@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.baseurl.Yum
+Exec=/usr/bin/env python /usr/share/yum/yum-daemon
+User=root
