@@ -32,9 +32,6 @@ DAEMON_INTERFACE = DAEMON_ORG+'.Interface'
 class AccessDeniedError(dbus.DBusException):
     _dbus_error_name = DAEMON_ORG+'.AccessDeniedError'
 
-class CommandFailError(dbus.DBusException):
-    _dbus_error_name = DAEMON_ORG+'.CommandFailError'
-
 class YumLockedError(dbus.DBusException):
     _dbus_error_name = DAEMON_ORG+'.YumLockedError'
 
@@ -58,7 +55,7 @@ class YumPreBaseConf:
         self.syslog_device = '/dev/log'
         self.localpkg_gpgcheck = False
 
-class YumexDaemon(dbus.service.Object):
+class YumDaemon(dbus.service.Object):
 
     def __init__(self, mainloop):
         self.mainloop = mainloop # use to terminate mainloop
@@ -70,6 +67,9 @@ class YumexDaemon(dbus.service.Object):
         
     @property    
     def yumbase(self):
+        '''
+        yumbase property so we can auto initialize it if not defined
+        '''
         if not self._yumbase:
             self._get_yumbase()    
         return self._yumbase
@@ -77,24 +77,12 @@ class YumexDaemon(dbus.service.Object):
     # DBUS Methods
 
     @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='ss', 
-                                          out_signature='', 
-                                          sender_keyword='sender')
-    def run(self, command, env_string, sender=None):
-        ''' Run a command with root access '''
-        self.check_permission(sender)
-        command = command.encode('utf8')
-        env_string = env_string.encode('utf8')
-        env = self.__get_dict(env_string)
-        task = subprocess.Popen(command, shell=True, env=env)
-        task.wait()
-        if task.returncode:
-            raise CommandFailError(command, task.returncode)
-
-    @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
                                           out_signature='i') 
     def get_version(self):
+        '''
+        Get the daemon version
+        '''
         return version
 
     @dbus.service.method(DAEMON_INTERFACE, 
@@ -102,7 +90,10 @@ class YumexDaemon(dbus.service.Object):
                                           out_signature='',
                                           sender_keyword='sender')
     def exit(self, sender=None):
-        ''' Exit the daemon'''
+        '''
+        Exit the daemon
+        @param sender:
+        '''
         self.check_permission(sender)
         self.mainloop.quit()
 
@@ -111,7 +102,10 @@ class YumexDaemon(dbus.service.Object):
                                           out_signature='b',
                                           sender_keyword='sender')
     def lock(self, sender=None):
-        ''' get the lock'''
+        '''
+        Get the yum lock
+        @param sender:
+        '''
         self.check_permission(sender)
         if not self._lock:
             try:
@@ -127,11 +121,16 @@ class YumexDaemon(dbus.service.Object):
                                           out_signature='as',
                                           sender_keyword='sender')
     def get_packages(self, narrow, sender=None):
-        ''' setup '''
+        '''
+        Get a list of package ids, based on a package narrower
+        @param narrow: pkg narrow string ('installed','updates' etc)
+        @param sender:
+        '''
+        
         self.check_permission(sender)
         if self.check_lock(sender):
             yh = self.yumbase.doPackageLists(pkgnarrow=narrow)
-            pkgs = [str(po) for po in getattr(yh,narrow)]
+            pkgs = [self.get_id(po) for po in getattr(yh,narrow)]
             return pkgs
         else:
             return []
@@ -148,16 +147,28 @@ class YumexDaemon(dbus.service.Object):
             self._reset_yumbase()
             self._lock = None
             return True
-            
+    
+
+    def get_id(self,pkg):
+        '''
+        convert a yum package obejct to an id string containing (n,e,v,r,a,repo)
+        @param pkg:
+        '''
+        values = [pkg.name, pkg.epoch, pkg.ver, pkg.rel, pkg.arch, pkg.ui_from_repo]
+        return ",".join(values)
 
     def check_lock(self, sender):
+        '''
+        Check that the current sender is owning the yum lock
+        @param sender:
+        '''
         if self._lock == sender:
             return True
         else:
             raise YumLockedError('Yum is locked by another application')
 
     def check_permission(self, sender):
-        ''' Check for permission to execute'''
+        ''' Check for senders permission to run root stuff'''
         if sender in self.authorized_sender:
             return
         else:
@@ -166,6 +177,10 @@ class YumexDaemon(dbus.service.Object):
 
 
     def _check_permission(self, sender):
+        '''
+        check senders permissions using PolicyKit1
+        @param sender:
+        '''
         if not sender: raise ValueError('sender == None')
         
         obj = dbus.SystemBus().get_object('org.freedesktop.PolicyKit1', '/org/freedesktop/PolicyKit1/Authority')
@@ -175,19 +190,24 @@ class YumexDaemon(dbus.service.Object):
         if not granted:
             raise AccessDeniedError('Session is not authorized')
 
-    def __get_dict(self, string):
-        return eval(string)
     
     def _get_yumbase(self):
+        '''
+        Get a YumBase object to work with
+        '''
         self._yumbase = yum.YumBase()
         
     def _reset_yumbase(self):
+        '''
+        destroy the current YumBase object
+        '''
         del self._yumbase
+        self._yumbase = None
 
 def main():
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     mainloop = gobject.MainLoop()
-    YumexDaemon(mainloop)
+    YumDaemon(mainloop)
     mainloop.run()
 
 if __name__ == '__main__':

@@ -1,19 +1,15 @@
 PKGDIR = /usr/share/yum-daemon
 ORG_NAME = org.baseurl.Yum
 
-all: 
-	@../../../tools/py-compile *.py 
-
 install:
 	mkdir -p $(DESTDIR)/usr/share/dbus-1/system-services
 	mkdir -p $(DESTDIR)/etc/dbus-1/system.d
 	mkdir -p $(DESTDIR)/usr/share/polkit-1/actions
-	mkdir -p $(DESTDIR)/usr/share/yumex		
+	mkdir -p $(DESTDIR)$(DESTDIR)/$(PKGDIR)
 	install -m644 dbus/$(ORG_NAME).service $(DESTDIR)/usr/share/dbus-1/system-services/.				
 	install -m644 dbus/$(ORG_NAME).conf $(DESTDIR)/etc/dbus-1/system.d/.				
 	install -m644 policykit1/$(ORG_NAME).policy $(DESTDIR)/usr/share/polkit-1/actions/.				
 	install -m644 daemon.py $(DESTDIR)/$(PKGDIR)/.
-	install -m644 daemon.pyc $(DESTDIR)/$(PKGDIR)/.
 	install -m755 yum-daemon $(DESTDIR)/$(PKGDIR)/.
 
 uninstall:
@@ -24,7 +20,6 @@ uninstall:
 	rm -r $(DESTDIR)/$(PKGDIR)/yum-daemon
 	
 refresh:
-	@$(MAKE) all
 	@sudo $(MAKE) install
 	
 clean:
