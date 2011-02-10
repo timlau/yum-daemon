@@ -99,6 +99,13 @@ class YumDaemonClient:
         Get a list of pkg ids for the current availabe updates
         '''
         return self.daemon.get_packages(narrow, dbus_interface=DAEMON_INTERFACE, timeout=600)
+
+    @catch_exception
+    def get_packages_by_name(self, name, newest_only=True):
+        '''
+        Get a list of pkg ids for the current availabe updates
+        '''
+        return self.daemon.get_packages_by_name(name, newest_only, dbus_interface=DAEMON_INTERFACE, timeout=600)
     
     def exit(self):
         ''' End the daemon'''
@@ -153,7 +160,10 @@ if __name__ == '__main__':
             print cli.get_attribute(id, 'description')               
             print "\nChangelog:"             
             changelog = cli.get_attribute(id, 'changelog')
-            show_changelog(changelog, max_elem=2)               
+            show_changelog(changelog, max_elem=2)   
+            pkgs = cli.get_packages_by_name('yum', newest_only=False)            
+            for po in sorted(pkgs):
+                print str(po)
             cli.unlock() # We should always 
     except AccessDeniedError, e: # Catch if user press Cancel in the PolicyKit dialog
         print str(e)

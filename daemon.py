@@ -108,12 +108,24 @@ class YumDaemon(dbus.service.Object):
         '''
         
         self.check_permission(sender)
-        if self.check_lock(sender):
-            yh = self.yumbase.doPackageLists(pkgnarrow=narrow)
-            pkgs = [self.get_id(po) for po in getattr(yh,narrow)]
-            return pkgs
+        self.check_lock(sender)
+        yh = self.yumbase.doPackageLists(pkgnarrow=narrow)
+        pkgs = getattr(yh,narrow)
+        return self._to_package_id_list(pkgs)
+        
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='sb', 
+                                          out_signature='as',
+                                          sender_keyword='sender')
+    def get_packages_by_name(self, name, newest_only, sender=None):
+        self.check_permission(sender)
+        self.check_lock(sender)
+        if newest_only:
+            pkgs = self.yumbase.pkgSack.returnNewestByName(patterns=[name], ignore_case=False)
         else:
-            return []
+            pkgs = self.yumbase.pkgSack.returnPackages(patterns=[name], ignore_case=False)
+        return self._to_package_id_list(pkgs)
+        
         
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='ss', 
@@ -142,8 +154,21 @@ class YumDaemon(dbus.service.Object):
             self._reset_yumbase()
             self._lock = None
             return True
-    
-    
+
+    def _to_package_id_list(self, pkgs):
+        '''
+        return a sorted list of package ids from a list of packages
+        if and po is installed, the installed po id will be returned
+        @param pkgs:
+        '''
+        result = []
+        for po in sorted(pkgs):
+            if self.yumbase.rpmdb.contains(po=po): # if the po is installed, then return the installed po 
+                (n, a, e, v, r) = po.pkgtup
+                po = self.yumbase.rpmdb.searchNevra(name=n, arch=a, ver=v, rel=r, epoch=e)[0]
+            result.append(self._get_id(po))
+        return result
+
     def get_po(self,id):
         ''' find the real package from an package id'''
         n, e, v, r, a, repo_id = id.split(',')
@@ -160,7 +185,7 @@ class YumDaemon(dbus.service.Object):
         else:
             return None
 
-    def get_id(self,pkg):
+    def _get_id(self,pkg):
         '''
         convert a yum package obejct to an id string containing (n,e,v,r,a,repo)
         @param pkg:
