@@ -130,40 +130,42 @@ def show_changelog(changelog, max_elem=3):
         print("* %s %s" % (date.fromtimestamp(c_date).isoformat(), c_ver))
         for line in msg.split('\n'):
             print("%s" % line)
-    
+
+def show_package_list(pkgs):    
+    for id in pkgs:
+        (n, e, v, r, a, repo_id) = cli.to_pkg_tuple(id)
+        print " --> %s-%s:%s-%s.%s (%s)" % (n, e, v, r, a, repo_id)
     
 if __name__ == '__main__':
     cli = YumDaemonClient()
     try:
-        print('Getting deamon version')
         print "Daemon Version : %i" % cli.get_version()
         if len(sys.argv) > 1 and sys.argv[1] == 'quit':
             cli.exit()
         else:
             cli.lock()
-            print('Testing get_packages')
+            print "\nInstalled packages"             
             pkgs = cli.get_packages('installed')
-            for po in sorted(pkgs):
-                print str(po)
-            id = str(po)
-            (n, e, v, r, a, repo_id) = cli.to_pkg_tuple(id)
-            print "Name : %s " % n
-            print "Summary : %s" % cli.get_attribute(id, 'summary')                 
+            show_package_list(pkgs)
+            print "\nAvailable Updates"             
             pkgs = cli.get_packages('updates')
-            for po in sorted(pkgs):
-                print str(po)
-            id = str(po)
+            show_package_list(pkgs)
+            id = str(pkgs[-1])
             (n, e, v, r, a, repo_id) = cli.to_pkg_tuple(id)
-            print "\nName : %s " % n
+            print "\nPackage attributes"             
+            print "Name : %s " % n
             print "Summary : %s" % cli.get_attribute(id, 'summary')    
             print "\nDescription:"             
             print cli.get_attribute(id, 'description')               
             print "\nChangelog:"             
             changelog = cli.get_attribute(id, 'changelog')
             show_changelog(changelog, max_elem=2)   
+            print "\nGet all yum packages:"                         
             pkgs = cli.get_packages_by_name('yum', newest_only=False)            
-            for po in sorted(pkgs):
-                print str(po)
+            show_package_list(pkgs)
+            print "\nGet all packages starting with yum (newest only)"                         
+            pkgs = cli.get_packages_by_name('yum*', newest_only=True)            
+            show_package_list(pkgs)
             cli.unlock() # We should always 
     except AccessDeniedError, e: # Catch if user press Cancel in the PolicyKit dialog
         print str(e)
