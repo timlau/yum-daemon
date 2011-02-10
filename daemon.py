@@ -25,6 +25,8 @@ import subprocess
 import yum
 import yum.Errors as Errors
 from urlgrabber.progress import format_number
+from yum.callbacks import *
+from yum.rpmtrans import RPMBaseCallback
 
 
 version = 100 # must be integer
@@ -44,10 +46,81 @@ class YumLockedError(dbus.DBusException):
 class YumTransactionError(dbus.DBusException):
     _dbus_error_name = DAEMON_ORG+'.YumTransactionError'
 
+#------------------------------------------------------------------------------ Callback handlers
+class DownloadCallback(  DownloadBaseCallback ):
+    '''
+    Yum Download callback handler class
+    the updateProgress will be called while something is being downloaded
+    '''
+    def __init__(self,base):
+        DownloadBaseCallback.__init__(self)
+        self.base = base
+
+    def updateProgress(self,name,frac,fread,ftime):
+        '''
+        Update the progressbar
+        @param name: filename
+        @param frac: Progress fracment (0 -> 1)
+        @param fread: formated string containing BytesRead
+        @param ftime : formated string containing remaining or elapsed time
+        '''
+        # send a DBus signal with progress info
+        self.base.UpdateProgress(name,frac,fread,ftime)
+
+class ProcessTransCallback(ProcessTransBaseCallback):
+    STATES = { PT_DOWNLOAD  : "download",
+               PT_GPGCHECK    : "signature-check",
+               PT_TEST_TRANS  : "run-test-transaction",
+               PT_TRANSACTION : "run-transaction"}
+
+    def __init__(self, base):
+        ProcessTransBaseCallback.__init__(self)
+        self.base = base
+        
+    def event(self,state,data=None):
+        if state in ProcessTransCallback.STATES:
+            ProcessTransBaseCallback.event(self,state,data)
+            self.base.TransactionEvent(ProcessTransCallback.STATES[state])
+            
+class RPMCallback(RPMBaseCallback):
+    '''
+    RPMTransaction display callback class
+    '''
+    def __init__(self, base):
+        RPMBaseCallback.__init__(self)
+        self.base = base
+        
+    def event(self, package, action, te_current, te_total, ts_current, ts_total):
+        """
+        @param package: A yum package object or simple string of a package name
+        @param action: A yum.constant transaction set state or in the obscure 
+                       rpm repackage case it could be the string 'repackaging'
+        @param te_current: Current number of bytes processed in the transaction
+                           element being processed
+        @param te_total: Total number of bytes in the transaction element being
+                         processed
+        @param ts_current: number of processes completed in whole transaction
+        @param ts_total: total number of processes in the transaction.
+        """
+        if not isinstance(package, str): # package can be both str or yum package object
+            id = self.base._get_id(package)
+        else:
+            id = package
+        self.base.RPMProgress(id, action, te_current, te_total, ts_current, ts_total)
+
+    def scriptout(self, package, msgs):
+        """package is the package.  msgs is the messages that were
+        output (if any)."""
+        pass
+
+            
+            
+
 #------------------------------------------------------------------------------ Main class
-class YumDaemon(dbus.service.Object):
+class YumDaemon(dbus.service.Object, DownloadBaseCallback):
 
     def __init__(self, mainloop):
+        DownloadBaseCallback.__init__(self)
         self.mainloop = mainloop # use to terminate mainloop
         self.authorized_sender = set()
         self._lock = None
@@ -109,6 +182,7 @@ class YumDaemon(dbus.service.Object):
             try:
                 self.yumbase.doLock()
                 self._lock = sender
+                print('Yum is locked by : %s' % sender)
                 return True
             except Errors.LockError, e:
                 raise YumLockedError(str(e))
@@ -183,6 +257,7 @@ class YumDaemon(dbus.service.Object):
         if self.check_lock(sender):
             self.yumbase.doUnlock()
             self._reset_yumbase()
+            print('Yum lock by %s released' % self._lock)
             self._lock = None
             return True
 
@@ -217,11 +292,13 @@ class YumDaemon(dbus.service.Object):
         '''
         Resolve dependencies of current transaction
         '''
+        self.TransactionEvent('start-build')
         rc, msgs = self.yumbase.buildTransaction()
         if rc == 2: # OK
             output = self._get_transaction_list()
         else:
             output = msgs
+        self.TransactionEvent('end-build')
         return rc,repr(output)
     
     
@@ -234,13 +311,56 @@ class YumDaemon(dbus.service.Object):
         Run the current yum transaction
         '''
         try:
+            self.TransactionEvent('start-run')
             self._can_quit = False
-            self.yumbase.processTransaction()
+            callback = ProcessTransCallback(self)
+            rpmDisplay = RPMCallback(self)
+            self.yumbase.processTransaction(callback=callback, rpmDisplay=rpmDisplay)
             self._can_quit = True
+            self.TransactionEvent('end-run')
         except Errors.YumBaseError, e:
             self._can_quit = True            
+            self.TransactionEvent('fail')
             raise YumTransactionError(str(e))
+#===============================================================================
+# DBus signals
+#===============================================================================
+    @dbus.service.signal(DAEMON_INTERFACE)
+    def UpdateProgress(self,name,frac,fread,ftime):
+        '''
+        DBus signal with download progress information
+        will send dbus signals with download progress information
+        @param name: filename
+        @param frac: Progress fracment (0 -> 1)
+        @param fread: formated string containing BytesRead
+        @param ftime : formated string containing remaining or elapsed time
+        '''
+        pass
 
+    @dbus.service.signal(DAEMON_INTERFACE)
+    def TransactionEvent(self,event):
+        '''
+        DBus signal with Transaction information        
+        @param event:
+        '''
+        pass
+    
+    
+    @dbus.service.signal(DAEMON_INTERFACE)
+    def RPMProgress(self, package, action, te_current, te_total, ts_current, ts_total):
+        """
+        RPM Progress DBus signal
+        @param package: A yum package object or simple string of a package name
+        @param action: A yum.constant transaction set state or in the obscure 
+                       rpm repackage case it could be the string 'repackaging'
+        @param te_current: Current number of bytes processed in the transaction
+                           element being processed
+        @param te_total: Total number of bytes in the transaction element being
+                         processed
+        @param ts_current: number of processes completed in whole transaction
+        @param ts_total: total number of processes in the transaction.
+        """
+        pass
     
 #===============================================================================
 # Helper methods
@@ -382,6 +502,9 @@ class YumDaemon(dbus.service.Object):
         Get a YumBase object to work with
         '''
         self._yumbase = yum.YumBase()
+        #self._yumbase.doConfigSetup()
+        # setup the download callback handler
+        self._yumbase.repos.setProgressBar( DownloadCallback(self) )
         
     def _reset_yumbase(self):
         '''
