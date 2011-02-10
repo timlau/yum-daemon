@@ -114,6 +114,21 @@ class YumDaemon(dbus.service.Object):
             return pkgs
         else:
             return []
+        
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='ss', 
+                                          out_signature='s',
+                                          sender_keyword='sender')
+    def get_attribute(self, id, attr,sender=None):
+        po = self.get_po(id)
+        if po:
+            if hasattr(po, attr):
+                value = repr(getattr(po,attr))
+                return value
+            else:
+                return ':none'
+        else:
+            return ':not_found'        
             
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
@@ -128,6 +143,22 @@ class YumDaemon(dbus.service.Object):
             self._lock = None
             return True
     
+    
+    def get_po(self,id):
+        ''' find the real package from an package id'''
+        n, e, v, r, a, repo_id = id.split(',')
+        if repo_id == 'installed' or repo_id.startswith('@'):
+            pkgs = self.yumbase.rpmdb.searchNevra(n, e, v, r, a)
+        else:
+            repo = self.yumbase.repos.getRepo(repo_id) # Used the repo sack, it will be faster
+            if repo:
+                pkgs = repo.sack.searchNevra(n, e, v, r, a)
+            else: # fallback to the use the pkgSack, just in case
+                pkgs = self.pkgSack.searchNevra(n, e, v, r, a)
+        if pkgs:
+            return pkgs[0]
+        else:
+            return None
 
     def get_id(self,pkg):
         '''
