@@ -29,12 +29,14 @@ version = 100 # must be integer
 DAEMON_ORG = 'org.baseurl.Yum'
 DAEMON_INTERFACE = DAEMON_ORG+'.Interface'
 
+#------------------------------------------------------------------------------ DBus Exception
 class AccessDeniedError(dbus.DBusException):
     _dbus_error_name = DAEMON_ORG+'.AccessDeniedError'
 
 class YumLockedError(dbus.DBusException):
     _dbus_error_name = DAEMON_ORG+'.YumLockedError'
 
+#------------------------------------------------------------------------------ Main class
 class YumDaemon(dbus.service.Object):
 
     def __init__(self, mainloop):
@@ -53,8 +55,11 @@ class YumDaemon(dbus.service.Object):
         if not self._yumbase:
             self._get_yumbase()    
         return self._yumbase
-        
-    # DBUS Methods
+
+#===============================================================================
+# DBus Methods
+#===============================================================================
+
 
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
@@ -118,6 +123,12 @@ class YumDaemon(dbus.service.Object):
                                           out_signature='as',
                                           sender_keyword='sender')
     def get_packages_by_name(self, name, newest_only, sender=None):
+        '''
+        Get a list of packages from a name pattern
+        @param name: name pattern
+        @param newest_only: True = get newest packages only
+        @param sender:
+        '''
         self.check_permission(sender)
         self.check_lock(sender)
         if newest_only:
@@ -132,6 +143,13 @@ class YumDaemon(dbus.service.Object):
                                           out_signature='s',
                                           sender_keyword='sender')
     def get_attribute(self, id, attr,sender=None):
+        '''
+        Get an attribute from a yum package id
+        it will return a python repr string of the attribute
+        @param id: yum package id
+        @param attr: name of attribute (summary, size, description, changelog etc..)
+        @param sender:
+        '''
         po = self.get_po(id)
         if po:
             if hasattr(po, attr):
@@ -154,6 +172,10 @@ class YumDaemon(dbus.service.Object):
             self._reset_yumbase()
             self._lock = None
             return True
+
+#===============================================================================
+# Helper methods
+#===============================================================================
 
     def _to_package_id_list(self, pkgs):
         '''
@@ -241,6 +263,7 @@ class YumDaemon(dbus.service.Object):
         self._yumbase = None
 
 def main():
+    # setup the DBus mainloop
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     mainloop = gobject.MainLoop()
     YumDaemon(mainloop)
