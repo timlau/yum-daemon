@@ -24,10 +24,15 @@ import os
 import subprocess
 import yum
 import yum.Errors as Errors
+from urlgrabber.progress import format_number
+
 
 version = 100 # must be integer
 DAEMON_ORG = 'org.baseurl.Yum'
 DAEMON_INTERFACE = DAEMON_ORG+'.Interface'
+
+def _(msg):
+    return msg
 
 #------------------------------------------------------------------------------ DBus Exception
 class AccessDeniedError(dbus.DBusException):
@@ -35,6 +40,9 @@ class AccessDeniedError(dbus.DBusException):
 
 class YumLockedError(dbus.DBusException):
     _dbus_error_name = DAEMON_ORG+'.YumLockedError'
+
+class YumTransactionError(dbus.DBusException):
+    _dbus_error_name = DAEMON_ORG+'.YumTransactionError'
 
 #------------------------------------------------------------------------------ Main class
 class YumDaemon(dbus.service.Object):
@@ -46,6 +54,7 @@ class YumDaemon(dbus.service.Object):
         bus_name = dbus.service.BusName(DAEMON_ORG, bus = dbus.SystemBus())
         dbus.service.Object.__init__(self, bus_name, '/')
         self._yumbase = None
+        self._can_quit = True
         
     @property    
     def yumbase(self):
@@ -72,7 +81,7 @@ class YumDaemon(dbus.service.Object):
 
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
-                                          out_signature='',
+                                          out_signature='b',
                                           sender_keyword='sender')
     def exit(self, sender=None):
         '''
@@ -80,7 +89,11 @@ class YumDaemon(dbus.service.Object):
         @param sender:
         '''
         self.check_permission(sender)
-        self.mainloop.quit()
+        if self._can_quit:
+            self.mainloop.quit()
+            return True
+        else:
+            return False
 
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
@@ -150,7 +163,7 @@ class YumDaemon(dbus.service.Object):
         @param attr: name of attribute (summary, size, description, changelog etc..)
         @param sender:
         '''
-        po = self.get_po(id)
+        po = self._get_po(id)
         if po:
             if hasattr(po, attr):
                 value = repr(getattr(po,attr))
@@ -173,9 +186,124 @@ class YumDaemon(dbus.service.Object):
             self._lock = None
             return True
 
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='ss', 
+                                          out_signature='as',
+                                          sender_keyword='sender')
+
+    def add_transaction(self, id, action, sender=None):
+        if action != 'localinstall': # Dont get a po if it is at local package
+            po = self._get_po(id)
+        txmbrs = []
+        if action == "install":
+            txmbrs = self.yumbase.install(po)
+        elif action == "update" or action == "obsolete":
+            txmbrs = self.yumbase.update(po)
+        elif action == "remove":
+            txmbrs = self.yumbase.remove(po)
+        elif action == "reinstall":
+            txmbrs = self.yumbase.reinstall(po)
+        elif action == "downgrade":
+            txmbrs = self.yumbase.downgrade(po)
+        elif action == "localinstall":
+            txmbrs = self.yumbase.installLocal(id)
+        return self._to_transaction_id_list(txmbrs)
+    
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='', 
+                                          out_signature='is',
+                                          sender_keyword='sender')
+    def build_transaction(self, sender):
+        '''
+        Resolve dependencies of current transaction
+        '''
+        rc, msgs = self.yumbase.buildTransaction()
+        if rc == 2: # OK
+            output = self._get_transaction_list()
+        else:
+            output = msgs
+        return rc,repr(output)
+    
+    
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='', 
+                                          out_signature='',
+                                          sender_keyword='sender')
+    def run_transaction(self, sender = None):
+        '''
+        Run the current yum transaction
+        '''
+        try:
+            self._can_quit = False
+            self.yumbase.processTransaction()
+            self._can_quit = True
+        except Errors.YumBaseError, e:
+            self._can_quit = True            
+            raise YumTransactionError(str(e))
+
+    
 #===============================================================================
 # Helper methods
 #===============================================================================
+    def _get_transaction_list(self):
+        ''' 
+        Generate a list of the current transaction 
+        '''
+        out_list = []
+        sublist = []
+        self.yumbase.tsInfo.makelists()
+        for (action, pkglist) in [(yum.i18n._('Installing'), self.yumbase.tsInfo.installed),
+                            (_('Updating'), self.yumbase.tsInfo.updated),
+                            (_('Removing'), self.yumbase.tsInfo.removed),
+                            (_('Installing for dependencies'), self.yumbase.tsInfo.depinstalled),
+                            (_('Updating for dependencies'), self.yumbase.tsInfo.depupdated),
+                            (_('Removing for dependencies'), self.yumbase.tsInfo.depremoved)]:
+            for txmbr in pkglist:
+                (n, a, e, v, r) = txmbr.pkgtup
+                evr = txmbr.po.printVer()
+                repoid = txmbr.repoid
+                pkgsize = float(txmbr.po.size)
+                size = format_number(pkgsize)
+                alist = []
+                for (obspo, relationship) in txmbr.relatedto:
+                    if relationship == 'obsoletes':
+                        appended = _('     replacing  %s%s%s.%s %s\n\n')
+                        appended %= ("", obspo.name, "",
+                                     obspo.arch, obspo.printVer())
+                        alist.append(appended)
+                el = (n, a, evr, repoid, size, alist)
+                sublist.append(el)
+            if pkglist:
+                out_list.append([action, sublist])
+                sublist = []
+        for (action, pkglist) in [(_('Skipped (dependency problems)'),
+                                   self.yumbase.skipped_packages), ]:
+            lines = []
+            for po in pkglist:
+                (n, a, e, v, r) = po.pkgtup
+                evr = po.printVer()
+                repoid = po.repoid
+                pkgsize = float(po.size)
+                size = format_number(pkgsize)
+                el = (n, a, evr, repoid, size, alist)
+                sublist.append(el)
+            if pkglist:
+                out_list.append([action, sublist])
+                sublist = []
+
+        return out_list
+
+    def _to_transaction_id_list(self, txmbrs):
+        '''
+        return a sorted list of package ids from a list of packages
+        if and po is installed, the installed po id will be returned
+        @param pkgs:
+        '''
+        result = []
+        for txmbr in txmbrs:
+            po = txmbr.po
+            result.append("%s,%s" % (self._get_id(po), txmbr.ts_state ))
+        return result
 
     def _to_package_id_list(self, pkgs):
         '''
@@ -191,7 +319,7 @@ class YumDaemon(dbus.service.Object):
             result.append(self._get_id(po))
         return result
 
-    def get_po(self,id):
+    def _get_po(self,id):
         ''' find the real package from an package id'''
         n, e, v, r, a, repo_id = id.split(',')
         if repo_id == 'installed' or repo_id.startswith('@'):

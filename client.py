@@ -32,6 +32,9 @@ class AccessDeniedError(Exception):
 class YumLockedError(Exception):
     'The Yum daemon is locked'
 
+class YumTransactionError(Exception):
+    'The yum transaction failed'
+
 def catch_exception(func):
     """
     This decorator to and dbus exceptions and make them python ones instead 
@@ -44,6 +47,8 @@ def catch_exception(func):
                 raise AccessDeniedError(*e.args)
             elif e.get_dbus_name() == 'org.baseurl.Yum.YumLockedError':
                 raise YumLockedError(*e.args)
+            elif e.get_dbus_name() == 'org.baseurl.Yum.YumTransactionError':
+                raise YumTransactionError(*e.args)
             else: raise
 
     newFunc.__name__ = func.__name__
@@ -106,6 +111,28 @@ class YumDaemonClient:
         Get a list of pkg ids for the current availabe updates
         '''
         return self.daemon.get_packages_by_name(name, newest_only, dbus_interface=DAEMON_INTERFACE, timeout=600)
+
+    @catch_exception
+    def add_transaction(self, id, action):
+        '''
+        Get a list of pkg ids for the current availabe updates
+        '''
+        return self.daemon.add_transaction(id, action, dbus_interface=DAEMON_INTERFACE, timeout=600)
+
+    @catch_exception
+    def build_transaction(self):
+        '''
+        Get a list of pkg ids for the current availabe updates
+        '''
+        return self.daemon.build_transaction( dbus_interface=DAEMON_INTERFACE, timeout=600)
+
+    @catch_exception
+    def run_transaction(self):
+        '''
+        Get a list of pkg ids for the current availabe updates
+        '''
+        self.daemon.run_transaction( dbus_interface=DAEMON_INTERFACE, timeout=600)
+
     
     def exit(self):
         ''' End the daemon'''
@@ -119,6 +146,11 @@ class YumDaemonClient:
         ''' find the real package from an package id'''
         (n, e, v, r, a, repo_id)  = str(id).split(',')
         return (n, e, v, r, a, repo_id)
+
+    def to_txmbr_tuple(self, id):
+        ''' find the real package from an package id'''
+        (n, e, v, r, a, repo_id, ts_state)  = str(id).split(',')
+        return (n, e, v, r, a, repo_id, ts_state)
 
 
 def show_changelog(changelog, max_elem=3):
@@ -135,6 +167,18 @@ def show_package_list(pkgs):
     for id in pkgs:
         (n, e, v, r, a, repo_id) = cli.to_pkg_tuple(id)
         print " --> %s-%s:%s-%s.%s (%s)" % (n, e, v, r, a, repo_id)
+
+def show_transaction_list(pkgs):    
+    for id in pkgs:
+        id = str(id)
+        (n, e, v, r, a, repo_id, ts_state) = cli.to_txmbr_tuple(id)
+        print " --> %s-%s:%s-%s.%s (%s) - %s" % (n, e, v, r, a, repo_id, ts_state)
+
+def show_transaction_result(output):
+    for action, pkgs in output:
+        print "  %s" % action
+        for pkg in pkgs:
+            print "  --> %s" % str(pkg)
     
 if __name__ == '__main__':
     cli = YumDaemonClient()
@@ -166,6 +210,29 @@ if __name__ == '__main__':
             print "\nGet all packages starting with yum (newest only)"                         
             pkgs = cli.get_packages_by_name('yum*', newest_only=True)            
             show_package_list(pkgs)
+            print "\ninstall/remove a package (yum-plugin-aliases)"                                     
+            pkgs = cli.get_packages_by_name('yum-plugin-aliases', newest_only=True)
+            if pkgs:
+                id = str(pkgs[0])
+                (n, e, v, r, a, repo_id) = cli.to_pkg_tuple(id)
+                if repo_id.startswith('@'):
+                    action = 'remove'
+                else:
+                    action = 'install'                    
+                print "Adding %s to transaction for %s" % (n,action)    
+                res = cli.add_transaction(id, action)
+                show_transaction_list(res)
+                print "Resolving dependencies"
+                rc, output = cli.build_transaction()
+                #print rc,output
+                if rc == 2:
+                    show_transaction_result(eval(output))
+                    try:
+                        print "Running the transaction"
+                        cli.run_transaction()
+                        print "Transaction Completed"
+                    except YumTransactionError,e:
+                        print "Transaction Failed : %s " % str(e)
             cli.unlock() # We should always 
     except AccessDeniedError, e: # Catch if user press Cancel in the PolicyKit dialog
         print str(e)
