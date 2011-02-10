@@ -16,11 +16,7 @@ uninstall:
 	rm -f $(DESTDIR)/usr/share/dbus-1/system-services/$(ORG_NAME).*
 	rm -f $(DESTDIR)/etc/dbus-1/system.d/$(ORG_NAME).*				
 	rm -r $(DESTDIR)/usr/share/polkit-1/actions/$(ORG_NAME).*		
-	rm -r $(DESTDIR)/$(PKGDIR)/daemon.p* 
-	rm -r $(DESTDIR)/$(PKGDIR)/yum-daemon
-	
-refresh:
-	@sudo $(MAKE) install
+	rm -rf $(DESTDIR)/$(PKGDIR)/
 	
 clean:
 	@rm *.pyc *.pyo	

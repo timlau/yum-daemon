@@ -1,0 +1,19 @@
+Simple prof of concept for a dbus based yum daemon
+
+How to install:
+================
+Run the following as root
+
+  make install
+
+
+
+
+How to test:
+=============
+just run:
+  
+  python client.py 
+  
+  
+to test
