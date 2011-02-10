@@ -1,5 +1,6 @@
 Simple prof of concept for a dbus based yum daemon
 
+
 How to install:
 ================
 Run the following as root
@@ -14,6 +15,11 @@ How to test:
 just run:
   
   python client.py 
+    
   
+to make the daemon exit run:
+
+  python client.py quit 
   
-to test
+If you run it as normal user, you well get PolicyKit dialog asking for root password
+If you run as root it will just execute

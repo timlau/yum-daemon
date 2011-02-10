@@ -35,26 +35,6 @@ class AccessDeniedError(dbus.DBusException):
 class YumLockedError(dbus.DBusException):
     _dbus_error_name = DAEMON_ORG+'.YumLockedError'
 
-class YumPreBaseConf:
-    """This is the configuration interface for the YumBase configuration.
-       So if you want to change if plugins are on/off, or debuglevel/etc.
-       you tweak it here, and when yb.conf does it's thing ... it happens. """
-
-    def __init__(self):
-        self.fn = '/etc/yum/yum.conf'
-        self.root = '/'
-        self.init_plugins = True
-        self.plugin_types = (yum.plugins.TYPE_CORE,)
-        self.optparser = None
-        self.debuglevel = None
-        self.errorlevel = None
-        self.disabled_plugins = None
-        self.enabled_plugins = None
-        self.syslog_ident = None
-        self.syslog_facility = None
-        self.syslog_device = '/dev/log'
-        self.localpkg_gpgcheck = False
-
 class YumDaemon(dbus.service.Object):
 
     def __init__(self, mainloop):

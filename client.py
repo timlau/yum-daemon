@@ -18,13 +18,12 @@
 
 import os
 import dbus
+import sys
 
 DAEMON_ORG = 'org.baseurl.Yum'
 DAEMON_INTERFACE = DAEMON_ORG+'.Interface'
 
 # Exception classes 
-class CommandFailError(Exception):
-    'Fail to execute a command'
 
 class AccessDeniedError(Exception):
     'User press cancel button in policykit window'
@@ -92,15 +91,18 @@ if __name__ == '__main__':
     try:
         print('Getting deamon version')
         print "Daemon Version : %i" % cli.get_version()
-        cli.lock()
-        print('Testing get_packages')
-        pkgs = cli.get_packages('installed')
-        for po in sorted(pkgs):
-            print str(po)
-        pkgs = cli.get_packages('updates')
-        for po in sorted(pkgs):
-            print str(po)
-        cli.unlock()
+        if len(sys.argv) > 1 and sys.argv[1] == 'quit':
+            cli.exit()
+        else:
+            cli.lock()
+            print('Testing get_packages')
+            pkgs = cli.get_packages('installed')
+            for po in sorted(pkgs):
+                print str(po)
+            pkgs = cli.get_packages('updates')
+            for po in sorted(pkgs):
+                print str(po)
+            cli.unlock()
     except AccessDeniedError, e: # Catch if user press Cancel in the PolicyKit dialog
         print str(e)
     except YumLockedError, e: # Catch if user press Cancel in the PolicyKit dialog
