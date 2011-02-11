@@ -27,6 +27,7 @@ import yum.Errors as Errors
 from urlgrabber.progress import format_number
 from yum.callbacks import *
 from yum.rpmtrans import RPMBaseCallback
+from yum.constants import *
 
 
 version = 100 # must be integer
@@ -86,6 +87,15 @@ class RPMCallback(RPMBaseCallback):
     '''
     RPMTransaction display callback class
     '''
+    ACTIONS = { TS_UPDATE : 'update', 
+                TS_ERASE: 'erase',
+                TS_INSTALL: 'install', 
+                TS_TRUEINSTALL : 'install',
+                TS_OBSOLETED: 'obsolete',
+                TS_OBSOLETING: 'install',
+                TS_UPDATED: 'cleanup',
+                'repackaging': 'repackage'}
+
     def __init__(self, base):
         RPMBaseCallback.__init__(self)
         self.base = base
@@ -106,6 +116,8 @@ class RPMCallback(RPMBaseCallback):
             id = self.base._get_id(package)
         else:
             id = package
+        if action in RPMCallback.ACTIONS:
+            action = RPMCallback.ACTIONS[action]
         self.base.RPMProgress(id, action, te_current, te_total, ts_current, ts_total)
 
     def scriptout(self, package, msgs):
