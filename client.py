@@ -75,21 +75,21 @@ class YumDaemonClient:
         return obj
 
     @catch_exception
-    def lock(self):
-        self.daemon.lock(dbus_interface=DAEMON_INTERFACE)
+    def Lock(self):
+        self.daemon.Lock(dbus_interface=DAEMON_INTERFACE)
 
     @catch_exception
-    def unlock(self):
-        self.daemon.unlock(dbus_interface=DAEMON_INTERFACE)
+    def Unlock(self):
+        self.daemon.Unlock(dbus_interface=DAEMON_INTERFACE)
             
     @catch_exception
-    def get_attribute(self, id, attr):
+    def GetAttribute(self, id, attr):
         '''
         get yum package attribute (summary, size etc)
         @param id:
         @param attr:
         '''
-        result = self.daemon.get_attribute(id, attr, dbus_interface=DAEMON_INTERFACE)
+        result = self.daemon.GetAttribute(id, attr, dbus_interface=DAEMON_INTERFACE)
         if result == ':none': # illegal attribute
             result = None
         elif result == ':not_found': # package not found
@@ -99,48 +99,48 @@ class YumDaemonClient:
         return result
 
     @catch_exception
-    def get_packages(self, narrow):
+    def GetPackages(self, narrow):
         '''
         Get a list of pkg ids for the current availabe updates
         '''
-        return self.daemon.get_packages(narrow, dbus_interface=DAEMON_INTERFACE, timeout=600)
+        return self.daemon.GetPackages(narrow, dbus_interface=DAEMON_INTERFACE, timeout=600)
 
     @catch_exception
-    def get_packages_by_name(self, name, newest_only=True):
+    def GetPackagesByName(self, name, newest_only=True):
         '''
         Get a list of pkg ids for the current availabe updates
         '''
-        return self.daemon.get_packages_by_name(name, newest_only, dbus_interface=DAEMON_INTERFACE, timeout=600)
+        return self.daemon.GetPackagesByName(name, newest_only, dbus_interface=DAEMON_INTERFACE, timeout=600)
 
     @catch_exception
-    def add_transaction(self, id, action):
+    def AddTransaction(self, id, action):
         '''
         Get a list of pkg ids for the current availabe updates
         '''
-        return self.daemon.add_transaction(id, action, dbus_interface=DAEMON_INTERFACE, timeout=600)
+        return self.daemon.AddTransaction(id, action, dbus_interface=DAEMON_INTERFACE, timeout=600)
 
     @catch_exception
-    def build_transaction(self):
+    def BuildTransaction(self):
         '''
         Get a list of pkg ids for the current availabe updates
         '''
-        return self.daemon.build_transaction( dbus_interface=DAEMON_INTERFACE, timeout=600)
+        return self.daemon.BuildTransaction( dbus_interface=DAEMON_INTERFACE, timeout=600)
 
     @catch_exception
-    def run_transaction(self):
+    def RunTransaction(self):
         '''
         Get a list of pkg ids for the current availabe updates
         '''
-        self.daemon.run_transaction( dbus_interface=DAEMON_INTERFACE, timeout=600)
+        self.daemon.RunTransaction( dbus_interface=DAEMON_INTERFACE, timeout=600)
 
     
-    def exit(self):
+    def Exit(self):
         ''' End the daemon'''
-        self.daemon.exit(dbus_interface=DAEMON_INTERFACE)
+        self.daemon.Exit(dbus_interface=DAEMON_INTERFACE)
 
-    def get_version(self):
+    def GetVersion(self):
         ''' get the daemon version'''
-        return self.daemon.get_version( dbus_interface=DAEMON_INTERFACE)
+        return self.daemon.GetVersion( dbus_interface=DAEMON_INTERFACE)
     
     def to_pkg_tuple(self, id):
         ''' find the real package from an package id'''
@@ -183,35 +183,35 @@ def show_transaction_result(output):
 if __name__ == '__main__':
     cli = YumDaemonClient()
     try:
-        print "Daemon Version : %i" % cli.get_version()
+        print "Daemon Version : %i" % cli.GetVersion()
         if len(sys.argv) > 1 and sys.argv[1] == 'quit':
-            cli.exit()
+            cli.Exit()
         else:
-            cli.lock()
+            cli.Lock()
             print "\nInstalled packages"             
-            pkgs = cli.get_packages('installed')
+            pkgs = cli.GetPackages('installed')
             show_package_list(pkgs)
             print "\nAvailable Updates"             
-            pkgs = cli.get_packages('updates')
+            pkgs = cli.GetPackages('updates')
             show_package_list(pkgs)
             id = str(pkgs[-1])
             (n, e, v, r, a, repo_id) = cli.to_pkg_tuple(id)
             print "\nPackage attributes"             
             print "Name : %s " % n
-            print "Summary : %s" % cli.get_attribute(id, 'summary')    
+            print "Summary : %s" % cli.GetAttribute(id, 'summary')    
             print "\nDescription:"             
-            print cli.get_attribute(id, 'description')               
+            print cli.GetAttribute(id, 'description')               
             print "\nChangelog:"             
-            changelog = cli.get_attribute(id, 'changelog')
+            changelog = cli.GetAttribute(id, 'changelog')
             show_changelog(changelog, max_elem=2)   
             print "\nGet all yum packages:"                         
-            pkgs = cli.get_packages_by_name('yum', newest_only=False)            
+            pkgs = cli.GetPackagesByName('yum', newest_only=False)            
             show_package_list(pkgs)
             print "\nGet all packages starting with yum (newest only)"                         
-            pkgs = cli.get_packages_by_name('yum*', newest_only=True)            
+            pkgs = cli.GetPackagesByName('yum*', newest_only=True)            
             show_package_list(pkgs)
             print "\ninstall/remove a package (yum-plugin-aliases)"                                     
-            pkgs = cli.get_packages_by_name('yum-plugin-aliases', newest_only=True)
+            pkgs = cli.GetPackagesByName('yum-plugin-aliases', newest_only=True)
             if pkgs:
                 id = str(pkgs[0])
                 (n, e, v, r, a, repo_id) = cli.to_pkg_tuple(id)
@@ -220,20 +220,20 @@ if __name__ == '__main__':
                 else:
                     action = 'install'                    
                 print "Adding %s to transaction for %s" % (n,action)    
-                res = cli.add_transaction(id, action)
+                res = cli.AddTransaction(id, action)
                 show_transaction_list(res)
                 print "Resolving dependencies"
-                rc, output = cli.build_transaction()
+                rc, output = cli.BuildTransaction()
                 #print rc,output
                 if rc == 2:
                     show_transaction_result(eval(output))
                     try:
                         print "Running the transaction"
-                        cli.run_transaction()
+                        cli.RunTransaction()
                         print "Transaction Completed"
                     except YumTransactionError,e:
                         print "Transaction Failed : %s " % str(e)
-            cli.unlock() # We should always 
+            cli.Unlock() # We should always 
     except AccessDeniedError, e: # Catch if user press Cancel in the PolicyKit dialog
         print str(e)
     except YumLockedError, e: # Catch if user press Cancel in the PolicyKit dialog

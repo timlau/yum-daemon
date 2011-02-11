@@ -158,7 +158,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
                                           out_signature='i') 
-    def get_version(self):
+    def GetVersion(self):
         '''
         Get the daemon version
         '''
@@ -168,7 +168,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                                           in_signature='', 
                                           out_signature='b',
                                           sender_keyword='sender')
-    def exit(self, sender=None):
+    def Exit(self, sender=None):
         '''
         Exit the daemon
         @param sender:
@@ -184,7 +184,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                                           in_signature='', 
                                           out_signature='b',
                                           sender_keyword='sender')
-    def lock(self, sender=None):
+    def Lock(self, sender=None):
         '''
         Get the yum lock
         @param sender:
@@ -204,7 +204,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                                           in_signature='s', 
                                           out_signature='as',
                                           sender_keyword='sender')
-    def get_packages(self, narrow, sender=None):
+    def GetPackages(self, narrow, sender=None):
         '''
         Get a list of package ids, based on a package narrower
         @param narrow: pkg narrow string ('installed','updates' etc)
@@ -221,7 +221,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                                           in_signature='sb', 
                                           out_signature='as',
                                           sender_keyword='sender')
-    def get_packages_by_name(self, name, newest_only, sender=None):
+    def GetPackagesByName(self, name, newest_only, sender=None):
         '''
         Get a list of packages from a name pattern
         @param name: name pattern
@@ -241,7 +241,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                                           in_signature='ss', 
                                           out_signature='s',
                                           sender_keyword='sender')
-    def get_attribute(self, id, attr,sender=None):
+    def GetAttribute(self, id, attr,sender=None):
         '''
         Get an attribute from a yum package id
         it will return a python repr string of the attribute
@@ -263,7 +263,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                                           in_signature='', 
                                           out_signature='b',
                                           sender_keyword='sender')
-    def unlock(self, sender=None):
+    def Unlock(self, sender=None):
         ''' release the lock'''
         self.check_permission(sender)
         if self.check_lock(sender):
@@ -278,7 +278,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                                           out_signature='as',
                                           sender_keyword='sender')
 
-    def add_transaction(self, id, action, sender=None):
+    def AddTransaction(self, id, action, sender=None):
         if action != 'localinstall': # Dont get a po if it is at local package
             po = self._get_po(id)
         txmbrs = []
@@ -300,7 +300,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                                           in_signature='', 
                                           out_signature='is',
                                           sender_keyword='sender')
-    def build_transaction(self, sender):
+    def BuildTransaction(self, sender):
         '''
         Resolve dependencies of current transaction
         '''
@@ -318,7 +318,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                                           in_signature='', 
                                           out_signature='',
                                           sender_keyword='sender')
-    def run_transaction(self, sender = None):
+    def RunTransaction(self, sender = None):
         '''
         Run the current yum transaction
         '''
