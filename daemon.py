@@ -204,6 +204,25 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
 
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
+                                          out_signature='as',
+                                          sender_keyword='sender')
+    def GetRepositories(self, filter, sender=None):
+        '''
+        Get the value a list of repo ids
+        @param filter: filter to limit the listed repositories
+        @param sender:
+        '''
+        repos = []
+        repos = self.yumbase.repos
+        if filter == '' or filter == 'enabled':
+            repos = [repo.id for repo in repos.listEnabled()]
+        else:
+            repos = [repo.id for repo in repos.findRepos(filter)]
+        return repos    
+            
+        
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='s', 
                                           out_signature='s',
                                           sender_keyword='sender')
     def GetConfig(self, setting ,sender=None):
@@ -213,12 +232,33 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         @param setting: name of setting (debuglevel etc..)
         @param sender:
         '''
+        if setting == '*': # Return all config
+            cfg = self.yumbase.conf
+            all_conf = dict([(c,getattr(cfg,c)) for c in cfg.iterkeys()])
+            return json.dumps(all_conf)            
         if hasattr(self.yumbase.conf, setting):
             value = json.dumps(getattr(self.yumbase.conf, setting))
             return value
         else:
-            return ':none'
+            return json.dumps(None)
 
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='s', 
+                                          out_signature='s',
+                                          sender_keyword='sender')
+    def GetRepo(self, repo_id ,sender=None):
+        '''
+        Get information about a give repo_id
+        the repo setting will be returned as dictionary in JSON format
+        @param repo_id:
+        @param sender:
+        '''
+        try:
+            repo = self.yumbase.repos.getRepo(repo_id)
+            repo_conf = dict([(c,getattr(repo,c)) for c in repo.iterkeys()])
+            return json.dumps(repo_conf)            
+        except Errors.RepoError:
+            return json.dumps(None)
 
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 

@@ -84,19 +84,32 @@ class YumDaemonClient:
         self.daemon.Unlock(dbus_interface=DAEMON_INTERFACE)
 
     @catch_exception
+    def GetRepositories(self, filter):
+        '''        
+        @param filer:
+        '''
+        result = self.daemon.GetRepositories(filter, dbus_interface=DAEMON_INTERFACE)
+        return [str(r) for r in result]
+
+    @catch_exception
+    def GetRepo(self, repo_id):
+        '''
+        
+        @param repo_id:
+        '''
+        result = json.loads(self.daemon.GetRepo(repo_id, dbus_interface=DAEMON_INTERFACE))
+        return result
+
+    
+    @catch_exception
     def GetConfig(self, setting):
         '''
         get yum package attribute (summary, size etc)
         @param id:
         @param attr:
         '''
-        result = self.daemon.GetConfig(setting, dbus_interface=DAEMON_INTERFACE)
-        if result == ':none': # illegal attribute
-            result = None
-        else:
-            result = json.loads(result)
+        result = json.loads(self.daemon.GetConfig(setting, dbus_interface=DAEMON_INTERFACE))
         return result
-
             
     @catch_exception
     def GetAttribute(self, id, attr):
@@ -204,10 +217,16 @@ if __name__ == '__main__':
             cli.Exit()
         else:
             cli.Lock()
+            all_conf = cli.GetConfig('*')
+            for key in all_conf:
+                print "   %s = %s" % (key,all_conf[key])
+            repos = cli.GetRepositories('*-source')
+            print repos
+            print cli.GetRepo('fedoraXXX')
             print "errorlevel = %s" % cli.GetConfig('errorlevel')
-            print "\nInstalled packages"             
-            pkgs = cli.GetPackages('installed')
-            show_package_list(pkgs)
+#            print "\nInstalled packages"             
+#            pkgs = cli.GetPackages('installed')
+#            show_package_list(pkgs)
             print "\nAvailable Updates"             
             pkgs = cli.GetPackages('updates')
             show_package_list(pkgs)
