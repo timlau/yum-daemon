@@ -204,6 +204,24 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
 
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
+                                          out_signature='s',
+                                          sender_keyword='sender')
+    def GetConfig(self, setting ,sender=None):
+        '''
+        Get the value of a yum config setting
+        it will return a JSON string of the config
+        @param setting: name of setting (debuglevel etc..)
+        @param sender:
+        '''
+        if hasattr(self.yumbase.conf, setting):
+            value = json.dumps(getattr(self.yumbase.conf, setting))
+            return value
+        else:
+            return ':none'
+
+
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='s', 
                                           out_signature='as',
                                           sender_keyword='sender')
     def GetPackages(self, narrow, sender=None):

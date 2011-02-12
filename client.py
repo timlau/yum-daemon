@@ -82,6 +82,21 @@ class YumDaemonClient:
     @catch_exception
     def Unlock(self):
         self.daemon.Unlock(dbus_interface=DAEMON_INTERFACE)
+
+    @catch_exception
+    def GetConfig(self, setting):
+        '''
+        get yum package attribute (summary, size etc)
+        @param id:
+        @param attr:
+        '''
+        result = self.daemon.GetConfig(setting, dbus_interface=DAEMON_INTERFACE)
+        if result == ':none': # illegal attribute
+            result = None
+        else:
+            result = json.loads(result)
+        return result
+
             
     @catch_exception
     def GetAttribute(self, id, attr):
@@ -189,6 +204,7 @@ if __name__ == '__main__':
             cli.Exit()
         else:
             cli.Lock()
+            print "errorlevel = %s" % cli.GetConfig('errorlevel')
             print "\nInstalled packages"             
             pkgs = cli.GetPackages('installed')
             show_package_list(pkgs)
