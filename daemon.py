@@ -22,12 +22,14 @@ import dbus.glib
 import gobject
 import os
 import subprocess
+import json
 import yum
 import yum.Errors as Errors
 from urlgrabber.progress import format_number
 from yum.callbacks import *
 from yum.rpmtrans import RPMBaseCallback
 from yum.constants import *
+
 
 
 version = 100 # must be integer
@@ -252,7 +254,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         po = self._get_po(id)
         if po:
             if hasattr(po, attr):
-                value = repr(getattr(po,attr))
+                value = json.dumps(getattr(po,attr))
                 return value
             else:
                 return ':none'
@@ -298,7 +300,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
     
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
-                                          out_signature='is',
+                                          out_signature='s',
                                           sender_keyword='sender')
     def BuildTransaction(self, sender):
         '''
@@ -311,7 +313,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         else:
             output = msgs
         self.TransactionEvent('end-build')
-        return rc,repr(output)
+        return json.dumps((rc,output))
     
     
     @dbus.service.method(DAEMON_INTERFACE, 

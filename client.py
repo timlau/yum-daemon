@@ -19,6 +19,7 @@
 import os
 import dbus
 import sys
+import json
 from datetime import date
 
 DAEMON_ORG = 'org.baseurl.Yum'
@@ -95,7 +96,7 @@ class YumDaemonClient:
         elif result == ':not_found': # package not found
             result = None # FIXME: maybe raise an exception
         else:
-            result = eval(result)
+            result = json.loads(result)
         return result
 
     @catch_exception
@@ -223,10 +224,10 @@ if __name__ == '__main__':
                 res = cli.AddTransaction(id, action)
                 show_transaction_list(res)
                 print "Resolving dependencies"
-                rc, output = cli.BuildTransaction()
+                rc, output = json.loads(cli.BuildTransaction())
                 #print rc,output
                 if rc == 2:
-                    show_transaction_result(eval(output))
+                    show_transaction_result(output)
                     try:
                         print "Running the transaction"
                         cli.RunTransaction()
