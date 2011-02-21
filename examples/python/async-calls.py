@@ -73,7 +73,8 @@ class YumAsync:
         reply handler for the GetPackagesByName call
         @param pkgs: the result from the call
         '''
-        print "handle_reply"
+        print "We got some results"
+        print 70 * "="
         self.show_package_list(pkgs)
         self.quit()
 
@@ -82,8 +83,8 @@ class YumAsync:
         error handler for the GetPackagesByName call
         @param rc:
         '''
-        print "handle_error"
-        print rc
+        print "We got some errors"
+        print 70 * "="
         self.quit()
         
     def quit(self):
@@ -111,6 +112,7 @@ class YumAsync:
         '''
         Get the yum lock and make an async call to GetPackagesByName
         '''
+        print "starting make_calls"
         # get the lock 
         self.daemon.Lock(dbus_interface=DAEMON_INTERFACE)
         # call GetPackagesByName as a async call by using reply_handler and error_handler kwargs
@@ -122,6 +124,7 @@ class YumAsync:
                                      reply_handler=self.handle_reply,
                                      error_handler=self.handle_error)
                                             
+        print "ending make_calls"
         return False
         
         
