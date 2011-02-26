@@ -212,6 +212,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         @param filter: filter to limit the listed repositories
         @param sender:
         '''
+        self.check_permission(sender)
+        self.check_lock(sender)
         repos = []
         repos = self.yumbase.repos
         if filter == '' or filter == 'enabled':
@@ -232,6 +234,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         @param setting: name of setting (debuglevel etc..)
         @param sender:
         '''
+        self.check_permission(sender)
+        self.check_lock(sender)
         if setting == '*': # Return all config
             cfg = self.yumbase.conf
             all_conf = dict([(c,getattr(cfg,c)) for c in cfg.iterkeys()])
@@ -253,6 +257,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         @param repo_id:
         @param sender:
         '''
+        self.check_permission(sender)
+        self.check_lock(sender)
         try:
             repo = self.yumbase.repos.getRepo(repo_id)
             repo_conf = dict([(c,getattr(repo,c)) for c in repo.iterkeys()])
@@ -309,6 +315,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         @param attr: name of attribute (summary, size, description, changelog etc..)
         @param sender:
         '''
+        self.check_permission(sender)
+        self.check_lock(sender)
         po = self._get_po(id)
         if po:
             if hasattr(po, attr):
@@ -339,6 +347,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                                           sender_keyword='sender')
 
     def AddTransaction(self, id, action, sender=None):
+        self.check_permission(sender)
+        self.check_lock(sender)
         if action != 'localinstall': # Dont get a po if it is at local package
             po = self._get_po(id)
         txmbrs = []
@@ -364,6 +374,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         Resolve dependencies of current transaction
         '''
+        self.check_permission(sender)
+        self.check_lock(sender)
         self.TransactionEvent('start-build')
         rc, msgs = self.yumbase.buildTransaction()
         if rc == 2: # OK
@@ -382,6 +394,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         Run the current yum transaction
         '''
+        self.check_permission(sender)
+        self.check_lock(sender)
         try:
             self.TransactionEvent('start-run')
             self._can_quit = False
