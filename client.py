@@ -149,6 +149,14 @@ class YumDaemonClient:
         return self.daemon.AddTransaction(id, action, dbus_interface=DAEMON_INTERFACE, timeout=600)
 
     @catch_exception
+    def Install(self, pattern):
+        '''
+        Do a install <pattern string>, same as yum install <pattern string>
+        '''
+        return self.daemon.Install(pattern, dbus_interface=DAEMON_INTERFACE, timeout=600)
+
+
+    @catch_exception
     def BuildTransaction(self):
         '''
         Get a list of pkg ids for the current availabe updates

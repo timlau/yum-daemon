@@ -20,6 +20,10 @@ uninstall:
 	
 clean:
 	@rm *.pyc *.pyo	
+	
+test: FORCE
+	@nosetests -v -s test/
+	
 
 FORCE:
     

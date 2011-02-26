@@ -342,6 +342,17 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             return True
 
     @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='s', 
+                                          out_signature='s',
+                                          sender_keyword='sender')
+    def Install(self, pattern, sender=None):
+        self.check_permission(sender)
+        self.check_lock(sender)
+        txmbrs = self.yumbase.install(pattern=pattern)
+        return self._build_transaction()
+    
+    
+    @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='ss', 
                                           out_signature='as',
                                           sender_keyword='sender')
@@ -376,6 +387,12 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         self.check_permission(sender)
         self.check_lock(sender)
+        return self._build_transaction()
+    
+    def _build_transaction(self):
+        '''
+        Resolve dependencies of current transaction
+        '''
         self.TransactionEvent('start-build')
         rc, msgs = self.yumbase.buildTransaction()
         if rc == 2: # OK
@@ -384,7 +401,6 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             output = msgs
         self.TransactionEvent('end-build')
         return json.dumps((rc,output))
-    
     
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
