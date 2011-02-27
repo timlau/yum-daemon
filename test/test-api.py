@@ -150,7 +150,44 @@ class TestAPI(TestBase):
             self.assertIsInstance(pkgs, dbus.Array)
             self.assertEqual(len(pkgs),0) # the should be notting
             print('  packages found : %s ' % len(pkgs))
-                
+
+    def test_GetConfig(self):
+        ''' Testing GetConfig'''
+        all_conf = self.client.GetConfig('*')
+        self.assertIsInstance(all_conf, dict)
+        for key in all_conf:
+            print "   %s = %s" % (key,all_conf[key])
+        kpn = self.client.GetConfig('kernelpkgnames')
+        self.assertIsInstance(kpn, list)
+        print "kernelpkgnames : %s" % kpn        
+        skip_broken = self.client.GetConfig('skip_broken')
+        self.assertIn(skip_broken, [True,False])
+        print "skip_broken : %s" % skip_broken
+        not_found = self.client.GetConfig('not_found')
+        print "not_found : %s" % not_found
+        self.assertIsNone(not_found)
+    
+    def test_GetRepositories(self):
+        '''
+        *** Testing Repository Methods ***
+        '''
+        print
+        print "  Getting source repos"
+        repos = self.client.GetRepositories('*-source')
+        self.assertIsInstance(repos, list)
+        for repo_id in repos:
+            print "    Repo : %s" % repo_id
+            self.assertTrue(repo_id.endswith('-source'))
+        print "  \nGetting fedora repository"
+        repo = self.client.GetRepo('fedora')
+        self.assertIsInstance(repo, dict)
+        print "  Repo: fedora"
+        print "  Name : %s " % repo['name']
+        print "  Mirrorlist :\n  %s " % repo['mirrorlist']
+        # check for a repo not there
+        repo = self.client.GetRepo('XYZCYZ')
+        self.assertIsNone(repo)
+    
 # ======================== Helpers =======================        
     def _add_to_transaction(self, name):
         '''

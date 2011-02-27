@@ -211,33 +211,6 @@ class YumDaemonClient:
         (n, e, v, r, a, repo_id, ts_state)  = str(id).split(',')
         return (n, e, v, r, a, repo_id, ts_state)
 
-
-def show_changelog(changelog, max_elem=3):
-    i = 0
-    for (c_date, c_ver, msg) in changelog:
-        i += 1
-        if i > max_elem:
-            return
-        print("* %s %s" % (date.fromtimestamp(c_date).isoformat(), c_ver))
-        for line in msg.split('\n'):
-            print("%s" % line)
-
-def show_package_list(pkgs):    
-    for id in pkgs:
-        (n, e, v, r, a, repo_id) = cli.to_pkg_tuple(id)
-        print " --> %s-%s:%s-%s.%s (%s)" % (n, e, v, r, a, repo_id)
-
-def show_transaction_list(pkgs):    
-    for id in pkgs:
-        id = str(id)
-        (n, e, v, r, a, repo_id, ts_state) = cli.to_txmbr_tuple(id)
-        print " --> %s-%s:%s-%s.%s (%s) - %s" % (n, e, v, r, a, repo_id, ts_state)
-
-def show_transaction_result(output):
-    for action, pkgs in output:
-        print "  %s" % action
-        for pkg in pkgs:
-            print "  --> %s" % str(pkg)
     
 if __name__ == '__main__':
     cli = YumDaemonClient()
@@ -245,61 +218,6 @@ if __name__ == '__main__':
         print "Daemon Version : %i" % cli.GetVersion()
         if len(sys.argv) > 1 and sys.argv[1] == 'quit':
             cli.Exit()
-        else:
-            cli.Lock()
-            all_conf = cli.GetConfig('*')
-            for key in all_conf:
-                print "   %s = %s" % (key,all_conf[key])
-            repos = cli.GetRepositories('*-source')
-            print repos
-            print cli.GetRepo('fedoraXXX')
-            print "errorlevel = %s" % cli.GetConfig('errorlevel')
-#            print "\nInstalled packages"             
-#            pkgs = cli.GetPackages('installed')
-#            show_package_list(pkgs)
-            print "\nAvailable Updates"             
-            pkgs = cli.GetPackages('updates')
-            show_package_list(pkgs)
-            id = str(pkgs[-1])
-            (n, e, v, r, a, repo_id) = cli.to_pkg_tuple(id)
-            print "\nPackage attributes"             
-            print "Name : %s " % n
-            print "Summary : %s" % cli.GetAttribute(id, 'summary')    
-            print "\nDescription:"             
-            print cli.GetAttribute(id, 'description')               
-            print "\nChangelog:"             
-            changelog = cli.GetAttribute(id, 'changelog')
-            show_changelog(changelog, max_elem=2)   
-            print "\nGet all yum packages:"                         
-            pkgs = cli.GetPackagesByName('yum', newest_only=False)            
-            show_package_list(pkgs)
-            print "\nGet all packages starting with yum (newest only)"                         
-            pkgs = cli.GetPackagesByName('yum*', newest_only=True)            
-            show_package_list(pkgs)
-            print "\ninstall/remove a package (yum-plugin-aliases)"                                     
-            pkgs = cli.GetPackagesByName('yum-plugin-aliases', newest_only=True)
-            if pkgs:
-                id = str(pkgs[0])
-                (n, e, v, r, a, repo_id) = cli.to_pkg_tuple(id)
-                if repo_id.startswith('@'):
-                    action = 'remove'
-                else:
-                    action = 'install'                    
-                print "Adding %s to transaction for %s" % (n,action)    
-                res = cli.AddTransaction(id, action)
-                show_transaction_list(res)
-                print "Resolving dependencies"
-                rc, output = json.loads(cli.BuildTransaction())
-                #print rc,output
-                if rc == 2:
-                    show_transaction_result(output)
-                    try:
-                        print "Running the transaction"
-                        cli.RunTransaction()
-                        print "Transaction Completed"
-                    except YumTransactionError,e:
-                        print "Transaction Failed : %s " % str(e)
-            cli.Unlock() # We should always 
     except AccessDeniedError, e: # Catch if user press Cancel in the PolicyKit dialog
         print str(e)
     except YumLockedError, e: # Catch if user press Cancel in the PolicyKit dialog
