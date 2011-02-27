@@ -2,6 +2,8 @@ import sys
 import os.path
 sys.path.insert(0,os.path.abspath('../'))
 import unittest
+import dbus
+import json
 from datetime import date
 from client import YumDaemonClient
 
@@ -62,17 +64,18 @@ class TestBase(unittest.TestCase):
         self.assertIsInstance(txmbrs, dbus.Array)
         return txmbrs
         
-    def _run_transaction(self):
+    def _run_transaction(self, build=True):
         '''
         Desolve deps and run the current transaction
         '''
         print('************** Running the current transaction *********************')
-        result = self.client.BuildTransaction()
-        self.assertIsInstance(result, dbus.String)
-        rc, output = json.loads(result)
-        self.assertEqual(rc,2)
-        self.show_transaction_result(output)
-        self.assertGreater(len(output),0)
+        if build:
+            result = self.client.BuildTransaction()
+            self.assertIsInstance(result, dbus.String)
+            rc, output = json.loads(result)
+            self.assertEqual(rc,2)
+            self.show_transaction_result(output)
+            self.assertGreater(len(output),0)
         self.client.RunTransaction()
         
     def _is_installed(self, name):

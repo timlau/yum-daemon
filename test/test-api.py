@@ -12,10 +12,10 @@ class TestAPI(TestBase):
     def __init__(self, methodName='runTest'):
         TestBase.__init__(self, methodName)
         
-    def _run_transaction(self):
-        pass
-        
     def test_Locking(self):
+        '''
+        Test Unlock and Lock
+        '''
         print
         # release the lock (grabbed by setUp)
         self.client.Unlock()
@@ -27,32 +27,56 @@ class TestAPI(TestBase):
         self.client.Lock()
         
     def test_InstallRemove(self):
+        '''
+        Test Install and Remove
+        '''
         print
-        for x in range(2): # Do it twice to revert the action
-            if not self._is_installed('0xFFFF'):
-                is_installed = False
-                result = self.client.Install('0xFFFF')
-            else:
-                is_installed = True
-                result = self.client.Remove('0xFFFF')                
-            # result should be a dbus.String instance
-            self.assertIsInstance(result, dbus.String)
-            rc, output = json.loads(result)
-            self.assertEqual(rc,2)
+        # Make sure that the test packages is not installed
+        result = self.client.Remove('0xFFFF Hermes')                
+        self.assertIsInstance(result, dbus.String)
+        rc, output = json.loads(result)
+        if rc == 2:
             self.show_transaction_result(output)
-            self.assertGreater(len(output),0)
-            for action, pkgs in output:
-                if is_installed:
-                    self.assertEqual(action,u'Removing')
-                else:
-                    self.assertEqual(action,u'Installing')                    
-                self.assertGreater(len(pkgs),0)
-                name,arch, ver, repoid, size, replace = pkgs[0]
-                self.assertEqual(name,"0xFFFF")
-                self.assertEqual(replace,[])
-            self._run_transaction()
+            self.client.RunTransaction()
+        # Both test packages should be uninstalled now
+        self.assertFalse(self._is_installed('0xFFFF'))
+        self.assertFalse(self._is_installed('Hermes'))
+        # Install the test packages    
+        print "Installing Test Packages : 0xFFFF Hermes"
+        result = self.client.Install('0xFFFF Hermes')
+        # result should be a dbus.String instance
+        self.assertIsInstance(result, dbus.String)
+        rc, output = json.loads(result)
+        print('  Return Code : %i' % rc)
+        self.assertEqual(rc,2)
+        self.show_transaction_result(output)
+        self.assertGreater(len(output),0)
+        for action, pkgs in output:
+            self.assertEqual(action,u'Installing')                    
+            self.assertGreater(len(pkgs),0)
+        self.client.RunTransaction()
+        # Both test packages should be installed now
+        self.assertTrue(self._is_installed('0xFFFF'))
+        self.assertTrue(self._is_installed('Hermes'))
+        # Remove the test packages
+        print "Removing Test Packages : 0xFFFF Hermes"
+        result = self.client.Remove('0xFFFF Hermes')                
+        # result should be a dbus.String instance
+        self.assertIsInstance(result, dbus.String)
+        rc, output = json.loads(result)
+        print('  Return Code : %i' % rc)
+        self.assertEqual(rc,2)
+        self.show_transaction_result(output)
+        self.assertGreater(len(output),0)
+        for action, pkgs in output:
+            self.assertEqual(action,u'Removing')
+            self.assertGreater(len(pkgs),0)
+        self.client.RunTransaction()
 
     def test_GetPackagesByName(self):
+        '''
+        Test GetPackagesByName
+        '''
         print
         print "Get all available versions of yum"
         pkgs = self.client.GetPackagesByName('yum', newest_only=False)
@@ -88,6 +112,9 @@ class TestAPI(TestBase):
 
     
     def test_AddTransaction(self):
+        '''
+        Test AddTransaction
+        '''
         print
         txmbrs = self._add_to_transaction('0xFFFF')
         self.assertEqual(len(txmbrs),1)
@@ -99,6 +126,9 @@ class TestAPI(TestBase):
             self.assertEqual(ts_state,'u') # if package is not install, then install
             
     def test_GetTransaction(self):
+        '''
+        Test GetTransaction
+        '''
         print
         self._add_to_transaction('0xFFFF')
         txmbrs = self.client.GetTransaction()
@@ -114,6 +144,9 @@ class TestAPI(TestBase):
         
         
     def test_RunTransaction(self):
+        '''
+        Test RunTransaction
+        '''
         print
         # Do it twice to revert it 
         for x in range(2):
@@ -125,7 +158,7 @@ class TestAPI(TestBase):
 
     def test_GetPackages(self):
         '''
-        Tesing GetPackages and GetAttribute
+        Test GetPackages and GetAttribute
         '''
         print
         for narrow in ['installed','available']:
@@ -152,7 +185,9 @@ class TestAPI(TestBase):
             print('  packages found : %s ' % len(pkgs))
 
     def test_GetConfig(self):
-        ''' Testing GetConfig'''
+        ''' 
+        Test GetConfig
+        '''
         all_conf = self.client.GetConfig('*')
         self.assertIsInstance(all_conf, dict)
         for key in all_conf:
@@ -169,7 +204,7 @@ class TestAPI(TestBase):
     
     def test_GetRepositories(self):
         '''
-        *** Testing Repository Methods ***
+        Test GetRepository and GetRepo
         '''
         print
         print "  Getting source repos"

@@ -348,20 +348,34 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                                           in_signature='s', 
                                           out_signature='s',
                                           sender_keyword='sender')
-    def Install(self, pattern, sender=None):
+    def Install(self, cmds, sender=None):
+        '''
+        Install packages based on command patterns separated by spaces
+        sinulate what 'yum install <arguments>' does
+        @param cmds: command patterns separated by spaces
+        @param sender:
+        '''
         self.check_permission(sender)
         self.check_lock(sender)
-        txmbrs = self.yumbase.install(pattern=pattern)
+        for cmd in cmds.split(' '):
+            self.yumbase.install(pattern=cmd)
         return self._build_transaction()
     
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
                                           out_signature='s',
                                           sender_keyword='sender')
-    def Remove(self, pattern, sender=None):
+    def Remove(self, cmds, sender=None):
+        '''
+        Remove packages based on command patterns separated by spaces
+        sinulate what 'yum remove <arguments>' does
+        @param cmds: command patterns separated by spaces
+        @param sender:
+        '''
         self.check_permission(sender)
         self.check_lock(sender)
-        txmbrs = self.yumbase.remove(pattern=pattern)
+        for cmd in cmds.split(' '):
+            self.yumbase.remove(pattern=cmd)
         return self._build_transaction()
     
     @dbus.service.method(DAEMON_INTERFACE, 
@@ -458,9 +472,9 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             self._can_quit = False
             callback = ProcessTransCallback(self)
             rpmDisplay = RPMCallback(self)
-            self.yumbase.processTransaction(callback=callback, rpmDisplay=rpmDisplay)
+            result = self.yumbase.processTransaction(callback=callback, rpmDisplay=rpmDisplay)
             self._can_quit = True
-            self.yumbase._tsInfo = None # clear the transaction 
+            self._yumbase = None # Reset the yumbase to force reload 
             self.TransactionEvent('end-run')
         except Errors.YumBaseError, e:
             self._can_quit = True            
@@ -487,6 +501,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         DBus signal with Transaction information        
         @param event:
         '''
+        #print "event: %s" % event
         pass
     
     
