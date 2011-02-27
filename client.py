@@ -142,6 +142,21 @@ class YumDaemonClient:
         return self.daemon.GetPackagesByName(name, newest_only, dbus_interface=DAEMON_INTERFACE, timeout=600)
 
     @catch_exception
+    def ClearTransaction(self):
+        '''
+        Clear the current transaction
+        '''
+        return self.daemon.ClearTransaction(dbus_interface=DAEMON_INTERFACE, timeout=600)
+
+
+    @catch_exception
+    def GetTransaction(self):
+        '''
+        Get the current transaction
+        '''
+        return self.daemon.GetTransaction(dbus_interface=DAEMON_INTERFACE, timeout=600)
+
+    @catch_exception
     def AddTransaction(self, id, action):
         '''
         Get a list of pkg ids for the current availabe updates
@@ -154,6 +169,13 @@ class YumDaemonClient:
         Do a install <pattern string>, same as yum install <pattern string>
         '''
         return self.daemon.Install(pattern, dbus_interface=DAEMON_INTERFACE, timeout=600)
+
+    @catch_exception
+    def Remove(self, pattern):
+        '''
+        Do a install <pattern string>, same as yum remove <pattern string>
+        '''
+        return self.daemon.Remove(pattern, dbus_interface=DAEMON_INTERFACE, timeout=600)
 
 
     @catch_exception

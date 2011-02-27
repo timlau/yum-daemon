@@ -279,9 +279,12 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         
         self.check_permission(sender)
         self.check_lock(sender)
-        yh = self.yumbase.doPackageLists(pkgnarrow=narrow)
-        pkgs = getattr(yh,narrow)
-        return self._to_package_id_list(pkgs)
+        if narrow in ['installed','available','updates','obsoletes','recent','extras']:
+            yh = self.yumbase.doPackageLists(pkgnarrow=narrow)
+            pkgs = getattr(yh,narrow)
+            return self._to_package_id_list(pkgs)
+        else:
+            return []
         
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='sb', 
@@ -321,9 +324,9 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         if po:
             if hasattr(po, attr):
                 value = json.dumps(getattr(po,attr))
-                return value
             else:
-                return ':none'
+                value = json.dumps(None)
+            return value
         else:
             return ':not_found'        
             
@@ -351,6 +354,15 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         txmbrs = self.yumbase.install(pattern=pattern)
         return self._build_transaction()
     
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='s', 
+                                          out_signature='s',
+                                          sender_keyword='sender')
+    def Remove(self, pattern, sender=None):
+        self.check_permission(sender)
+        self.check_lock(sender)
+        txmbrs = self.yumbase.remove(pattern=pattern)
+        return self._build_transaction()
     
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='ss', 
@@ -376,6 +388,35 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         elif action == "localinstall":
             txmbrs = self.yumbase.installLocal(id)
         return self._to_transaction_id_list(txmbrs)
+    
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='', 
+                                          out_signature='',
+                                          sender_keyword='sender')
+    def ClearTransaction(self, sender):
+        '''
+        Clear the transactopm
+        '''
+        self.check_permission(sender)
+        self.check_lock(sender)
+        # Reset the transaction
+        self.yumbase._tsInfo = None 
+        
+
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='', 
+                                          out_signature='as',
+                                          sender_keyword='sender')
+
+    def GetTransaction(self, sender=None):
+        '''
+        Return the members of the current transaction
+        '''
+        self.check_permission(sender)
+        self.check_lock(sender)
+        txmbrs = self.yumbase.tsInfo
+        return self._to_transaction_id_list(txmbrs)
+
     
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
@@ -419,6 +460,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             rpmDisplay = RPMCallback(self)
             self.yumbase.processTransaction(callback=callback, rpmDisplay=rpmDisplay)
             self._can_quit = True
+            self.yumbase._tsInfo = None # clear the transaction 
             self.TransactionEvent('end-run')
         except Errors.YumBaseError, e:
             self._can_quit = True            
