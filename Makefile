@@ -21,9 +21,16 @@ uninstall:
 clean:
 	@rm *.pyc *.pyo	
 	
-test: FORCE
+test-verbose: FORCE
 	@nosetests -v -s test/
-	
+
+
+test: FORCE
+	@nosetests -v test/
+
+
+instdeps:
+	sudo yum install python-nose	
 
 FORCE:
     
