@@ -43,4 +43,69 @@ class TestBase(unittest.TestCase):
             for pkg in pkgs:
                 print "  --> %s" % str(pkg)
         
+# ======================== Helpers =======================        
+    def _add_to_transaction(self, name):
+        '''
+        Helper to add a package to transaction
+        '''
+        pkgs = self.client.GetPackagesByName(name, newest_only=True)
+        # pkgs should be a dbus.Array instance
+        self.assertIsInstance(pkgs, dbus.Array)
+        self.assertEqual(len(pkgs),1)
+        pkg = pkgs[0]
+        (n, e, v, r, a, repo_id) = self.client.to_pkg_tuple(pkg)
+        if repo_id[0] == '@':
+            action='remove'
+        else:
+            action='install'
+        txmbrs = self.client.AddTransaction(pkg,action)
+        self.assertIsInstance(txmbrs, dbus.Array)
+        return txmbrs
+        
+    def _run_transaction(self):
+        '''
+        Desolve deps and run the current transaction
+        '''
+        print('************** Running the current transaction *********************')
+        result = self.client.BuildTransaction()
+        self.assertIsInstance(result, dbus.String)
+        rc, output = json.loads(result)
+        self.assertEqual(rc,2)
+        self.show_transaction_result(output)
+        self.assertGreater(len(output),0)
+        self.client.RunTransaction()
+        
+    def _is_installed(self, name):
+        pkgs = self.client.GetPackagesByName(name, newest_only=True)
+        # pkgs should be a dbus.Array instance
+        self.assertIsInstance(pkgs, dbus.Array)
+        self.assertEqual(len(pkgs),1)
+        pkg = pkgs[0]
+        (n, e, v, r, a, repo_id) = self.client.to_pkg_tuple(pkg)
+        if repo_id[0] == '@':
+            return True
+        else:
+            return False
+        
+    def _show_package(self, id):
+        (n, e, v, r, a, repo_id) = self.client.to_pkg_tuple(id)
+        print "\nPackage attributes"
+        self.assertIsInstance(n, str)             
+        print "Name : %s " % n
+        summary = self.client.GetAttribute(id, 'summary')
+        self.assertIsInstance(summary, unicode)             
+        print "Summary : %s" % summary     
+        print "\nDescription:"     
+        desc = self.client.GetAttribute(id, 'description')         
+        self.assertIsInstance(desc, unicode)             
+        print desc                
+        print "\nChangelog:"             
+        changelog = self.client.GetAttribute(id, 'changelog')
+        self.assertIsInstance(changelog, list)             
+        self.show_changelog(changelog, max_elem=2)
+        # Check a not existing attribute dont make it blow up   
+        notfound = self.client.GetAttribute(id, 'notfound')
+        self.assertIsNone(notfound)      
+        print " Value of attribute 'notfound' : %s" % notfound
+               
         
