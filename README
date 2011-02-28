@@ -7,15 +7,17 @@ Run the following as root
 
   make install
 
-
-
-
 How to test:
 =============
 just run:
   
-  python client.py 
-    
+su -c "make test-verbose"
+
+to run the unit test with output to console
+
+or 
+
+su -c "make test" to just run the unit tests    
   
 to make the daemon exit run:
 
