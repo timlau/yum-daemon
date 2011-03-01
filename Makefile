@@ -21,10 +21,12 @@ uninstall:
 clean:
 	@rm *.pyc *.pyo	
 	
+# Run as root or you will get a password prompt for each test method :)
 test-verbose: FORCE
 	@nosetests -v -s test/
 
 
+# Run as root or you will get a password prompt for each test method :)
 test: FORCE
 	@nosetests -v test/
 

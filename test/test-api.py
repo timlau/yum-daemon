@@ -97,7 +97,6 @@ class TestAPI(TestBase):
         # Test if more then one version if yumex is available
         # use the fedora-yumex repo to get more than one (http:/repos.fedorapeople.org)
         pkgs = self.client.GetPackagesByName('yumex',False)
-        print pkgs
         if not len(pkgs) > 1:
             unittest.skip('more than one available version of yumex is needed for downgrade test')
         result = self.client.Downgrade('yumex')
