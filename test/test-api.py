@@ -3,7 +3,7 @@ sys.path.insert(0,os.path.abspath('../'))
 import dbus
 from base import TestBase
 from client import YumLockedError
-from unittest import skipIf
+import unittest
 import json
 
 
@@ -72,6 +72,58 @@ class TestAPI(TestBase):
             self.assertEqual(action,u'Removing')
             self.assertGreater(len(pkgs),0)
         self.client.RunTransaction()
+
+    def test_Reinstall(self):
+        '''
+        Test Reinstall
+        '''
+        result = self.client.Reinstall('gedit yumex')
+        self.assertIsInstance(result, dbus.String)
+        rc, output = json.loads(result)
+        print('  Return Code : %i' % rc)
+        self.assertEqual(rc,2)
+        self.show_transaction_result(output)
+        self.assertGreater(len(output),0)
+        for action, pkgs in output:
+            self.assertEqual(action,u'Installing')                    
+            self.assertEqual(len(pkgs),2)
+        self.client.RunTransaction()
+
+    def test_DowngradeUpdate(self):
+        '''
+        Test DownGrade & Update
+        '''
+        print
+        # Test if more then one version if yumex is available
+        # use the fedora-yumex repo to get more than one (http:/repos.fedorapeople.org)
+        pkgs = self.client.GetPackagesByName('yumex',False)
+        print pkgs
+        if not len(pkgs) > 1:
+            unittest.skip('more than one available version of yumex is needed for downgrade test')
+        result = self.client.Downgrade('yumex')
+        self.assertIsInstance(result, dbus.String)
+        rc, output = json.loads(result)
+        print('  Return Code : %i' % rc)
+        self.assertEqual(rc,2)
+        self.show_transaction_result(output)
+        self.assertGreater(len(output),0)
+        for action, pkgs in output:
+            # old version of yumex might need python-enum
+            self.assertIn(action,[u'Installing',u'Removing',u'Installing for dependencies'])                    
+            self.assertGreater(len(pkgs),0)
+        self.client.RunTransaction()
+        result = self.client.Update('yumex')
+        self.assertIsInstance(result, dbus.String)
+        rc, output = json.loads(result)
+        print('  Return Code : %i' % rc)
+        self.assertEqual(rc,2)
+        self.show_transaction_result(output)
+        self.assertGreater(len(output),0)
+        for action, pkgs in output:
+            self.assertEqual(action,u'Updating')                    
+            self.assertGreater(len(pkgs),0)
+        self.client.RunTransaction()
+
 
     def test_GetPackagesByName(self):
         '''

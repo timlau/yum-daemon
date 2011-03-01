@@ -379,6 +379,61 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         return self._build_transaction()
     
     @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='s', 
+                                          out_signature='s',
+                                          sender_keyword='sender')
+    def Update(self, cmds, sender=None):
+        '''
+        Update packages based on command patterns separated by spaces
+        sinulate what 'yum update <arguments>' does
+        @param cmds: command patterns separated by spaces
+        @param sender:
+        '''
+        self.check_permission(sender)
+        self.check_lock(sender)
+        if cmds == "":
+            self.yumbase.update()
+        else:
+            for cmd in cmds.split(' '):
+                self.yumbase.update(pattern=cmd)
+        return self._build_transaction()
+
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='s', 
+                                          out_signature='s',
+                                          sender_keyword='sender')
+    def Reinstall(self, cmds, sender=None):
+        '''
+        Reinstall packages based on command patterns separated by spaces
+        sinulate what 'yum reinstall <arguments>' does
+        @param cmds: command patterns separated by spaces
+        @param sender:
+        '''
+        self.check_permission(sender)
+        self.check_lock(sender)
+        for cmd in cmds.split(' '):
+            self.yumbase.reinstall(pattern=cmd)
+        return self._build_transaction()
+
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='s', 
+                                          out_signature='s',
+                                          sender_keyword='sender')
+    def Downgrade(self, cmds, sender=None):
+        '''
+        Downgrade packages based on command patterns separated by spaces
+        sinulate what 'yum downgrade <arguments>' does
+        @param cmds: command patterns separated by spaces
+        @param sender:
+        '''
+        self.check_permission(sender)
+        self.check_lock(sender)
+        for cmd in cmds.split(' '):
+            self.yumbase.downgrade(pattern=cmd)
+        return self._build_transaction()
+
+
+    @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='ss', 
                                           out_signature='as',
                                           sender_keyword='sender')

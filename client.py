@@ -177,6 +177,27 @@ class YumDaemonClient:
         '''
         return self.daemon.Remove(pattern, dbus_interface=DAEMON_INTERFACE, timeout=600)
 
+    @catch_exception
+    def Update(self, pattern):
+        '''
+        Do a update <pattern string>, same as yum update <pattern string>
+        '''
+        return self.daemon.Update(pattern, dbus_interface=DAEMON_INTERFACE, timeout=600)
+
+    @catch_exception
+    def Reinstall(self, pattern):
+        '''
+        Do a reinstall <pattern string>, same as yum reinstall <pattern string>
+        '''
+        return self.daemon.Reinstall(pattern, dbus_interface=DAEMON_INTERFACE, timeout=600)
+
+    @catch_exception
+    def Downgrade(self, pattern):
+        '''
+        Do a install <pattern string>, same as yum remove <pattern string>
+        '''
+        return self.daemon.Downgrade(pattern, dbus_interface=DAEMON_INTERFACE, timeout=600)
+
 
     @catch_exception
     def BuildTransaction(self):
