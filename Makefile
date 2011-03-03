@@ -30,6 +30,10 @@ test-verbose: FORCE
 test: FORCE
 	@nosetests -v test/
 
+# Run as root or you will get a password prompt for each test method :)
+test-devel: FORCE
+	@nosetests -v -s test/unit-devel.py
+
 
 instdeps:
 	sudo yum install python-nose	

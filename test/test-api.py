@@ -52,7 +52,7 @@ class TestAPI(TestBase):
         self.show_transaction_result(output)
         self.assertGreater(len(output),0)
         for action, pkgs in output:
-            self.assertEqual(action,u'Installing')                    
+            self.assertEqual(action,u'install')                    
             self.assertGreater(len(pkgs),0)
         self.client.RunTransaction()
         # Both test packages should be installed now
@@ -69,7 +69,7 @@ class TestAPI(TestBase):
         self.show_transaction_result(output)
         self.assertGreater(len(output),0)
         for action, pkgs in output:
-            self.assertEqual(action,u'Removing')
+            self.assertEqual(action,u'remove')
             self.assertGreater(len(pkgs),0)
         self.client.RunTransaction()
 
@@ -85,7 +85,7 @@ class TestAPI(TestBase):
         self.show_transaction_result(output)
         self.assertGreater(len(output),0)
         for action, pkgs in output:
-            self.assertEqual(action,u'Installing')                    
+            self.assertEqual(action,u'install')                    
             self.assertEqual(len(pkgs),2)
         self.client.RunTransaction()
 
@@ -108,7 +108,7 @@ class TestAPI(TestBase):
         self.assertGreater(len(output),0)
         for action, pkgs in output:
             # old version of yumex might need python-enum
-            self.assertIn(action,[u'Installing',u'Removing',u'Installing for dependencies'])                    
+            self.assertIn(action,[u'install',u'remove',u'install'])                    
             self.assertGreater(len(pkgs),0)
         self.client.RunTransaction()
         result = self.client.Update('yumex')
@@ -119,7 +119,7 @@ class TestAPI(TestBase):
         self.show_transaction_result(output)
         self.assertGreater(len(output),0)
         for action, pkgs in output:
-            self.assertEqual(action,u'Updating')                    
+            self.assertEqual(action,u'update')                    
             self.assertGreater(len(pkgs),0)
         self.client.RunTransaction()
 

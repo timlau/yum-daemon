@@ -23,12 +23,14 @@ import gobject
 import os
 import subprocess
 import json
+import logging
 import yum
 import yum.Errors as Errors
 from urlgrabber.progress import format_number
 from yum.callbacks import *
 from yum.rpmtrans import RPMBaseCallback
 from yum.constants import *
+import argparse
 
 
 
@@ -70,19 +72,17 @@ class DownloadCallback(  DownloadBaseCallback ):
         # send a DBus signal with progress info
         self.base.UpdateProgress(name,frac,fread,ftime)
 
-class ProcessTransCallback(ProcessTransBaseCallback):
+class ProcessTransCallback:
     STATES = { PT_DOWNLOAD  : "download",
                PT_GPGCHECK    : "signature-check",
                PT_TEST_TRANS  : "run-test-transaction",
                PT_TRANSACTION : "run-transaction"}
 
     def __init__(self, base):
-        ProcessTransBaseCallback.__init__(self)
         self.base = base
         
     def event(self,state,data=None):
         if state in ProcessTransCallback.STATES:
-            ProcessTransBaseCallback.event(self,state,data)
             self.base.TransactionEvent(ProcessTransCallback.STATES[state])
             
 class RPMCallback(RPMBaseCallback):
@@ -135,6 +135,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
 
     def __init__(self, mainloop):
         DownloadBaseCallback.__init__(self)
+        self.logger = logging.getLogger('yumdaemon')
         self.mainloop = mainloop # use to terminate mainloop
         self.authorized_sender = set()
         self._lock = None
@@ -142,6 +143,10 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         dbus.service.Object.__init__(self, bus_name, '/')
         self._yumbase = None
         self._can_quit = True
+        self._is_working = False
+        self._watchdog_count = 0
+        self._timeout_idle = 20         # time to daemon is closed when unlocked
+        self._timeout_locked = 600      # time to daemon is closed when locked and not working
         
     @property    
     def yumbase(self):
@@ -177,6 +182,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         self.check_permission(sender)
         if self._can_quit:
+            self._reset_yumbase()            
             self.mainloop.quit()
             return True
         else:
@@ -196,7 +202,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             try:
                 self.yumbase.doLock()
                 self._lock = sender
-                print('Yum is locked by : %s' % sender)
+                self.logger.info('LOCK: Locked by : %s' % sender)
                 return True
             except Errors.LockError, e:
                 raise YumLockedError(str(e))
@@ -212,15 +218,14 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         @param filter: filter to limit the listed repositories
         @param sender:
         '''
-        self.check_permission(sender)
-        self.check_lock(sender)
+        self.working_start(sender)
         repos = []
         repos = self.yumbase.repos
         if filter == '' or filter == 'enabled':
             repos = [repo.id for repo in repos.listEnabled()]
         else:
             repos = [repo.id for repo in repos.findRepos(filter)]
-        return repos    
+        return self.working_ended(repos)
             
         
     @dbus.service.method(DAEMON_INTERFACE, 
@@ -234,18 +239,17 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         @param setting: name of setting (debuglevel etc..)
         @param sender:
         '''
-        self.check_permission(sender)
-        self.check_lock(sender)
+        self.working_start(sender)
         if setting == '*': # Return all config
             cfg = self.yumbase.conf
             all_conf = dict([(c,getattr(cfg,c)) for c in cfg.iterkeys()])
-            return json.dumps(all_conf)            
-        if hasattr(self.yumbase.conf, setting):
+            value =  json.dumps(all_conf)            
+        elif hasattr(self.yumbase.conf, setting):
             value = json.dumps(getattr(self.yumbase.conf, setting))
-            return value
         else:
-            return json.dumps(None)
-
+            value = json.dumps(None)
+        return self.working_ended(value)
+        
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
                                           out_signature='s',
@@ -257,14 +261,14 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         @param repo_id:
         @param sender:
         '''
-        self.check_permission(sender)
-        self.check_lock(sender)
+        self.working_start(sender)
         try:
             repo = self.yumbase.repos.getRepo(repo_id)
             repo_conf = dict([(c,getattr(repo,c)) for c in repo.iterkeys()])
-            return json.dumps(repo_conf)            
+            value = json.dumps(repo_conf)            
         except Errors.RepoError:
-            return json.dumps(None)
+            value = json.dumps(None)
+        return self.working_ended(value)
 
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
@@ -276,15 +280,14 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         @param narrow: pkg narrow string ('installed','updates' etc)
         @param sender:
         '''
-        
-        self.check_permission(sender)
-        self.check_lock(sender)
+        self.working_start(sender)
         if narrow in ['installed','available','updates','obsoletes','recent','extras']:
             yh = self.yumbase.doPackageLists(pkgnarrow=narrow)
             pkgs = getattr(yh,narrow)
-            return self._to_package_id_list(pkgs)
+            value = self._to_package_id_list(pkgs)
         else:
-            return []
+            value = []
+        return self.working_ended(value)
         
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='sb', 
@@ -297,13 +300,13 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         @param newest_only: True = get newest packages only
         @param sender:
         '''
-        self.check_permission(sender)
-        self.check_lock(sender)
+        self.working_start(sender)
         if newest_only:
             pkgs = self.yumbase.pkgSack.returnNewestByName(patterns=[name], ignore_case=False)
         else:
             pkgs = self.yumbase.pkgSack.returnPackages(patterns=[name], ignore_case=False)
-        return self._to_package_id_list(pkgs)
+        value = self._to_package_id_list(pkgs) 
+        return self.working_ended(value)
         
         
     @dbus.service.method(DAEMON_INTERFACE, 
@@ -318,17 +321,16 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         @param attr: name of attribute (summary, size, description, changelog etc..)
         @param sender:
         '''
-        self.check_permission(sender)
-        self.check_lock(sender)
+        self.working_start(sender)
         po = self._get_po(id)
         if po:
             if hasattr(po, attr):
                 value = json.dumps(getattr(po,attr))
             else:
                 value = json.dumps(None)
-            return value
         else:
-            return ':not_found'        
+            value = json.dumps(None)        
+        return self.working_ended(value)
             
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
@@ -338,9 +340,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         ''' release the lock'''
         self.check_permission(sender)
         if self.check_lock(sender):
-            self.yumbase.doUnlock()
             self._reset_yumbase()
-            print('Yum lock by %s released' % self._lock)
+            self.logger.info('UNLOCK: Lock Release by %s' % self._lock)
             self._lock = None
             return True
 
@@ -355,11 +356,11 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         @param cmds: command patterns separated by spaces
         @param sender:
         '''
-        self.check_permission(sender)
-        self.check_lock(sender)
+        self.working_start(sender)
         for cmd in cmds.split(' '):
             self.yumbase.install(pattern=cmd)
-        return self._build_transaction()
+        value = self._build_transaction()        
+        return self.working_ended(value)
     
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
@@ -372,11 +373,11 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         @param cmds: command patterns separated by spaces
         @param sender:
         '''
-        self.check_permission(sender)
-        self.check_lock(sender)
+        self.working_start(sender)
         for cmd in cmds.split(' '):
             self.yumbase.remove(pattern=cmd)
-        return self._build_transaction()
+        value = self._build_transaction()        
+        return self.working_ended(value)
     
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
@@ -389,14 +390,15 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         @param cmds: command patterns separated by spaces
         @param sender:
         '''
-        self.check_permission(sender)
-        self.check_lock(sender)
+        self.working_start(sender)        
         if cmds == "":
-            self.yumbase.update()
+            txmbrs = self.yumbase.update()
+            self.logger.debug([str(txmbr.po) for txmbr in txmbrs]) 
         else:
             for cmd in cmds.split(' '):
                 self.yumbase.update(pattern=cmd)
-        return self._build_transaction()
+        value = self._build_transaction()        
+        return self.working_ended(value)
 
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
@@ -409,11 +411,11 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         @param cmds: command patterns separated by spaces
         @param sender:
         '''
-        self.check_permission(sender)
-        self.check_lock(sender)
+        self.working_start(sender)
         for cmd in cmds.split(' '):
             self.yumbase.reinstall(pattern=cmd)
-        return self._build_transaction()
+        value = self._build_transaction()        
+        return self.working_ended(value)
 
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
@@ -426,11 +428,11 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         @param cmds: command patterns separated by spaces
         @param sender:
         '''
-        self.check_permission(sender)
-        self.check_lock(sender)
+        self.working_start(sender)
         for cmd in cmds.split(' '):
             self.yumbase.downgrade(pattern=cmd)
-        return self._build_transaction()
+        value = self._build_transaction()        
+        return self.working_ended(value)
 
 
     @dbus.service.method(DAEMON_INTERFACE, 
@@ -439,8 +441,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                                           sender_keyword='sender')
 
     def AddTransaction(self, id, action, sender=None):
-        self.check_permission(sender)
-        self.check_lock(sender)
+        self.working_start(sender)
         if action != 'localinstall': # Dont get a po if it is at local package
             po = self._get_po(id)
         txmbrs = []
@@ -456,7 +457,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             txmbrs = self.yumbase.downgrade(po)
         elif action == "localinstall":
             txmbrs = self.yumbase.installLocal(id)
-        return self._to_transaction_id_list(txmbrs)
+        value = self._to_transaction_id_list(txmbrs)
+        return self.working_ended(value)
     
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
@@ -466,10 +468,10 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         Clear the transactopm
         '''
-        self.check_permission(sender)
-        self.check_lock(sender)
+        self.working_start(sender)
         # Reset the transaction
         self.yumbase._tsInfo = None 
+        return self.working_ended()
         
 
     @dbus.service.method(DAEMON_INTERFACE, 
@@ -481,10 +483,10 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         Return the members of the current transaction
         '''
-        self.check_permission(sender)
-        self.check_lock(sender)
+        self.working_start(sender)
         txmbrs = self.yumbase.tsInfo
-        return self._to_transaction_id_list(txmbrs)
+        value = self._to_transaction_id_list(txmbrs)
+        return self.working_ended(value)
 
     
     @dbus.service.method(DAEMON_INTERFACE, 
@@ -495,9 +497,10 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         Resolve dependencies of current transaction
         '''
-        self.check_permission(sender)
-        self.check_lock(sender)
-        return self._build_transaction()
+        self.working_start(sender)
+        value = self._build_transaction()
+        return self.working_ended(value)
+
     
     def _build_transaction(self):
         '''
@@ -520,6 +523,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         Run the current yum transaction
         '''
+        self.working_start(sender)
         self.check_permission(sender)
         self.check_lock(sender)
         try:
@@ -529,12 +533,16 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             rpmDisplay = RPMCallback(self)
             result = self.yumbase.processTransaction(callback=callback, rpmDisplay=rpmDisplay)
             self._can_quit = True
-            self._yumbase = None # Reset the yumbase to force reload 
+            self._reset_yumbase()
             self.TransactionEvent('end-run')
+            self.working_ended()
         except Errors.YumBaseError, e:
             self._can_quit = True            
             self.TransactionEvent('fail')
+            self._reset_yumbase()
+            self.working_ended()
             raise YumTransactionError(str(e))
+        
 #===============================================================================
 # DBus signals
 #===============================================================================
@@ -579,6 +587,16 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
 #===============================================================================
 # Helper methods
 #===============================================================================
+    def working_start(self,sender):
+        self.check_permission(sender)
+        self.check_lock(sender)        
+        self._is_working = True
+        self._watchdog_count = 0
+
+    def working_ended(self, value=None):
+        self._is_working = False
+        return value
+    
     def _get_transaction_list(self):
         ''' 
         Generate a list of the current transaction 
@@ -586,12 +604,12 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         out_list = []
         sublist = []
         self.yumbase.tsInfo.makelists()
-        for (action, pkglist) in [(yum.i18n._('Installing'), self.yumbase.tsInfo.installed),
-                            (_('Updating'), self.yumbase.tsInfo.updated),
-                            (_('Removing'), self.yumbase.tsInfo.removed),
-                            (_('Installing for dependencies'), self.yumbase.tsInfo.depinstalled),
-                            (_('Updating for dependencies'), self.yumbase.tsInfo.depupdated),
-                            (_('Removing for dependencies'), self.yumbase.tsInfo.depremoved)]:
+        for (action, pkglist) in [('install', self.yumbase.tsInfo.installed),
+                            ('update', self.yumbase.tsInfo.updated),
+                            ('remove', self.yumbase.tsInfo.removed),
+                            ('install-deps', self.yumbase.tsInfo.depinstalled),
+                            ('update-deps', self.yumbase.tsInfo.depupdated),
+                            ('remove-deps', self.yumbase.tsInfo.depremoved)]:
             for txmbr in pkglist:
                 (n, a, e, v, r) = txmbr.pkgtup
                 evr = txmbr.po.printVer()
@@ -601,16 +619,13 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                 alist = []
                 for (obspo, relationship) in txmbr.relatedto:
                     if relationship == 'obsoletes':
-                        appended = _('     replacing  %s%s%s.%s %s\n\n')
-                        appended %= ("", obspo.name, "",
-                                     obspo.arch, obspo.printVer())
-                        alist.append(appended)
-                el = (n, a, evr, repoid, size, alist)
+                        alist.append(self._get_id(obspo))
+                el = (self._get_id(txmbr.po), size, alist)
                 sublist.append(el)
             if pkglist:
                 out_list.append([action, sublist])
                 sublist = []
-        for (action, pkglist) in [(_('Skipped (dependency problems)'),
+        for (action, pkglist) in [('skipped',
                                    self.yumbase.skipped_packages), ]:
             lines = []
             for po in pkglist:
@@ -619,7 +634,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                 repoid = po.repoid
                 pkgsize = float(po.size)
                 size = format_number(pkgsize)
-                el = (n, a, evr, repoid, size, alist)
+                el = (self._get_id(po), size, alist)
                 sublist.append(el)
             if pkglist:
                 out_list.append([action, sublist])
@@ -716,22 +731,83 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         Get a YumBase object to work with
         '''
         self._yumbase = yum.YumBase()
+        # make yum silent
+        self._yumbase.preconf.errorlevel=0
+        self._yumbase.preconf.debuglevel=0
         #self._yumbase.doConfigSetup()
         # setup the download callback handler
         self._yumbase.repos.setProgressBar( DownloadCallback(self) )
+        self._yumbase.doLock()
+        self.logger.debug(' --> YUM LOCKED: Lockfile = %s' % self._yumbase._lockfile)
+        
         
     def _reset_yumbase(self):
         '''
         destroy the current YumBase object
         '''
-        del self._yumbase
-        self._yumbase = None
+        if self._yumbase:
+            self._yumbase.close()
+            self._yumbase.closeRpmDB()
+            self._yumbase.doUnlock()
+            self.logger.debug(' --> YUM UNLOCKED : Lockfile = %s' % self._yumbase._lockfile)
+            del self._yumbase
+            self._yumbase = None
+        
+
+    def _setup_watchdog(self):
+        '''
+        Setup the watchdog to run every second when idle
+        '''
+        gobject.timeout_add(1000, self._watchdog)
+        
+    def _watchdog(self):
+        terminate = False
+        if self._is_working: # is working
+            return True
+        if not self._lock: # is locked
+            if self._watchdog_count > self._timeout_idle:
+                terminate = True
+        else:
+            if self._watchdog_count > self._timeout_locked:
+                terminate = True
+        if terminate: # shall we quit
+            if self._can_quit:
+                self._reset_yumbase()            
+                self.mainloop.quit()
+        else:
+            self._watchdog_count += 1
+            self.logger.debug("Watchdog : %i" % self._watchdog_count )
+            return True
+        
+def doTextLoggerSetup(logroot='yumdaemon', logfmt='%(asctime)s: %(message)s', loglvl=logging.INFO):
+    ''' Setup Python logging  '''
+    logger = logging.getLogger(logroot)
+    logger.setLevel(loglvl)
+    formatter = logging.Formatter(logfmt, "%H:%M:%S")
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    handler.propagate = False
+    logger.addHandler(handler)
+        
 
 def main():
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument('-d', '--debug', action='store_true')
+    parser.add_argument('--notimeout', action='store_true')
+    args = parser.parse_args()
+    if args.verbose:
+        if args.debug:
+            doTextLoggerSetup(loglvl=logging.DEBUG)
+        else:
+            doTextLoggerSetup()
+    
     # setup the DBus mainloop
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     mainloop = gobject.MainLoop()
-    YumDaemon(mainloop)
+    yd = YumDaemon(mainloop)
+    if not args.notimeout:
+        yd._setup_watchdog()
     mainloop.run()
 
 if __name__ == '__main__':
