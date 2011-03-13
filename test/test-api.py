@@ -298,4 +298,18 @@ class TestAPI(TestBase):
         print "found %i packages" % len(pkgs)
         self.assertGreater(len(pkgs), 0) # we should find some matches
 
+    def test_GetGroups(self):
+        result = self.client.GetGroups()
+        for cat, grps in result:
+            # cat: [category_id, category_name, category_desc]
+            self.assertIsInstance(cat, list) # cat is a list
+            self.assertIsInstance(grps, list) # grps is a list
+            self.assertEqual(len(cat),3) # cat has 3 elements                    
+            print " --> %s" % cat[0]
+            for grp in grps:
+                # [group_id, group_name, group_desc, group_is_installed]
+                self.assertIsInstance(grp, list) # grp is a list
+                self.assertEqual(len(grp),4) # grp has 4 elements                    
+                print "   tag: %s name: %s \n   desc: %s \n   installed : %s " % tuple(grp)
+
         

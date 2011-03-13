@@ -194,6 +194,12 @@ class YumDaemonClient:
         '''
         return self.daemon.Search(fields, keys, match_all, dbus_interface=DAEMON_INTERFACE, timeout=600)
 
+    @catch_exception
+    def GetGroups(self):
+        '''
+        
+        '''
+        return json.loads(self.daemon.GetGroups( dbus_interface=DAEMON_INTERFACE, timeout=600))
 
     @catch_exception
     def Reinstall(self, pattern):

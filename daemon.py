@@ -567,6 +567,19 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             result.append(self._get_id(pkg))
         return self.working_ended(result)
 
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='', 
+                                          out_signature='s',
+                                          sender_keyword='sender')
+    def GetGroups(self, sender=None ):
+        '''
+        Return a category/group tree
+        '''
+        self.working_start(sender)
+        value = self._get_groups()
+        return self.working_ended(value)
+
+
 
 
 #
@@ -639,6 +652,29 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
     def working_ended(self, value=None):
         self._is_working = False
         return value
+    
+    def _get_groups(self):
+        '''
+        make a list with categoties and there groups
+        '''
+        all_groups = []
+        try:
+            cats = self.yumbase.comps.get_categories()
+            for category in cats:
+                cat = (category.categoryid, category.ui_name, category.ui_description)
+                cat_grps = []
+                grps = [self.yumbase.comps.return_group(g) for g in category.groups if self.yumbase.comps.has_group(g)]
+                for grp in grps:
+                    elem = (grp.groupid, grp.ui_name, grp.ui_description, grp.installed)
+                    cat_grps.append(elem)
+                cat_grps.sort()
+                all_groups.append((cat, cat_grps))
+        except Errors.GroupsError, e:
+            print str(e)
+        all_groups.sort()
+        return json.dumps(all_groups)
+
+
     
     def _get_transaction_list(self):
         ''' 
