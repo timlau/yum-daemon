@@ -51,6 +51,9 @@ class YumLockedError(dbus.DBusException):
 class YumTransactionError(dbus.DBusException):
     _dbus_error_name = DAEMON_ORG+'.YumTransactionError'
 
+class YumNotImplementedError(dbus.DBusException):
+    _dbus_error_name = DAEMON_ORG+'.YumNotImplementedError'
+
 #------------------------------------------------------------------------------ Callback handlers
 class DownloadCallback(  DownloadBaseCallback ):
     '''
@@ -542,6 +545,46 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             self._reset_yumbase()
             self.working_ended()
             raise YumTransactionError(str(e))
+
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='asasb', 
+                                          out_signature='as',
+                                          sender_keyword='sender')
+    def Search(self, fields, keys, match_all, sender=None ):
+        '''
+        Search for for packages, where given fields contain given key words
+        @param fields: list of fields to search in
+        @param keys: list of keywords to search for
+        @param match_all: match all flag, if True return only packages matching all keys
+        '''
+        self.working_start(sender)
+        result = []
+        for found in self.yumbase.searchGenerator(fields, keys, keys=True): 
+            pkg = found[0]
+            fkeys = found[1]
+            if match_all and not len(fkeys) == len(keys): # skip the result if not all keys matches
+                continue
+            result.append(self._get_id(pkg))
+        return self.working_ended(result)
+
+
+
+#
+#  Template for new method
+#
+#    @dbus.service.method(DAEMON_INTERFACE, 
+#                                          in_signature='', 
+#                                          out_signature='',
+#                                          sender_keyword='sender')
+#    def NewMethod(self, sender=None ):
+#        '''
+#        
+#        '''
+#        self.working_start(sender)
+#        value = True
+#        return self.working_ended(value)
+#
+
         
 #===============================================================================
 # DBus signals
@@ -791,7 +834,7 @@ def doTextLoggerSetup(logroot='yumdaemon', logfmt='%(asctime)s: %(message)s', lo
         
 
 def main():
-    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser = argparse.ArgumentParser(description='Yum D-Bus Daemon')
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('-d', '--debug', action='store_true')
     parser.add_argument('--notimeout', action='store_true')

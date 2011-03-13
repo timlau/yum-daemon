@@ -274,5 +274,28 @@ class TestAPI(TestBase):
         repo = self.client.GetRepo('XYZCYZ')
         self.assertIsNone(repo)
     
+    def test_Search(self):
+        '''
+        Testing Search
+        '''
+        fields = ['name','summary']
+        keys = ['yum','plugin']
+        pkgs = self.client.Search(fields, keys ,True)
+        self.assertIsInstance(pkgs, dbus.Array)
+        for p in pkgs:
+            summary = self.client.GetAttribute(p,'summary')
+            print str(p),summary
+            self.assertTrue(keys[0] in str(p) or keys[0] in summary)
+            self.assertTrue(keys[1] in str(p) or keys[1] in summary)
+        keys = ['yum','zzzzddddsss'] # second key should not be found
+        pkgs = self.client.Search(fields, keys ,True)
+        self.assertIsInstance(pkgs, dbus.Array)
+        print "found %i packages" % len(pkgs)
+        self.assertEqual(len(pkgs), 0) # when should not find any matches
+        keys = ['yum','zzzzddddsss'] # second key should not be found
+        pkgs = self.client.Search(fields, keys ,False)
+        self.assertIsInstance(pkgs, dbus.Array)
+        print "found %i packages" % len(pkgs)
+        self.assertGreater(len(pkgs), 0) # we should find some matches
 
         

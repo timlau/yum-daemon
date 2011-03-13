@@ -20,7 +20,7 @@ class TestAPIDevel(TestBase):
 
     def test_UpdateAll(self):
         '''
-        Test DownGrade & Update
+        Test Update All
         '''
         print
         # Test if more then one version if yumex is available
@@ -35,8 +35,10 @@ class TestAPIDevel(TestBase):
         print('  Return Code : %i' % rc)
         self.assertEqual(rc,2)
         self.show_transaction_result(output)
-#        self.assertGreater(len(output),0)
-#        for action, pkgs in output:
-#            self.assertEqual(action,u'Updating')                    
-#            self.assertGreater(len(pkgs),0)
-#        self.client.RunTransaction()
+        self.assertGreater(len(output),0)
+        for action, pkgs in output:
+            self.assertEqual(action,u'Updating')                    
+            self.assertGreater(len(pkgs),0)
+        self.client.RunTransaction()
+
+            

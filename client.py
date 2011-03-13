@@ -185,6 +185,17 @@ class YumDaemonClient:
         return self.daemon.Update(pattern, dbus_interface=DAEMON_INTERFACE, timeout=600)
 
     @catch_exception
+    def Search(self, fields, keys, match_all):
+        '''
+        
+        @param fields:
+        @param keys:
+        @param match_all:
+        '''
+        return self.daemon.Search(fields, keys, match_all, dbus_interface=DAEMON_INTERFACE, timeout=600)
+
+
+    @catch_exception
     def Reinstall(self, pattern):
         '''
         Do a reinstall <pattern string>, same as yum reinstall <pattern string>
