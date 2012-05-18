@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python -tt
 import sys
 sys.path.insert(0,'/usr/share/yum-daemon')
 import daemon
