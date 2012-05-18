@@ -739,12 +739,12 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         if and po is installed, the installed po id will be returned
         @param pkgs:
         '''
-        result = []
+        result = set()
         for po in sorted(pkgs):
             if self.yumbase.rpmdb.contains(po=po): # if the po is installed, then return the installed po 
                 (n, a, e, v, r) = po.pkgtup
                 po = self.yumbase.rpmdb.searchNevra(name=n, arch=a, ver=v, rel=r, epoch=e)[0]
-            result.append(self._get_id(po))
+            result.add(self._get_id(po))
         return result
 
     def _get_po(self,id):

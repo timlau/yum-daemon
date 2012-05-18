@@ -82,13 +82,12 @@ class TestBase(unittest.TestCase):
         pkgs = self.client.GetPackagesByName(name, newest_only=True)
         # pkgs should be a dbus.Array instance
         self.assertIsInstance(pkgs, dbus.Array)
-        self.assertEqual(len(pkgs),1)
-        pkg = pkgs[0]
-        (n, e, v, r, a, repo_id) = self.client.to_pkg_tuple(pkg)
-        if repo_id[0] == '@':
-            return True
-        else:
-            return False
+        self.assertTrue(len(pkgs)>0)
+        for pkg in pkgs:
+            (n, e, v, r, a, repo_id) = self.client.to_pkg_tuple(pkg)
+            if repo_id[0] == '@':
+                return True
+        return False
         
     def _show_package(self, id):
         (n, e, v, r, a, repo_id) = self.client.to_pkg_tuple(id)
