@@ -28,6 +28,7 @@ import dbus.service
 import dbus.glib
 import gobject
 import os
+import sys
 
 DAEMON_ORG = 'org.baseurl.Yum'
 DAEMON_INTERFACE = DAEMON_ORG+'.Interface'
@@ -56,6 +57,7 @@ class YumAsync:
         except dbus.exceptions.DBusException, e:
             print "Initialize of dbus daemon failed"
             print str(e)
+            sys.exit(1)
         return obj
 
 
