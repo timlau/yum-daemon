@@ -30,6 +30,7 @@ from urlgrabber.progress import format_number
 from yum.callbacks import *
 from yum.rpmtrans import RPMBaseCallback
 from yum.constants import *
+from yum.update_md import UpdateMetadata
 import argparse
 
 
@@ -67,10 +68,10 @@ class DownloadCallback(  DownloadBaseCallback ):
     def updateProgress(self,name,frac,fread,ftime):
         '''
         Update the progressbar
-        @param name: filename
-        @param frac: Progress fracment (0 -> 1)
-        @param fread: formated string containing BytesRead
-        @param ftime : formated string containing remaining or elapsed time
+        :param name: filename
+        :param frac: Progress fracment (0 -> 1)
+        :param fread: formated string containing BytesRead
+        :param ftime : formated string containing remaining or elapsed time
         '''
         # send a DBus signal with progress info
         self.base.UpdateProgress(name,frac,fread,ftime)
@@ -107,15 +108,15 @@ class RPMCallback(RPMBaseCallback):
         
     def event(self, package, action, te_current, te_total, ts_current, ts_total):
         """
-        @param package: A yum package object or simple string of a package name
-        @param action: A yum.constant transaction set state or in the obscure 
+        :param package: A yum package object or simple string of a package name
+        :param action: A yum.constant transaction set state or in the obscure 
                        rpm repackage case it could be the string 'repackaging'
-        @param te_current: Current number of bytes processed in the transaction
+        :param te_current: Current number of bytes processed in the transaction
                            element being processed
-        @param te_total: Total number of bytes in the transaction element being
+        :param te_total: Total number of bytes in the transaction element being
                          processed
-        @param ts_current: number of processes completed in whole transaction
-        @param ts_total: total number of processes in the transaction.
+        :param ts_current: number of processes completed in whole transaction
+        :param ts_total: total number of processes in the transaction.
         """
         if not isinstance(package, str): # package can be both str or yum package object
             id = self.base._get_id(package)
@@ -150,6 +151,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         self._watchdog_count = 0
         self._timeout_idle = 20         # time to daemon is closed when unlocked
         self._timeout_locked = 600      # time to daemon is closed when locked and not working
+        self._updateMetadata = None     # Cache for yum UpdateMetadata object
         
     @property    
     def yumbase(self):
@@ -181,7 +183,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
     def Exit(self, sender=None):
         '''
         Exit the daemon
-        @param sender:
+        :param sender:
         '''
         self.check_permission(sender)
         if self._can_quit:
@@ -198,7 +200,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
     def Lock(self, sender=None):
         '''
         Get the yum lock
-        @param sender:
+        :param sender:
         '''
         self.check_permission(sender)
         if not self._lock:
@@ -218,8 +220,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
     def GetRepositories(self, filter, sender=None):
         '''
         Get the value a list of repo ids
-        @param filter: filter to limit the listed repositories
-        @param sender:
+        :param filter: filter to limit the listed repositories
+        :param sender:
         '''
         self.working_start(sender)
         repos = []
@@ -239,8 +241,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         Get the value of a yum config setting
         it will return a JSON string of the config
-        @param setting: name of setting (debuglevel etc..)
-        @param sender:
+        :param setting: name of setting (debuglevel etc..)
+        :param sender:
         '''
         self.working_start(sender)
         if setting == '*': # Return all config
@@ -261,8 +263,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         Get information about a give repo_id
         the repo setting will be returned as dictionary in JSON format
-        @param repo_id:
-        @param sender:
+        :param repo_id:
+        :param sender:
         '''
         self.working_start(sender)
         try:
@@ -280,8 +282,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
     def GetPackages(self, narrow, sender=None):
         '''
         Get a list of package ids, based on a package narrower
-        @param narrow: pkg narrow string ('installed','updates' etc)
-        @param sender:
+        :param narrow: pkg narrow string ('installed','updates' etc)
+        :param sender:
         '''
         self.working_start(sender)
         if narrow in ['installed','available','updates','obsoletes','recent','extras']:
@@ -299,9 +301,9 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
     def GetPackagesByName(self, name, newest_only, sender=None):
         '''
         Get a list of packages from a name pattern
-        @param name: name pattern
-        @param newest_only: True = get newest packages only
-        @param sender:
+        :param name: name pattern
+        :param newest_only: True = get newest packages only
+        :param sender:
         '''
         self.working_start(sender)
         if newest_only:
@@ -320,9 +322,9 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         Get an attribute from a yum package id
         it will return a python repr string of the attribute
-        @param id: yum package id
-        @param attr: name of attribute (summary, size, description, changelog etc..)
-        @param sender:
+        :param id: yum package id
+        :param attr: name of attribute (summary, size, description, changelog etc..)
+        :param sender:
         '''
         self.working_start(sender)
         po = self._get_po(id)
@@ -335,6 +337,29 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             value = json.dumps(None)        
         return self.working_ended(value)
             
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='s', 
+                                          out_signature='s',
+                                          sender_keyword='sender')
+    def GetUpdateInfo(self, id,sender=None):
+        '''
+        Get an Update Infomation e from a yum package id
+        it will return a python repr string of the attribute
+        :param id: yum package id
+        :param sender:
+        '''
+        self.working_start(sender)
+        po = self._get_po(id)
+        if po:
+            md = self.update_metadata
+            notices = md.get_notices(po.name)
+            value = json.dumps(notices)
+        else:
+            value = json.dumps(None)        
+        return self.working_ended(value)
+
+    
+    
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
                                           out_signature='b',
@@ -356,8 +381,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         Install packages based on command patterns separated by spaces
         sinulate what 'yum install <arguments>' does
-        @param cmds: command patterns separated by spaces
-        @param sender:
+        :param cmds: command patterns separated by spaces
+        :param sender:
         '''
         self.working_start(sender)
         for cmd in cmds.split(' '):
@@ -373,8 +398,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         Remove packages based on command patterns separated by spaces
         sinulate what 'yum remove <arguments>' does
-        @param cmds: command patterns separated by spaces
-        @param sender:
+        :param cmds: command patterns separated by spaces
+        :param sender:
         '''
         self.working_start(sender)
         for cmd in cmds.split(' '):
@@ -390,8 +415,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         Update packages based on command patterns separated by spaces
         sinulate what 'yum update <arguments>' does
-        @param cmds: command patterns separated by spaces
-        @param sender:
+        :param cmds: command patterns separated by spaces
+        :param sender:
         '''
         self.working_start(sender)        
         if cmds == "":
@@ -411,8 +436,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         Reinstall packages based on command patterns separated by spaces
         sinulate what 'yum reinstall <arguments>' does
-        @param cmds: command patterns separated by spaces
-        @param sender:
+        :param cmds: command patterns separated by spaces
+        :param sender:
         '''
         self.working_start(sender)
         for cmd in cmds.split(' '):
@@ -428,8 +453,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         Downgrade packages based on command patterns separated by spaces
         sinulate what 'yum downgrade <arguments>' does
-        @param cmds: command patterns separated by spaces
-        @param sender:
+        :param cmds: command patterns separated by spaces
+        :param sender:
         '''
         self.working_start(sender)
         for cmd in cmds.split(' '):
@@ -553,9 +578,9 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
     def Search(self, fields, keys, match_all, sender=None ):
         '''
         Search for for packages, where given fields contain given key words
-        @param fields: list of fields to search in
-        @param keys: list of keywords to search for
-        @param match_all: match all flag, if True return only packages matching all keys
+        :param fields: list of fields to search in
+        :param keys: list of keywords to search for
+        :param match_all: match all flag, if True return only packages matching all keys
         '''
         self.working_start(sender)
         result = []
@@ -607,10 +632,10 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         DBus signal with download progress information
         will send dbus signals with download progress information
-        @param name: filename
-        @param frac: Progress fracment (0 -> 1)
-        @param fread: formated string containing BytesRead
-        @param ftime : formated string containing remaining or elapsed time
+        :param name: filename
+        :param frac: Progress fracment (0 -> 1)
+        :param fread: formated string containing BytesRead
+        :param ftime : formated string containing remaining or elapsed time
         '''
         pass
 
@@ -618,7 +643,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
     def TransactionEvent(self,event):
         '''
         DBus signal with Transaction information        
-        @param event:
+        :param event:
         '''
         #print "event: %s" % event
         pass
@@ -628,15 +653,15 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
     def RPMProgress(self, package, action, te_current, te_total, ts_current, ts_total):
         """
         RPM Progress DBus signal
-        @param package: A yum package object or simple string of a package name
-        @param action: A yum.constant transaction set state or in the obscure 
+        :param package: A yum package object or simple string of a package name
+        :param action: A yum.constant transaction set state or in the obscure 
                        rpm repackage case it could be the string 'repackaging'
-        @param te_current: Current number of bytes processed in the transaction
+        :param te_current: Current number of bytes processed in the transaction
                            element being processed
-        @param te_total: Total number of bytes in the transaction element being
+        :param te_total: Total number of bytes in the transaction element being
                          processed
-        @param ts_current: number of processes completed in whole transaction
-        @param ts_total: total number of processes in the transaction.
+        :param ts_current: number of processes completed in whole transaction
+        :param ts_total: total number of processes in the transaction.
         """
         pass
     
@@ -725,7 +750,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         return a sorted list of package ids from a list of packages
         if and po is installed, the installed po id will be returned
-        @param pkgs:
+        :param pkgs:
         '''
         result = []
         for txmbr in txmbrs:
@@ -733,11 +758,17 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             result.append("%s,%s" % (self._get_id(po), txmbr.ts_state ))
         return result
 
+    @property
+    def update_metadata(self):
+        if not self._updateMetadata:
+            self._updateMetadata = UpdateMetadata(self.yumbase.repos.listEnabled())
+        return self._updateMetadata
+
     def _to_package_id_list(self, pkgs):
         '''
         return a sorted list of package ids from a list of packages
         if and po is installed, the installed po id will be returned
-        @param pkgs:
+        :param pkgs:
         '''
         result = set()
         for po in sorted(pkgs):
@@ -766,7 +797,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
     def _get_id(self,pkg):
         '''
         convert a yum package obejct to an id string containing (n,e,v,r,a,repo)
-        @param pkg:
+        :param pkg:
         '''
         values = [pkg.name, pkg.epoch, pkg.ver, pkg.rel, pkg.arch, pkg.ui_from_repo]
         return ",".join(values)
@@ -774,7 +805,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
     def check_lock(self, sender):
         '''
         Check that the current sender is owning the yum lock
-        @param sender:
+        :param sender:
         '''
         if self._lock == sender:
             return True
@@ -793,7 +824,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
     def _check_permission(self, sender):
         '''
         check senders permissions using PolicyKit1
-        @param sender:
+        :param sender:
         '''
         if not sender: raise ValueError('sender == None')
         
