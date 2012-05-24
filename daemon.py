@@ -130,9 +130,7 @@ class RPMCallback(RPMBaseCallback):
         """package is the package.  msgs is the messages that were
         output (if any)."""
         pass
-
-            
-            
+           
 
 #------------------------------------------------------------------------------ Main class
 class YumDaemon(dbus.service.Object, DownloadBaseCallback):
@@ -292,6 +290,25 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             value = self._to_package_id_list(pkgs)
         else:
             value = []
+        return self.working_ended(value)
+
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='s', 
+                                          out_signature='as',
+                                          sender_keyword='sender')
+    def GetPackageObjects(self, narrow, sender=None):
+        '''
+        Get a list of package ids, based on a package narrower
+        :param narrow: pkg narrow string ('installed','updates' etc)
+        :param sender:
+        '''
+        self.working_start(sender)
+        value = []
+        if narrow in ['installed','available','updates','obsoletes','recent','extras']:
+            yh = self.yumbase.doPackageLists(pkgnarrow=narrow)
+            pkgs = getattr(yh,narrow)
+            for po in pkgs:
+                value.append(self._get_po_dict(po))
         return self.working_ended(value)
         
     @dbus.service.method(DAEMON_INTERFACE, 
@@ -678,6 +695,16 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         self._is_working = False
         return value
     
+    def _get_po_dict(self, pkg):
+        po_dict = {}
+        values = [pkg.name, pkg.epoch, pkg.ver, pkg.rel, pkg.arch, pkg.ui_from_repo]
+        po_dict['id'] = ",".join(values)
+        po_dict['summary'] = pkg.summary
+        po_dict['size'] = pkg.size
+        return json.dumps(po_dict)
+        
+        
+        
     def _get_groups(self):
         '''
         make a list with categoties and there groups
