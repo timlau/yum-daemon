@@ -294,7 +294,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
 
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
-                                          out_signature='as',
+                                          out_signature='s',
                                           sender_keyword='sender')
     def GetPackageObjects(self, narrow, sender=None):
         '''
@@ -307,9 +307,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         if narrow in ['installed','available','updates','obsoletes','recent','extras']:
             yh = self.yumbase.doPackageLists(pkgnarrow=narrow)
             pkgs = getattr(yh,narrow)
-            for po in pkgs:
-                value.append(self._get_po_dict(po))
-        return self.working_ended(value)
+            value = [self._get_po_tuple(po) for po in pkgs]
+            return self.working_ended(json.dumps(value))
         
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='sb', 
@@ -486,6 +485,12 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                                           sender_keyword='sender')
 
     def AddTransaction(self, id, action, sender=None):
+        '''
+        Add an package to the current transaction 
+        
+        :param id: package id for the package to add
+        :param action: the action to perform ( install, update, remove, obsolete, reinstall, downgrade, localinstall )
+        '''
         self.working_start(sender)
         if action != 'localinstall': # Dont get a po if it is at local package
             po = self._get_po(id)
@@ -695,13 +700,10 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         self._is_working = False
         return value
     
-    def _get_po_dict(self, pkg):
-        po_dict = {}
+    def _get_po_tuple(self, pkg):
         values = [pkg.name, pkg.epoch, pkg.ver, pkg.rel, pkg.arch, pkg.ui_from_repo]
-        po_dict['id'] = ",".join(values)
-        po_dict['summary'] = pkg.summary
-        po_dict['size'] = pkg.size
-        return json.dumps(po_dict)
+        po_tuple = (",".join(values), pkg.summary, pkg.size)
+        return po_tuple
         
         
         
