@@ -9,8 +9,8 @@ install:
 	install -m644 dbus/$(ORG_NAME).service $(DESTDIR)/usr/share/dbus-1/system-services/.				
 	install -m644 dbus/$(ORG_NAME).conf $(DESTDIR)/etc/dbus-1/system.d/.				
 	install -m644 policykit1/$(ORG_NAME).policy $(DESTDIR)/usr/share/polkit-1/actions/.				
-	install -m644 daemon.py $(DESTDIR)/$(PKGDIR)/.
-	install -m755 yum-daemon $(DESTDIR)/$(PKGDIR)/.
+	install -m644 server/daemon.py $(DESTDIR)/$(PKGDIR)/.
+	install -m755 server/yum-daemon $(DESTDIR)/$(PKGDIR)/.
 
 uninstall:
 	rm -f $(DESTDIR)/usr/share/dbus-1/system-services/$(ORG_NAME).*
