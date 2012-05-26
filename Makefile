@@ -1,5 +1,14 @@
 PKGDIR = /usr/share/yum-daemon
 ORG_NAME = org.baseurl.Yum
+SUBDIRS = client\python2 client/python2
+all: subdirs
+	
+subdirs:
+	for d in $(SUBDIRS); do make -C $$d; [ $$? = 0 ] || exit 1 ; done
+
+clean:
+	@rm -fv *~ *.tar.gz *.list *.lang 
+	for d in $(SUBDIRS); do make -C $$d clean ; done
 
 install:
 	mkdir -p $(DESTDIR)/usr/share/dbus-1/system-services
@@ -11,6 +20,7 @@ install:
 	install -m644 policykit1/$(ORG_NAME).policy $(DESTDIR)/usr/share/polkit-1/actions/.				
 	install -m644 server/daemon.py $(DESTDIR)/$(PKGDIR)/.
 	install -m755 server/yum-daemon $(DESTDIR)/$(PKGDIR)/.
+	for d in $(SUBDIRS); do make DESTDIR=`cd $(DESTDIR); pwd` -C $$d install; [ $$? = 0 ] || exit 1; done
 
 uninstall:
 	rm -f $(DESTDIR)/usr/share/dbus-1/system-services/$(ORG_NAME).*
