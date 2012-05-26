@@ -130,9 +130,17 @@ class YumDaemonClient:
     @catch_exception
     def GetPackages(self, narrow):
         '''
-        Get a list of pkg ids for the current availabe updates
+        Get a list of pkg ids for a given package filter
         '''
         return self.daemon.GetPackages(narrow, dbus_interface=DAEMON_INTERFACE, timeout=600)
+
+    @catch_exception
+    def GetPackageObjects(self, narrow):
+        '''
+        Get a list of pkg tuples (id, summary, size)  for a given package filter
+        '''
+        result = self.daemon.GetPackageObjects(narrow, dbus_interface=DAEMON_INTERFACE, timeout=600)
+        return json.loads(result)
 
     @catch_exception
     def GetPackagesByName(self, name, newest_only=True):

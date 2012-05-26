@@ -312,4 +312,17 @@ class TestAPI(TestBase):
                 self.assertEqual(len(grp),4) # grp has 4 elements                    
                 print "   tag: %s name: %s \n   desc: %s \n   installed : %s " % tuple(grp)
 
+
+
+    def test_GetPackageObjects(self):
+        print()
+        for pkg_filter in ['installed','available','updates','obsoletes','recent','extras']:
+            print(" --> Checking filter : %s" % pkg_filter)
+            result = self.client.GetPackageObjects(pkg_filter)
+            self.assertIsInstance(result, list) # cat is a list
+            print("     Got %i packages" % len(result))            
+            if len(result) > 1:
+                self.assertIsInstance(result[1], list) # cat is a list
+                self.assertEqual(len(result[1]),3)
+            
         

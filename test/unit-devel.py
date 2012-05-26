@@ -1,5 +1,5 @@
 import sys, os
-sys.path.insert(0,os.path.abspath('../'))
+sys.path.insert(0,os.path.abspath('client/python2'))
 import dbus
 from base import TestBase
 from client import YumLockedError
@@ -42,4 +42,3 @@ class TestAPIDevel(TestBase):
 #        self.client.RunTransaction()
 
 
-            
