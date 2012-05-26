@@ -31,7 +31,7 @@ Usage: (Make your own subclass based on YumDaemonClient and overload the signal 
     class MyClient(YumDaemonClient)
     
         def __init(self):
-            YumDaemonClient.__init__(self):
+            YumDaemonClient.__init__(self)
             # Do your stuff here
             
         def on_UpdateProgress(self,name,frac,fread,ftime):
@@ -265,6 +265,13 @@ class YumDaemonClient:
             result = json.loads(result)
         return result
 
+    def GetUpdateInfo(self, pkg_id):
+        '''
+        Get Updateinfo for a package
+        :param pkg_id:
+        '''
+        result = self.run_dbus_async('GetUpdateInfo','(s)',pkg_id)
+        return json.loads(result)
 
     def GetPackages(self, pkg_filter):
         '''

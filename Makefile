@@ -1,6 +1,6 @@
 PKGDIR = /usr/share/yum-daemon
 ORG_NAME = org.baseurl.Yum
-SUBDIRS = client\python2 client/python2
+SUBDIRS = client/python2 client/python3
 all: subdirs
 	
 subdirs:
