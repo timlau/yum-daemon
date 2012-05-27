@@ -69,9 +69,9 @@ API Definitions: (Work in Progress)
 ## Data
 
 
-**Package Id** = "name,epoch,version,release,arch,repoid" (Comma separated string)
-**Transaction Id** = "name,epoch,version,release,arch,repoid,ts_state" (Comma separated string)
-                 
+**Package Id** = "name,epoch,version,release,arch,repoid" (Comma separated string)  
+**Transaction Id** = "name,epoch,version,release,arch,repoid,ts_state" (Comma separated string)  
+
 ## Locking
 
 #### Lock() (DONE)
@@ -91,7 +91,6 @@ return value from config
 #### SetConfig(option, value, persistant)
 set config option=value (for current session or persistant)
 
-     
 ## Repository
 
 #### EnableRepo(repo_id, persistant)
@@ -102,7 +101,7 @@ Enable repo
 
 Disable repo
 
-#### GetRepositories(filer) (DONE)  
+#### GetRepositories(filer) (DONE)
 
 get list with repos  
 filter = "" return enabled repositories  
@@ -127,9 +126,9 @@ Return list of package ids
 
 #### GetPackageObjects(pkg_filter) (DONE)
 
-Return list of tuples containing (package ids, summary, size)
+Return list of tuples containing (package ids, summary, size)  
 **pkg_filter** = installed|available|updates|obsoletes|.....
-         
+
 #### GetPackagesByName(pattern, newest_only) (DONE)
 
 get a list of package ids where name matches pattern  
@@ -228,7 +227,7 @@ Do the same as **yum install args**
 
 Do the same as **yum remove args**
 
-#### Update(args) (DONE)  
+#### Update(args) (DONE)
 
 Do the same as **yum update args**
 
