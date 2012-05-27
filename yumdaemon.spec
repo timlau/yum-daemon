@@ -3,7 +3,7 @@ Version:        0.1
 Release:        0.1%{?dist}
 Summary:        Dbus daemon for yum package actions
 
-License:        GPL2+
+License:        GPLv2+
 URL:            https://github.com/timlau/yum-daemon
 Source0:        yumdaemon-%{version}.tar.gz
 
