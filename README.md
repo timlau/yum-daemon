@@ -244,10 +244,10 @@ Do the same as "yum downgrade args"
 
 This signal will be sent a evey progress callback when something is being downloaded (metadata, packages etc)
 
- * name : filename
- * frac : Progress fracment (0 -\> 1)
- * fread : formated string containing !BytesRead
- * ftime : formated string containing remaining or elapsed time
+    name : filename
+    frac : Progress fracment (0 -\> 1)
+    fread : formated string containing !BytesRead
+    ftime : formated string containing remaining or elapsed time
 
 #### TransactionEvent(self,event) (DONE)
 
@@ -255,28 +255,28 @@ This signal will be in differnet part of the transaction flow
 
 event: an action keyword of where we are in the transaction process.
 
- * start-build : when starting to depsolve
- * end-build : when depsolve is completed
- * start-run : when starting to execute the current transaction
- * end-run : when current transaction is ended without error
- * fail : when current transaction is ended with errors
- * download : when package downloading is started
- * signature-check : when package signature check is started
- * run-test-transaction : when rpm test transaction starts
- * run-transaction : when rpm transaction starts
+    start-build : when starting to depsolve
+    end-build : when depsolve is completed
+    start-run : when starting to execute the current transaction
+    end-run : when current transaction is ended without error
+    fail : when current transaction is ended with errors
+    download : when package downloading is started
+    signature-check : when package signature check is started
+    run-test-transaction : when rpm test transaction starts
+    run-transaction : when rpm transaction starts
 
 
 #### RPMProgress(pkg_id, action, te_current, te_total, ts_current, ts_total) (DONE)
 
- * package : A package id or simple string of a package name
- * action : the action being performed ( install,cleanup .....)
- * te_current : Current number of bytes processed in the transaction element being processed
- * te_total : Total number of bytes in the transaction element being processed
- * ts_current : number of processes completed in whole transaction
- * ts_total : total number of processes in the transaction.
+    package : A package id or simple string of a package name
+    action : the action being performed ( install,cleanup .....)
+    te_current : Current number of bytes processed in the transaction element being processed
+    te_total : Total number of bytes in the transaction element being processed
+    ts_current : number of processes completed in whole transaction
+    ts_total : total number of processes in the transaction.
 
 #### Progress(action, percent)
 
- * action : action being performed
- * percent : the progress of the whole transaction in percent
+    action : action being performed
+    percent : the progress of the whole transaction in percent
 
