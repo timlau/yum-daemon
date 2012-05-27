@@ -253,17 +253,16 @@ This signal will be sent a evey progress callback when something is being downlo
 
 This signal will be in differnet part of the transaction flow
 
-event: an action keyword of where we are in the transaction process.
-
-    start-build : when starting to depsolve
-    end-build : when depsolve is completed
-    start-run : when starting to execute the current transaction
-    end-run : when current transaction is ended without error
-    fail : when current transaction is ended with errors
-    download : when package downloading is started
-    signature-check : when package signature check is started
-    run-test-transaction : when rpm test transaction starts
-    run-transaction : when rpm transaction starts
+    event: an action keyword of where we are in the transaction process.
+        start-build : when starting to depsolve
+        end-build : when depsolve is completed
+        start-run : when starting to execute the current transaction
+        end-run : when current transaction is ended without error
+        fail : when current transaction is ended with errors
+        download : when package downloading is started
+        signature-check : when package signature check is started
+        run-test-transaction : when rpm test transaction starts
+        run-transaction : when rpm transaction starts
 
 
 #### RPMProgress(pkg_id, action, te_current, te_total, ts_current, ts_total) (DONE)
