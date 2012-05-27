@@ -66,30 +66,25 @@ API Definitions: (Work in Progress)
 ====================================
 
 
-Data
------
+## Data
 
-<Package Id> = "name,epoch,version,release,arch,repoid" (Comma separated string)
-<Transaction Id> = "name,epoch,version,release,arch,repoid,ts_state" (Comma separated string)
+
+*Package Id* = "name,epoch,version,release,arch,repoid" (Comma separated string)
+*Transaction Id* = "name,epoch,version,release,arch,repoid,ts_state" (Comma separated string)
                 
-Locking
---------
+## Locking
 
-Lock() (DONE)
---------------
+### Lock() (DONE)
+
 start a new yum instance and set the yum lock
 
-Unlock() (DONE)
-----------------
+### Unlock() (DONE)
 
 release the yum lock and delete the current yum instance
 
-----
-Config
--------
+## Config
 
-GetConfig(option)
-------------------
+### GetConfig(option)
 
 return value from config
 
@@ -97,59 +92,47 @@ SetConfig(option, value, persistant)
 set config option=value (for current session or persistant)
 
     
-----
-Repository
------------
+## Repository
 
-EnableRepo(repo_id, persistant)
---------------------------------
+### EnableRepo(repo_id, persistant)
 
 Enable repo
 
-DisableRepo(repo_id, persistant)
----------------------------------
+### DisableRepo(repo_id, persistant)
 
 Disable repo
 
-GetRepositories(filer) (DONE) 
-------------------------------
+### GetRepositories(filer) (DONE) 
 
 get list with repos 
 filter = "" return enabled repositories
 filter = "<some pattern>" will return repo matching <some pattern>
 Ex. filter = "*" will return all repos., filter = "*-source" will return source repos
 
-GetRepo(repo_id) (DONE)
------------------------
+### GetRepo(repo_id) (DONE)
 
 return information about a repo
 the information is returned as a dictinary in JSON format
 
-SetRepo(repo_id, repo_info)
-----------------------------
+### SetRepo(repo_id, repo_info)
 
 change repo info or create new one is not exists
 repo_info = {'name' : values,.......}
 
-----
-Packages
-----------
+## Packages
 
-GetPackages(pkg_narrow) (DONE)
--------------------------------
+### GetPackages(pkg_narrow) (DONE)
 
 Return list of package ids
 pkg_narrow = installed|available|updates|obsoletes|.....
         
-GetPackagesByName(pattern, newest_only) (DONE)
-------------------------------------------------
+### GetPackagesByName(pattern, newest_only) (DONE)
 
 get a list of package ids where name matches pattern
 pattern ::= <pattern string> (ex. 'yum', 'yum*')
 
 
-GetAttribute(pkg_id, attribute) (DONE)
-----------------------------------------
+### GetAttribute(pkg_id, attribute) (DONE)
 
 return an attribute value from at give pkg_id.
 attribute = <Yum Package attribute Name> (Ex. 'summanry', 'description')
@@ -157,70 +140,57 @@ it return a string there contains a python repr of the attribute
 ':none' will be returned if attribute dont exist.
 ':not-found' will be returned if no package matching pkg_id is found
 
-GetUpdateInfo(pkg_id)
-----------------------
+### GetUpdateInfo(pkg_id)
+
 Get updateinfo about a given pkg_id
 
 
-----
-Groups
---------
+## Groups
 Methods to handle yum groups/categories
 
-'''<Do be definded>'''
+** Do be definded **
 
-----
-Search:
---------
+## Search:
 
-Search(fields, keys, match_all) (DONE)
----------------------------------------
+### Search(fields, keys, match_all) (DONE)
 
 return a list of package ids for matching packages
 fields = a list of package attributes to search in (Name, summary, description etc)
 keys = a list of key words to search for.
 match_all = define if all keys should match or partial match is allowed (boolean)
 
+## History
 
-----
-History
---------
-
-GetHistory(elements)
----------------------
+### GetHistory(elements)
 
 return a list with a number of history ids (integers)
 
 elements = the number of elements to return
 
-GetHistoryInfo(id)
--------------------
+### GetHistoryInfo(id)
+
 return a dict with details about a give history id
 
 
-RedoHistory(id)
-----------------
+### RedoHistory(id)
+
 redo a given history id
 
 
-UndoHistory(id)
-----------------
+### UndoHistory(id)
+
 undo given history id
 
-----
-Transaction
--------------
+## Transaction
 
-AddTransaction(pkg_id, action) (DONE)
---------------------------------------
+### AddTransaction(pkg_id, action) (DONE)
 
 Add a package to the current transaction for an given action
 action = install|update|remove|reinstall|downgrade|localinstall
 localinstall takes a path to a .rpm file as pkg_id
 return a list of transaction ids for the packages added to the transaction
 
-BuildTransaction() (DONE)
---------------------------
+### BuildTransaction() (DONE)
 
 resolve the dependencies of the current transaction.
 return a (return code, output) pair
@@ -229,54 +199,49 @@ if no problems output will contains a repr of a list containing tuples of (actio
 if problmes output will contain a list of desolve problem messages.
 
 
-RunTransaction() (DONE)
-------------------------
+### RunTransaction() (DONE)
 
 will run the current transaction (Download, signature check, test transaction, transaction)
 
-ClearTransaction() (DONE)
+### ClearTransaction() (DONE)
 
 will clear the current transaction
 
-GetTransaction() (DONE)
+### GetTransaction() (DONE)
 
 will return the member of the current transaction 
 
-----
-high-level Methods
--------------------
+## high-level Methods
 
 Simple method to emulate yum cli actions
 there methods will find packages matching the argument and add them to the transaction
 and return the transaction result for confirmation.
 The transaction can then be executed by calling !RunTransaction()
 
-Install(args) (DONE)
----------------------
+### Install(args) (DONE)
+
 Do the same as "yum install args"
 
-Remove(args) (DONE)
---------------------
+### Remove(args) (DONE)
+
 Do the same as "yum remove args"
 
-Update(args) (DONE) 
---------------------
+### Update(args) (DONE) 
+
 Do the same as "yum update args"
 
-Reinstall(args)  (DONE)
------------------------
+### Reinstall(args)  (DONE)
 
 Do the same as "yum reinstall args"
 
-Downgrade(args)  (DONE)
------------------------
+### Downgrade(args)  (DONE)
+
 Do the same as "yum downgrade args"
 
-----
-Signals: (D-Bus signals sendt by yum's callback handlers)
+## Signals: (D-Bus signals sendt by yum's callback handlers)
 
-UpdateProgress(self,name,frac,fread,ftime) (DONE)
---------------------------------------------------
+### UpdateProgress(self,name,frac,fread,ftime) (DONE)
+
 This signal will be sent a evey progress callback when something is being downloaded (metadata, packages etc)
 
     name: filename
@@ -284,8 +249,8 @@ This signal will be sent a evey progress callback when something is being downlo
     fread: formated string containing !BytesRead
     ftime : formated string containing remaining or elapsed time
 
-TransactionEvent(self,event) (DONE)
-------------------------------------
+### TransactionEvent(self,event) (DONE)
+
 This signal will be in differnet part of the transaction flow
 
 event: an action keyword of where we are in the transaction process.
@@ -300,8 +265,8 @@ event: an action keyword of where we are in the transaction process.
     'run-transaction'      : when rpm transaction starts
 
 
-RPMProgress(pkg_id, action, te_current, te_total, ts_current, ts_total) (DONE)
--------------------------------------------------------------------------------
+### RPMProgress(pkg_id, action, te_current, te_total, ts_current, ts_total) (DONE)
+
     package: A package id or simple string of a package name
     action: the action being performed ( install,cleanup .....)
     te_current: Current number of bytes processed in the transaction element being processed
@@ -309,8 +274,8 @@ RPMProgress(pkg_id, action, te_current, te_total, ts_current, ts_total) (DONE)
     ts_current: number of processes completed in whole transaction
     ts_total: total number of processes in the transaction.
 
-Progress(action, percent)
---------------------------
+### Progress(action, percent)
+
     action = action being performed
     percent = the progress of the whole transaction in percent
 
