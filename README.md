@@ -6,7 +6,7 @@ Yum-daemon is a DBus system service there make part for Yum's API available for 
 This make it easy to do packaging action from your application no matter what language it is written in, as long as there
 is DBus binding for it.
 
-Yum-daemon uses PolicyKit for authentication, so when you call one of the commands (as normal users) you will get a 
+Yum-daemon uses PolicyKit for authentication, so when you call one of the commands (as normal users) you will get a  
 PolicyKit dialog to ask for password of a priviledged user like root.
 
 **yum-daemon is still under heavy development and the API is not stable or complete yet**
@@ -35,7 +35,7 @@ How to test:
 -------------
 
 just run:
-  
+   
     make test-verbos
 
 to run the unit test with output to console
@@ -43,16 +43,16 @@ to run the unit test with output to console
 or this to just run the unit tests.
 
     make test
-  
+   
 to make the daemon exit run:
 
     python client/python2/client.py quit
-  
+   
 if you want to monitor the yum progress signals send by the daemon
 the start the following in another shell window.
 
     python examples/python2/monitor.py
-  
+   
 If you run it as normal user, you well get PolicyKit dialog asking for root password
 If you run as root it will just execute
 
@@ -71,7 +71,7 @@ API Definitions: (Work in Progress)
 
 **Package Id** = "name,epoch,version,release,arch,repoid" (Comma separated string)
 **Transaction Id** = "name,epoch,version,release,arch,repoid,ts_state" (Comma separated string)
-                
+                 
 ## Locking
 
 #### Lock() (DONE)
@@ -91,7 +91,7 @@ return value from config
 #### SetConfig(option, value, persistant)
 set config option=value (for current session or persistant)
 
-    
+     
 ## Repository
 
 #### EnableRepo(repo_id, persistant)
@@ -102,12 +102,12 @@ Enable repo
 
 Disable repo
 
-#### GetRepositories(filer) (DONE) 
+#### GetRepositories(filer) (DONE)  
 
-get list with repos 
-filter = "" return enabled repositories 
-filter = **some pattern** will return repo matching **some pattern** 
-Ex. filter = **\*** will return all repos., filter = **\*-source** will return source repos 
+get list with repos  
+filter = "" return enabled repositories  
+filter = **some pattern** will return repo matching **some pattern**  
+Ex. filter = **\*** will return all repos., filter = **\*-source** will return source repos  
 
 #### GetRepo(repo_id) (DONE)
 
@@ -115,34 +115,34 @@ return information about a repo the information is returned as a dictinary in JS
 
 #### SetRepo(repo_id, repo_info)
 
-change repo info or create new one is not exists 
+change repo info or create new one is not exists  
 **repo_info** = {'name' : values,.......}
 
 ## Packages
 
 #### GetPackages(pkg_filter) (DONE)
 
-Return list of package ids 
+Return list of package ids  
 **pkg_filter** = installed|available|updates|obsoletes|.....
 
 #### GetPackageObjects(pkg_filter) (DONE)
 
 Return list of tuples containing (package ids, summary, size)
 **pkg_filter** = installed|available|updates|obsoletes|.....
-        
+         
 #### GetPackagesByName(pattern, newest_only) (DONE)
 
-get a list of package ids where name matches pattern 
+get a list of package ids where name matches pattern  
 **pattern** ::= \\<pattern string\\> (ex. 'yum', 'yum*')
 
 
 #### GetAttribute(pkg_id, attribute) (DONE)
 
-return an attribute value from at give pkg_id. 
-attribute = \<Yum Package attribute Name\> (Ex. 'summanry', 'description') 
-it return a string there contains a python repr of the attribute 
-':none' will be returned if attribute dont exist. 
-':not-found' will be returned if no package matching pkg_id is found 
+return an attribute value from at give pkg_id.  
+attribute = \<Yum Package attribute Name\> (Ex. 'summanry', 'description')  
+it return a string there contains a python repr of the attribute  
+':none' will be returned if attribute dont exist.  
+':not-found' will be returned if no package matching pkg_id is found  
 
 #### GetUpdateInfo(pkg_id)
 
@@ -158,16 +158,16 @@ Methods to handle yum groups/categories
 
 #### Search(fields, keys, match_all) (DONE)
 
-return a list of package ids for matching packages 
-**fields**: a list of package attributes to search in (Name, summary, description etc) 
-**keys**: a list of key words to search for. 
-**match_all**: define if all keys should match or partial match is allowed (boolean) 
+return a list of package ids for matching packages  
+**fields**: a list of package attributes to search in (Name, summary, description etc)  
+**keys**: a list of key words to search for.  
+**match_all**: define if all keys should match or partial match is allowed (boolean)  
 
 ## History
 
 #### GetHistory(elements)
 
-return a list with a number of history ids (integers) 
+return a list with a number of history ids (integers)  
 **elements**: the number of elements to return
 
 #### GetHistoryInfo(id)
@@ -188,18 +188,18 @@ undo given history **id**
 
 #### AddTransaction(pkg_id, action) (DONE)
 
-Add a package to the current transaction for an given action 
-**action**: |remove|reinstall|downgrade|localinstall 
-**localinstall**: takes a path to a .rpm file as pkg_id 
+Add a package to the current transaction for an given action  
+**action**: |remove|reinstall|downgrade|localinstall  
+**localinstall**: takes a path to a .rpm file as pkg_id  
 return a list of transaction ids for the packages added to the transaction
 
 #### BuildTransaction() (DONE)
 
-resolve the dependencies of the current transaction. 
-return a (return code, output) pair 
-return code = 2 is transaction was resolved without problems 
-if no problems output will contains a repr of a list containing tuples of (action, package info list) 
-if problmes output will contain a list of desolve problem messages. 
+resolve the dependencies of the current transaction.  
+return a (return code, output) pair  
+return code = 2 is transaction was resolved without problems  
+if no problems output will contains a repr of a list containing tuples of (action, package info list)  
+if problmes output will contain a list of desolve problem messages.  
 
 
 #### RunTransaction() (DONE)
@@ -212,12 +212,12 @@ will clear the current transaction
 
 #### GetTransaction() (DONE)
 
-will return the member of the current transaction 
+will return the member of the current transaction  
 
 ## high-level Methods
 
 Simple method to emulate yum cli actions there methods will find packages matching the argument and add them to the transaction
-and return the transaction result for confirmation. 
+and return the transaction result for confirmation.  
 The transaction can then be executed by calling **RunTransaction()**
 
 #### Install(args) (DONE)
@@ -228,7 +228,7 @@ Do the same as **yum install args**
 
 Do the same as **yum remove args**
 
-#### Update(args) (DONE) 
+#### Update(args) (DONE)  
 
 Do the same as **yum update args**
 
