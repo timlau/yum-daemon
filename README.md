@@ -69,8 +69,8 @@ API Definitions: (Work in Progress)
 ## Data
 
 
-*Package Id* = "name,epoch,version,release,arch,repoid" (Comma separated string)
-*Transaction Id* = "name,epoch,version,release,arch,repoid,ts_state" (Comma separated string)
+**Package Id** = "name,epoch,version,release,arch,repoid" (Comma separated string)
+**Transaction Id** = "name,epoch,version,release,arch,repoid,ts_state" (Comma separated string)
                 
 ## Locking
 
@@ -88,7 +88,7 @@ release the yum lock and delete the current yum instance
 
 return value from config
 
-SetConfig(option, value, persistant)
+#### SetConfig(option, value, persistant)
 set config option=value (for current session or persistant)
 
     
@@ -106,8 +106,8 @@ Disable repo
 
 get list with repos 
 filter = "" return enabled repositories
-filter = "<some pattern>" will return repo matching <some pattern>
-Ex. filter = "*" will return all repos., filter = "*-source" will return source repos
+filter = **some pattern** will return repo matching **some pattern**
+Ex. filter = **\*** will return all repos., filter = **\*-source** will return source repos
 
 #### GetRepo(repo_id) (DONE)
 
@@ -117,25 +117,25 @@ the information is returned as a dictinary in JSON format
 #### SetRepo(repo_id, repo_info)
 
 change repo info or create new one is not exists
-repo_info = {'name' : values,.......}
+**repo_info** = {'name' : values,.......}
 
 ## Packages
 
 #### GetPackages(pkg_narrow) (DONE)
 
 Return list of package ids
-pkg_narrow = installed|available|updates|obsoletes|.....
+**pkg_narrow** = installed|available|updates|obsoletes|.....
         
 #### GetPackagesByName(pattern, newest_only) (DONE)
 
 get a list of package ids where name matches pattern
-pattern ::= <pattern string> (ex. 'yum', 'yum*')
+**pattern** ::= \\<pattern string\\> (ex. 'yum', 'yum*')
 
 
 #### GetAttribute(pkg_id, attribute) (DONE)
 
 return an attribute value from at give pkg_id.
-attribute = <Yum Package attribute Name> (Ex. 'summanry', 'description')
+attribute = \<Yum Package attribute Name\> (Ex. 'summanry', 'description')
 it return a string there contains a python repr of the attribute
 ':none' will be returned if attribute dont exist.
 ':not-found' will be returned if no package matching pkg_id is found
@@ -245,7 +245,7 @@ Do the same as "yum downgrade args"
 This signal will be sent a evey progress callback when something is being downloaded (metadata, packages etc)
 
  * name : filename
- * frac : Progress fracment (0 -> 1)
+ * frac : Progress fracment (0 -\> 1)
  * fread : formated string containing !BytesRead
  * ftime : formated string containing remaining or elapsed time
 
