@@ -1,11 +1,11 @@
 import sys
 import os.path
-sys.path.insert(0,os.path.abspath('client/python2/'))
+sys.path.insert(0,os.path.abspath('client'))
 import unittest
 import dbus
 import json
 from datetime import date
-from client import YumDaemonClient
+from yumdaemon2 import YumDaemonClient
 
 class TestBase(unittest.TestCase):
     def __init__(self, methodName='runTest'):

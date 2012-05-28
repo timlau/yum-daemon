@@ -1,7 +1,7 @@
 PKGNAME = yumdaemon
 PKGDIR = /usr/share/$(PKGNAME)
 ORG_NAME = org.baseurl.Yum
-SUBDIRS = client/python2 client/python3
+SUBDIRS = client/yumdaemon2 client/yumdaemon3
 VERSION=$(shell awk '/Version:/ { print $$2 }' ${PKGNAME}.spec)
 PYTHON=python
 GITDATE=git$(shell date +%Y%m%d)

@@ -1,5 +1,5 @@
 PYTHON=python
-PACKAGE = yumdaemon
+PACKAGE = yumdaemon2
 PYFILES = $(wildcard *.py)
 PYVER := $(shell $(PYTHON) -c 'import sys; print "%.3s" %(sys.version)')
 PYSYSDIR := $(shell $(PYTHON) -c 'import sys; print sys.prefix')
@@ -10,11 +10,10 @@ all:
 	echo "Nothing to do"
 
 clean:
-	rm -f *.pyc *.pyo *~
+	rm -rf *.pyc *.pyo *~ __pycache__
 
 install:
 	mkdir -p $(DESTDIR)/$(PKGDIR)
 	for p in $(PYFILES) ; do \
 		install -m 755 $$p $(DESTDIR)/$(PKGDIR)/$$p; \
 	done
-	$(PYTHON) -c "import compileall; compileall.compile_dir('$(DESTDIR)/$(PKGDIR)', 1, '$(PYDIR)', 1)"

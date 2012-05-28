@@ -1,8 +1,8 @@
 import sys, os
-sys.path.insert(0,os.path.abspath('client/python2/'))
+sys.path.insert(0,os.path.abspath('client'))
 import dbus
 from base import TestBase
-from client import YumLockedError
+from yumdaemon2 import YumLockedError
 import unittest
 import json
 

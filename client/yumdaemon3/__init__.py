@@ -24,9 +24,10 @@ yum-daemon Dbus service.
 
 It use async call to the yum-daemon, so signal can be catched and a Gtk gui dont get unresonsive
 
-Usage: (Make your own subclass based on YumDaemonClient and overload the signal handlers)
+Usage: (Make your own subclass based on :class:`yumdaemon3.client.YumDaemonClient` and overload the signal handlers)::
 
-    from client import YumDaemonClient
+
+    from yumdaemon3.client import YumDaemonClient
     
     class MyClient(YumDaemonClient)
     
@@ -223,7 +224,7 @@ class YumDaemonClient:
 
     def GetRepositories(self, pkg_filter):
         '''        
-        @param filer:
+        :param filer:
         '''
         result = self.run_dbus_async('GetRepositories','(s)',pkg_filter)
         return [str(r) for r in result]
@@ -232,7 +233,7 @@ class YumDaemonClient:
     def GetRepo(self, repo_id):
         '''
         
-        @param repo_id:
+        :param repo_id:
         '''
         result = json.loads(self.run_dbus_async('GetRepo','(s)',repo_id))
         return result
@@ -242,8 +243,9 @@ class YumDaemonClient:
     def GetConfig(self, setting):
         '''
         get yum package attribute (summary, size etc)
-        @param id:
-        @param attr:
+        
+        :param id:
+        :param attr:
         '''
         result = json.loads(self.run_dbus_async('GetConfig','(s)',setting))
         return result
@@ -268,6 +270,7 @@ class YumDaemonClient:
     def GetUpdateInfo(self, pkg_id):
         '''
         Get Updateinfo for a package
+        
         :param pkg_id:
         '''
         result = self.run_dbus_async('GetUpdateInfo','(s)',pkg_id)
@@ -276,6 +279,7 @@ class YumDaemonClient:
     def GetPackages(self, pkg_filter):
         '''
         Get a list of pkg ids for a given filter (installed, updates ..)
+        
         :param pkg_filter: package filter ('installed','available','updates','obsoletes','recent','extras')
         '''
         return self.run_dbus_async('GetPackages','(s)',pkg_filter)
@@ -340,9 +344,10 @@ class YumDaemonClient:
     def Search(self, fields, keys, match_all):
         '''
         Search for packages where keys is matched in fields
-        @param fields:
-        @param keys:
-        @param match_all:
+        
+        :param fields:
+        :param keys:
+        :param match_all:
         '''
         return self.run_dbus_async('Search','(asasb)',fields, keys, match_all)
 

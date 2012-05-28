@@ -86,7 +86,7 @@ class YumDaemonClient:
     @catch_exception
     def GetRepositories(self, filter):
         '''        
-        @param filer:
+        :param filer:
         '''
         result = self.daemon.GetRepositories(filter, dbus_interface=DAEMON_INTERFACE)
         return [str(r) for r in result]
@@ -95,7 +95,7 @@ class YumDaemonClient:
     def GetRepo(self, repo_id):
         '''
         
-        @param repo_id:
+        :param repo_id:
         '''
         result = json.loads(self.daemon.GetRepo(repo_id, dbus_interface=DAEMON_INTERFACE))
         return result
@@ -105,8 +105,8 @@ class YumDaemonClient:
     def GetConfig(self, setting):
         '''
         get yum package attribute (summary, size etc)
-        @param id:
-        @param attr:
+        :param id:
+        :param attr:
         '''
         result = json.loads(self.daemon.GetConfig(setting, dbus_interface=DAEMON_INTERFACE))
         return result
@@ -115,8 +115,8 @@ class YumDaemonClient:
     def GetAttribute(self, id, attr):
         '''
         get yum package attribute (summary, size etc)
-        @param id:
-        @param attr:
+        :param id:
+        :param attr:
         '''
         result = self.daemon.GetAttribute(id, attr, dbus_interface=DAEMON_INTERFACE)
         if result == ':none': # illegal attribute
@@ -198,9 +198,9 @@ class YumDaemonClient:
     def Search(self, fields, keys, match_all):
         '''
         
-        @param fields:
-        @param keys:
-        @param match_all:
+        :param fields:
+        :param keys:
+        :param match_all:
         '''
         return self.daemon.Search(fields, keys, match_all, dbus_interface=DAEMON_INTERFACE, timeout=600)
 
