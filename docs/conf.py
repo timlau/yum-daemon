@@ -22,8 +22,7 @@ import sys, os
 # -- General configuration -----------------------------------------------------
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../server")))
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../client/python2")))
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../client/python3")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../client")))
 
 
 # If your documentation needs a minimal Sphinx version, state it here.
