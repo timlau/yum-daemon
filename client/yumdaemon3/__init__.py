@@ -205,12 +205,19 @@ class YumDaemonClient:
     
     
     def Lock(self):
+        '''
+        Get the yum lock, this give exclusive access to the daemon and yum
+        this must always be called before doing other actions
+        '''
         try:
             self.daemon.Lock()
         except Exception as err:
             self.handle_dbus_error(err)
 
     def Unlock(self):
+        '''
+        Release the yum lock
+        '''
         try:
             self.daemon.Unlock()
         except Exception as err:
@@ -256,10 +263,9 @@ class YumDaemonClient:
 
     def GetConfig(self, setting):
         '''
-        get yum package attribute (summary, size etc)
-        
-        :param id:
-        :param attr:
+        Read a config setting from yum.conf
+        :param setting: setting to read
+        :type setting: String
         '''
         result = json.loads(self.run_dbus_async('GetConfig','(s)',setting))
         return result
@@ -269,8 +275,8 @@ class YumDaemonClient:
         '''
         get yum package attribute (description, filelist, changelog etc)
 
-        :param pkg_id:
-        :param attr:
+        :param pkg_id: pkg_id to get attribute from
+        :param attr: name of attribute to get
         '''
         result = self.run_dbus_async('GetAttribute','(ss)',pkg_id, attr)
         if result == ':none': # illegal attribute
@@ -285,7 +291,7 @@ class YumDaemonClient:
         '''
         Get Updateinfo for a package
         
-        :param pkg_id:
+        :param pkg_id: pkg_id to get update info from
         '''
         result = self.run_dbus_async('GetUpdateInfo','(s)',pkg_id)
         return json.loads(result)
@@ -295,6 +301,8 @@ class YumDaemonClient:
         Get a list of pkg ids for a given filter (installed, updates ..)
         
         :param pkg_filter: package filter ('installed','available','updates','obsoletes','recent','extras')
+        :type pkg_filter: String
+        :return: list of pkg_id's
         '''
         return self.run_dbus_async('GetPackages','(s)',pkg_filter)
 
@@ -304,7 +312,9 @@ class YumDaemonClient:
         Get a list of pkg ids for starts with name
         
         :param name: name prefix to match
+        :type name: String
         :param newest_only: show only the newest match or every match.
+        :type newest_only: boolean
         '''
         return self.run_dbus_async('GetPackagesByName','(sb)',name, newest_only)
 
@@ -320,6 +330,8 @@ class YumDaemonClient:
     def GetTransaction(self):
         '''
         Get the current transaction
+        
+        :return: the current transaction
         '''
         return self.run_dbus_async('GetTransaction')
 
@@ -329,7 +341,9 @@ class YumDaemonClient:
         Add an package to the current transaction 
         
         :param id: package id for the package to add
+        :type id: String
         :param action: the action to perform ( install, update, remove, obsolete, reinstall, downgrade, localinstall )
+        :type action: String
         '''
         return self.run_dbus_async('AddTransaction','(ss)',id, action)
 
@@ -337,13 +351,19 @@ class YumDaemonClient:
     def Install(self, pattern):
         '''
         Do a install <pattern string>, same as yum install <pattern string>
-        '''
+         
+        :param pattern: package pattern to install
+        :type pattern: String
+       '''
         return self.run_dbus_async('Install','(s)',pattern)
 
 
     def Remove(self, pattern):
         '''
         Do a install <pattern string>, same as yum remove <pattern string>
+        
+        :param pattern: package pattern to remove
+        :type pattern: String
         '''
         return self.run_dbus_async('Remove','(s)',pattern)
 
@@ -351,6 +371,10 @@ class YumDaemonClient:
     def Update(self, pattern):
         '''
         Do a update <pattern string>, same as yum update <pattern string>
+        
+        :param pattern: package pattern to update
+        :type pattern: String
+
         '''
         return self.run_dbus_async('Update','(s)',pattern)
 
@@ -380,6 +404,10 @@ class YumDaemonClient:
     def Reinstall(self, pattern):
         '''
         Do a reinstall <pattern string>, same as yum reinstall <pattern string>
+        
+        :param pattern: package pattern to reinstall
+        :type pattern: String
+        
         '''
         return self.run_dbus_async('Reinstall','(s)',pattern)
 
@@ -387,6 +415,9 @@ class YumDaemonClient:
     def Downgrade(self, pattern):
         '''
         Do a install <pattern string>, same as yum remove <pattern string>
+        
+        :param pattern: package pattern to downgrade
+        :type pattern: String
         '''
         return self.run_dbus_async('Downgrade','(s)',pattern)
 
