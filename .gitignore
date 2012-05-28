@@ -3,4 +3,4 @@
 /.pydevproject
 /.settings/org.eclipse.core.resources.prefs
 *~
-
+docs/_*
