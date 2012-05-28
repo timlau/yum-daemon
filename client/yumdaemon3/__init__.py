@@ -24,10 +24,10 @@ yum-daemon Dbus service.
 
 It use async call to the yum-daemon, so signal can be catched and a Gtk gui dont get unresonsive
 
-Usage: (Make your own subclass based on :class:`yumdaemon3.client.YumDaemonClient` and overload the signal handlers)::
+Usage: (Make your own subclass based on :class:`yumdaemon3.YumDaemonClient` and overload the signal handlers)::
 
 
-    from yumdaemon3.client import YumDaemonClient
+    from yumdaemon3 import YumDaemonClient
     
     class MyClient(YumDaemonClient)
     
@@ -218,22 +218,36 @@ class YumDaemonClient:
         
         
     def GetPackageObjects(self, pkg_filter, fields):
+        '''
+        Get a list of pkg list for a given package filter  
+        each pkg list contains [pkg_id, field,....] where field is a atrribute of the package object  
+        Ex. summary, size etc.
+        
+        :param pkg_filter: package filter ('installed','available','updates','obsoletes','recent','extras')
+        :param fields: yum package objects attributes to get.
+        :type fields: list of Strings
+        '''
         result = self.run_dbus_async('GetPackageObjects','(sas)',pkg_filter, fields)
         return json.loads(result)
     
 
-    def GetRepositories(self, pkg_filter):
+    def GetRepositories(self, repo_filter):
         '''        
-        :param filer:
+        Get a list of repository ids where name matches a filter
+        
+        :param repo_filter: filter to match
+        :return: list of repo id's
         '''
-        result = self.run_dbus_async('GetRepositories','(s)',pkg_filter)
+        result = self.run_dbus_async('GetRepositories','(s)',repo_filter)
         return [str(r) for r in result]
 
 
     def GetRepo(self, repo_id):
         '''
+        Get a dictionary of information about a given repo id.
         
-        :param repo_id:
+        :param repo_id: repo id to get information from
+        :return: dictionary with repo info 
         '''
         result = json.loads(self.run_dbus_async('GetRepo','(s)',repo_id))
         return result
@@ -345,16 +359,20 @@ class YumDaemonClient:
         '''
         Search for packages where keys is matched in fields
         
-        :param fields:
-        :param keys:
-        :param match_all:
+        :param fields: yum po attributes to search in
+        :type fields: list of strings
+        :param keys: keys to search for
+        :type keys: list of strings
+        :param match_all: match all keys or only one
+        :type match_all: boolean
+        :return: list of pkg_id's
         '''
         return self.run_dbus_async('Search','(asasb)',fields, keys, match_all)
 
 
     def GetGroups(self):
         '''
-        
+        Get list of Groups
         '''
         return json.loads(self.run_dbus_async('GetGroups'))
 

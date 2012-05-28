@@ -16,6 +16,34 @@
 #
 # (C) 2011 - Tim Lauridsen <timlau@fedoraproject.org>
 
+"""
+This is a Python 2.x client API for the yumdaemon Dbus Service
+
+This module gives a simple pythonic interface to doing Yum package action using the 
+yum-daemon Dbus service.
+
+It uses synchronous call to the DBus service
+
+Example::
+
+    from yumdaemon2 import YumDaemonClient
+    
+    try:
+        cli = YumDaemonClient()
+        cli.Lock()
+        pkgs = cli.GetPackagesByName('yum', newest_only=False) # get packages where names starts with yum
+        for pkg in pkgs:
+            print(pkg)
+        
+    except AccessDeniedError, e: # Catch if user press Cancel in the PolicyKit dialog
+        print('Access denied')
+    except YumLockedError, e: # Catch if user press Cancel in the PolicyKit dialog
+        print('Yum is locked by another application')
+
+
+
+"""
+
 import os
 import dbus
 import sys
