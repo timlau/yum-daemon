@@ -277,37 +277,37 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                                           in_signature='s', 
                                           out_signature='as',
                                           sender_keyword='sender')
-    def GetPackages(self, narrow, sender=None):
+    def GetPackages(self, pkg_filter, sender=None):
         '''
-        Get a list of package ids, based on a package narrower
-        :param narrow: pkg narrow string ('installed','updates' etc)
+        Get a list of package ids, based on a package pkg_filterer
+        :param pkg_filter: pkg pkg_filter string ('installed','updates' etc)
         :param sender:
         '''
         self.working_start(sender)
-        if narrow in ['installed','available','updates','obsoletes','recent','extras']:
-            yh = self.yumbase.doPackageLists(pkgnarrow=narrow)
-            pkgs = getattr(yh,narrow)
+        if pkg_filter in ['installed','available','updates','obsoletes','recent','extras']:
+            yh = self.yumbase.doPackageLists(pkgnarrow=pkg_filter)
+            pkgs = getattr(yh,pkg_filter)
             value = self._to_package_id_list(pkgs)
         else:
             value = []
         return self.working_ended(value)
 
     @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='s', 
+                                          in_signature='sas', 
                                           out_signature='s',
                                           sender_keyword='sender')
-    def GetPackageObjects(self, narrow, sender=None):
+    def GetPackageObjects(self, pkg_filter, fields, sender=None):
         '''
-        Get a list of package ids, based on a package narrower
-        :param narrow: pkg narrow string ('installed','updates' etc)
+        Get a list of package ids, based on a package pkg_filterer
+        :param pkg_filter: pkg pkg_filter string ('installed','updates' etc)
         :param sender:
         '''
         self.working_start(sender)
         value = []
-        if narrow in ['installed','available','updates','obsoletes','recent','extras']:
-            yh = self.yumbase.doPackageLists(pkgnarrow=narrow)
-            pkgs = getattr(yh,narrow)
-            value = [self._get_po_tuple(po) for po in pkgs]
+        if pkg_filter in ['installed','available','updates','obsoletes','recent','extras']:
+            yh = self.yumbase.doPackageLists(pkgnarrow=pkg_filter)
+            pkgs = getattr(yh,pkg_filter)
+            value = [self._get_po_list(po,fields) for po in pkgs]
             return self.working_ended(json.dumps(value))
         
     @dbus.service.method(DAEMON_INTERFACE, 
@@ -331,7 +331,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         
         
     @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='ss', 
+                                          in_signature='sas', 
                                           out_signature='s',
                                           sender_keyword='sender')
     def GetAttribute(self, id, attr,sender=None):
@@ -700,10 +700,14 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         self._is_working = False
         return value
     
-    def _get_po_tuple(self, pkg):
-        values = [pkg.name, pkg.epoch, pkg.ver, pkg.rel, pkg.arch, pkg.ui_from_repo]
-        po_tuple = (",".join(values), pkg.summary, pkg.size)
-        return po_tuple
+    def _get_po_list(self, pkg, fields):
+        
+        id = ",".join([pkg.name, pkg.epoch, pkg.ver, pkg.rel, pkg.arch, pkg.ui_from_repo])
+        po_list = [id]
+        for field in fields:
+            if hasattr(pkg,field):
+                po_list.append(getattr(pkg,field))
+        return po_list
         
         
         

@@ -216,8 +216,8 @@ class YumDaemonClient:
             self.handle_dbus_error(err)
         
         
-    def GetPackageObjects(self, pkg_filter):
-        result = self.run_dbus_async('GetPackageObjects','(s)',pkg_filter)
+    def GetPackageObjects(self, pkg_filter, fields):
+        result = self.run_dbus_async('GetPackageObjects','(sas)',pkg_filter, fields)
         return json.loads(result)
     
 
@@ -395,7 +395,7 @@ if __name__ == "__main__":
         print("=" * 70)
         print("Getting Update")
         print("=" * 70)
-        result = client.GetPackageObjects('updates')
+        result = client.GetPackageObjects('updates',['summary','size'])
         for (pkg_id,summary,size) in result:
             print("%s\n\tsummary : %s\n\tsize : %s" % (pkg_id,summary,size))
         print("=" * 70)
