@@ -72,6 +72,9 @@ class YumTransactionError(YumDaemonError):
     'The yum transaction failed'
     
 class DBus:
+    '''
+    Helper class to work with GDBus in a easier way
+    '''
     def __init__(self, conn):
         self.conn = conn
 
@@ -90,6 +93,9 @@ class DBus:
         )
 
 class WeakMethod:
+    '''
+    helper class to work with a weakref class method
+    '''
     def __init__(self, inst, method):
         self.proxy = weakref.proxy(inst)
         self.method = method
@@ -104,6 +110,9 @@ system = DBus(Gio.bus_get_sync(Gio.BusType.SYSTEM, None))
     
     
 class YumDaemonClient:
+    '''
+    A class to communicate with the yumdaemon DBus services in a easy way
+    '''
 
     def __init__(self):
         self.daemon = self._get_daemon() 
@@ -117,7 +126,7 @@ class YumDaemonClient:
             proxy.connect('g-signal', WeakMethod(self, '_on_g_signal')) # Connect the Dbus signal handler
             return proxy
         except Exception as err:
-            self.handle_dbus_error(err)
+            self._handle_dbus_error(err)
 
     def _on_g_signal(self, proxy, sender, signal, params):
         '''
@@ -153,8 +162,13 @@ class YumDaemonClient:
         print("RPMProgress : %s %s" % (action, package))
             
             
-    def handle_dbus_error(self, err):            
-        exc, msg = self.parse_error()
+    def _handle_dbus_error(self, err):            
+        '''
+        Parse error from service and raise python Exceptions
+        :param err:
+        :type err:
+        '''
+        exc, msg = self._parse_error()
         if exc == DAEMON_ORG+'.AccessDeniedError':
             raise AccessDeniedError(msg)
         elif exc == DAEMON_ORG+'.YumLockedError':
@@ -166,7 +180,10 @@ class YumDaemonClient:
         else:
             raise YumDaemonError(str(err))
             
-    def parse_error(self):
+    def _parse_error(self):
+        '''
+        parse values from a DBus releated exception
+        '''
         (type, value, traceback) = sys.exc_info()
         res = DBUS_ERR_RE.match(str(value))
         if res:
@@ -174,6 +191,15 @@ class YumDaemonClient:
         return "",""       
 
     def _return_handler(self, obj, result, user_data):
+        '''
+        Async DBus call, return handler
+        :param obj:
+        :type obj:
+        :param result:
+        :type result:
+        :param user_data:
+        :type user_data:
+        '''
         if isinstance(result, Exception):
             #print(result)
             user_data['result'] = None
@@ -184,12 +210,22 @@ class YumDaemonClient:
         user_data['main_loop'].quit()
         
     def _get_result(self, user_data):
+        '''
+        Get return data from async call or handle error
+        :param user_data:
+        :type user_data:
+        '''
         if user_data['error']: # Errors
-            self.handle_dbus_error(user_data['error'])
+            self._handle_dbus_error(user_data['error'])
         else:
             return user_data['result']
         
-    def run_dbus_async(self, cmd, *args):
+    def _run_dbus_async(self, cmd, *args):
+        '''
+        Make an async call to a DBus method in the yumdaemon service
+        :param cmd: method to run
+        :type cmd: string
+        '''
         main_loop = GObject.MainLoop()
         data = {'main_loop': main_loop}
         func = getattr(self.daemon,cmd)
@@ -199,7 +235,12 @@ class YumDaemonClient:
         return result      
         
 
-    def run_dbus_sync(self, cmd, *args):
+    def _run_dbus_sync(self, cmd, *args):
+        '''
+        Make a sync call to a DBus method in the yumdaemon service
+        :param cmd:
+        :type cmd:
+        '''
         func = getattr(self.daemon,cmd)
         return func(*args)
     
@@ -212,7 +253,7 @@ class YumDaemonClient:
         try:
             self.daemon.Lock()
         except Exception as err:
-            self.handle_dbus_error(err)
+            self._handle_dbus_error(err)
 
     def Unlock(self):
         '''
@@ -221,7 +262,7 @@ class YumDaemonClient:
         try:
             self.daemon.Unlock()
         except Exception as err:
-            self.handle_dbus_error(err)
+            self._handle_dbus_error(err)
         
         
     def GetPackageObjects(self, pkg_filter, fields):
@@ -231,10 +272,11 @@ class YumDaemonClient:
         Ex. summary, size etc.
         
         :param pkg_filter: package filter ('installed','available','updates','obsoletes','recent','extras')
+        :type pkg_filter: String
         :param fields: yum package objects attributes to get.
         :type fields: list of Strings
         '''
-        result = self.run_dbus_async('GetPackageObjects','(sas)',pkg_filter, fields)
+        result = self._run_dbus_async('GetPackageObjects','(sas)',pkg_filter, fields)
         return json.loads(result)
     
 
@@ -245,7 +287,7 @@ class YumDaemonClient:
         :param repo_filter: filter to match
         :return: list of repo id's
         '''
-        result = self.run_dbus_async('GetRepositories','(s)',repo_filter)
+        result = self._run_dbus_async('GetRepositories','(s)',repo_filter)
         return [str(r) for r in result]
 
 
@@ -256,7 +298,7 @@ class YumDaemonClient:
         :param repo_id: repo id to get information from
         :return: dictionary with repo info 
         '''
-        result = json.loads(self.run_dbus_async('GetRepo','(s)',repo_id))
+        result = json.loads(self._run_dbus_async('GetRepo','(s)',repo_id))
         return result
 
     
@@ -267,7 +309,7 @@ class YumDaemonClient:
         :param setting: setting to read
         :type setting: String
         '''
-        result = json.loads(self.run_dbus_async('GetConfig','(s)',setting))
+        result = json.loads(self._run_dbus_async('GetConfig','(s)',setting))
         return result
             
 
@@ -278,7 +320,7 @@ class YumDaemonClient:
         :param pkg_id: pkg_id to get attribute from
         :param attr: name of attribute to get
         '''
-        result = self.run_dbus_async('GetAttribute','(ss)',pkg_id, attr)
+        result = self._run_dbus_async('GetAttribute','(ss)',pkg_id, attr)
         if result == ':none': # illegal attribute
             result = None
         elif result == ':not_found': # package not found
@@ -293,7 +335,7 @@ class YumDaemonClient:
         
         :param pkg_id: pkg_id to get update info from
         '''
-        result = self.run_dbus_async('GetUpdateInfo','(s)',pkg_id)
+        result = self._run_dbus_async('GetUpdateInfo','(s)',pkg_id)
         return json.loads(result)
 
     def GetPackages(self, pkg_filter):
@@ -304,7 +346,7 @@ class YumDaemonClient:
         :type pkg_filter: String
         :return: list of pkg_id's
         '''
-        return self.run_dbus_async('GetPackages','(s)',pkg_filter)
+        return self._run_dbus_async('GetPackages','(s)',pkg_filter)
 
 
     def GetPackagesByName(self, name, newest_only=True):
@@ -316,14 +358,14 @@ class YumDaemonClient:
         :param newest_only: show only the newest match or every match.
         :type newest_only: boolean
         '''
-        return self.run_dbus_async('GetPackagesByName','(sb)',name, newest_only)
+        return self._run_dbus_async('GetPackagesByName','(sb)',name, newest_only)
 
 
     def ClearTransaction(self):
         '''
         Clear the current transaction
         '''
-        return self.run_dbus_async('ClearTransaction')
+        return self._run_dbus_async('ClearTransaction')
 
 
 
@@ -333,7 +375,7 @@ class YumDaemonClient:
         
         :return: the current transaction
         '''
-        return self.run_dbus_async('GetTransaction')
+        return self._run_dbus_async('GetTransaction')
 
 
     def AddTransaction(self, id, action):
@@ -345,7 +387,7 @@ class YumDaemonClient:
         :param action: the action to perform ( install, update, remove, obsolete, reinstall, downgrade, localinstall )
         :type action: String
         '''
-        return self.run_dbus_async('AddTransaction','(ss)',id, action)
+        return self._run_dbus_async('AddTransaction','(ss)',id, action)
 
 
     def Install(self, pattern):
@@ -355,7 +397,7 @@ class YumDaemonClient:
         :param pattern: package pattern to install
         :type pattern: String
        '''
-        return self.run_dbus_async('Install','(s)',pattern)
+        return self._run_dbus_async('Install','(s)',pattern)
 
 
     def Remove(self, pattern):
@@ -365,7 +407,7 @@ class YumDaemonClient:
         :param pattern: package pattern to remove
         :type pattern: String
         '''
-        return self.run_dbus_async('Remove','(s)',pattern)
+        return self._run_dbus_async('Remove','(s)',pattern)
 
 
     def Update(self, pattern):
@@ -376,7 +418,7 @@ class YumDaemonClient:
         :type pattern: String
 
         '''
-        return self.run_dbus_async('Update','(s)',pattern)
+        return self._run_dbus_async('Update','(s)',pattern)
 
 
     def Search(self, fields, keys, match_all):
@@ -391,14 +433,14 @@ class YumDaemonClient:
         :type match_all: boolean
         :return: list of pkg_id's
         '''
-        return self.run_dbus_async('Search','(asasb)',fields, keys, match_all)
+        return self._run_dbus_async('Search','(asasb)',fields, keys, match_all)
 
 
     def GetGroups(self):
         '''
         Get list of Groups
         '''
-        return json.loads(self.run_dbus_async('GetGroups'))
+        return json.loads(self._run_dbus_async('GetGroups'))
 
 
     def Reinstall(self, pattern):
@@ -409,7 +451,7 @@ class YumDaemonClient:
         :type pattern: String
         
         '''
-        return self.run_dbus_async('Reinstall','(s)',pattern)
+        return self._run_dbus_async('Reinstall','(s)',pattern)
 
 
     def Downgrade(self, pattern):
@@ -419,7 +461,7 @@ class YumDaemonClient:
         :param pattern: package pattern to downgrade
         :type pattern: String
         '''
-        return self.run_dbus_async('Downgrade','(s)',pattern)
+        return self._run_dbus_async('Downgrade','(s)',pattern)
 
 
 
@@ -427,19 +469,19 @@ class YumDaemonClient:
         '''
         Get a list of pkg ids for the current availabe updates
         '''
-        return self.run_dbus_async('BuildTransaction')
+        return self._run_dbus_async('BuildTransaction')
 
 
     def RunTransaction(self):
         '''
         Get a list of pkg ids for the current availabe updates
         '''
-        self.run_dbus_async('RunTransaction')
+        self._run_dbus_async('RunTransaction')
 
     
     def Exit(self):
         ''' End the daemon'''
-        self.run_dbus_async('Exit')
+        self._run_dbus_async('Exit')
     
 
 if __name__ == "__main__":
