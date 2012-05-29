@@ -21,7 +21,6 @@ import sys, os
 
 # -- General configuration -----------------------------------------------------
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../")))
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../server")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../client")))
 
 

@@ -272,9 +272,9 @@ class YumDaemonClient:
         Ex. summary, size etc.
         
         :param pkg_filter: package filter ('installed','available','updates','obsoletes','recent','extras')
-        :type pkg_filter: String
+        :type pkg_filter: string
         :param fields: yum package objects attributes to get.
-        :type fields: list of Strings
+        :type fields: list of strings
         '''
         result = self._run_dbus_async('GetPackageObjects','(sas)',pkg_filter, fields)
         return json.loads(result)
@@ -307,7 +307,7 @@ class YumDaemonClient:
         '''
         Read a config setting from yum.conf
         :param setting: setting to read
-        :type setting: String
+        :type setting: string
         '''
         result = json.loads(self._run_dbus_async('GetConfig','(s)',setting))
         return result
@@ -343,8 +343,9 @@ class YumDaemonClient:
         Get a list of pkg ids for a given filter (installed, updates ..)
         
         :param pkg_filter: package filter ('installed','available','updates','obsoletes','recent','extras')
-        :type pkg_filter: String
+        :type pkg_filter: string
         :return: list of pkg_id's
+        :rtype: list of strings
         '''
         return self._run_dbus_async('GetPackages','(s)',pkg_filter)
 
@@ -354,9 +355,10 @@ class YumDaemonClient:
         Get a list of pkg ids for starts with name
         
         :param name: name prefix to match
-        :type name: String
+        :type name: string
         :param newest_only: show only the newest match or every match.
         :type newest_only: boolean
+        :return: list of pkg_is's
         '''
         return self._run_dbus_async('GetPackagesByName','(sb)',name, newest_only)
 
@@ -383,9 +385,9 @@ class YumDaemonClient:
         Add an package to the current transaction 
         
         :param id: package id for the package to add
-        :type id: String
+        :type id: string
         :param action: the action to perform ( install, update, remove, obsolete, reinstall, downgrade, localinstall )
-        :type action: String
+        :type action: string
         '''
         return self._run_dbus_async('AddTransaction','(ss)',id, action)
 
@@ -395,7 +397,7 @@ class YumDaemonClient:
         Do a install <pattern string>, same as yum install <pattern string>
          
         :param pattern: package pattern to install
-        :type pattern: String
+        :type pattern: string
        '''
         return self._run_dbus_async('Install','(s)',pattern)
 
@@ -405,7 +407,7 @@ class YumDaemonClient:
         Do a install <pattern string>, same as yum remove <pattern string>
         
         :param pattern: package pattern to remove
-        :type pattern: String
+        :type pattern: string
         '''
         return self._run_dbus_async('Remove','(s)',pattern)
 
@@ -415,7 +417,7 @@ class YumDaemonClient:
         Do a update <pattern string>, same as yum update <pattern string>
         
         :param pattern: package pattern to update
-        :type pattern: String
+        :type pattern: string
 
         '''
         return self._run_dbus_async('Update','(s)',pattern)
@@ -448,7 +450,7 @@ class YumDaemonClient:
         Do a reinstall <pattern string>, same as yum reinstall <pattern string>
         
         :param pattern: package pattern to reinstall
-        :type pattern: String
+        :type pattern: string
         
         '''
         return self._run_dbus_async('Reinstall','(s)',pattern)
@@ -459,7 +461,7 @@ class YumDaemonClient:
         Do a install <pattern string>, same as yum remove <pattern string>
         
         :param pattern: package pattern to downgrade
-        :type pattern: String
+        :type pattern: string
         '''
         return self._run_dbus_async('Downgrade','(s)',pattern)
 
