@@ -1,5 +1,5 @@
 ==========================================
-yumdaemon DBus client API for Python 3.x
+Client API for Python 3.x
 ==========================================
 
 .. automodule:: yumdaemon3

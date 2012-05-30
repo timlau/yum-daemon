@@ -1,15 +1,49 @@
 ==========================================
-yumdaemon DBus service API documentation
+DBus service API documentation
 ==========================================
 
 The yumdaemon is an easy way to utililize the power of the yum package manager from your own programs
 
+Data structures
+----------------
 
+.. table:: **Data structures**
 
+   =================================  =================================
+   Name                               Content
+   =================================  =================================
+   Package Id (pkg_id)                "name,epoch,ver,rel,arch,repo_id"
+   Transaction List (tx_list)	      "pkg_id,ts_state"		 
+   =================================  =================================
+   
+|
+   
+.. table:: **Attribute Descriptions**
 
-API Methods
-=============
+   ================  =========================================================
+   Attribute         Description
+   ================  =========================================================
+   name              Package Name
+   epoch             Package Epoch
+   ver               Package Version
+   rel               Package Release
+   arch				 Package Architecture
+   repo_id			 Repository Id
+   ts_state			 Transaction Member state
+   ================  =========================================================
+   
+Transaction result::
 
+	<transaction_result> ::= <result>, <result>, ...., <result>
+	<result>             ::= <action>, <pkg_list>
+	<action>             ::= install | update | remove | install-deps | update-deps | remove-deps | skipped
+	<plg_list>           ::= <pkg_info>, <pkg_info>, ......, <pkg_info>
+	<pkg_info>           ::= <pkg_id>, size, <obs_list>
+	<pkg_id>             ::= name, epoch, version, release, arch, repo_id
+	<obs_list>           ::= <obs_id>, <obs_id>, ...., <obs_id>
+	<obs_id>             ::= name, epoch, version, release, arch, repo_id for packages obsoletes by <pkg_id>
+   
+ 
 Misc methods
 -------------
 
@@ -45,8 +79,8 @@ Repository and config methods
 
    :param repo_id: repo id 
    :type repo_id: string
-   :return: a dictionary with repo information
-   :rtype: JSON string (s)
+   :return: a dictionary with repo information **(JSON)**
+   :rtype: string (s)
 
 
 .. py:function:: GetConfig(setting)
@@ -55,8 +89,8 @@ Repository and config methods
 
    :param setting: name of setting (debuglevel etc..)
    :type setting: string
-   :return:  the config value of the requested setting
-   :rtype: JSON string (s)
+   :return: the config value of the requested setting **(JSON)**
+   :rtype: string (s)
 
 Package methods
 ----------------
@@ -84,8 +118,8 @@ These methods is for getting packages and information about packages
    :type pkg_filter: string
    :param fields: yum package objects attributes to get.
    :type fields: array of strings (as)
-   :return: list of (id, field1, field2...)
-   :rtype: array of JSON strings (as) , each JSON Sting contains (id, field1, field2...)
+   :return: list of (id, field1, field2...) **(JSON)**, each JSON Sting contains (id, field1, field2...)
+   :rtype: array of strings (as) 
 
 .. py:function:: GetPackagesByName(name, newest_only)
 
@@ -106,7 +140,9 @@ These methods is for getting packages and information about packages
    :param pkg_id: pkg_id to get attribute from
    :type pkg_id: string
    :param attr: name of attribute to get
-   :type attr: JSON string (s), the content depend on attribute being read
+   :type attr: string
+   :return: the value of the attribute **(JSON)**, the content depend on attribute being read
+   :rtype:  string (s)
    
 .. py:function:: GetUpdateInfo(id)
  
@@ -114,7 +150,7 @@ These methods is for getting packages and information about packages
         
    :param pkg_id: pkg_id to get update info from
    :type pkg_id: string
-   :return: update info for the package (JSON)
+   :return: update info for the package **(JSON)**
    :rtype: string (s)
 
 .. py:function:: Search(fields, keys, match_all )
@@ -141,47 +177,47 @@ Works just like the ``yum install <cmds>`` command line
 
    :param cmds: package arguments separated by spaces
    :type cmds: string
-   :return: return code, result of resolved transaction (rc = 2 is ok, else failure)
-   :rtype: (return code, transaction) encoded as JSON string
+   :return: return code, result of resolved transaction (rc = 2 is ok, else failure) **(JSON)**
+   :rtype: string (s)
 
 .. py:function:: Remove(cmds)
 
-Works just like the ``yum install <cmds>`` command line
+   Works just like the ``yum install <cmds>`` command line
 
    :param cmds: package arguments separated by spaces
    :type cmds: string
-   :return: return code, result of resolved transaction (rc = 2 is ok, else failure)
-   :rtype: (return code, transaction) encoded as JSON string
+   :return: return code, result of resolved transaction (rc = 2 is ok, else failure) **(JSON)**
+   :rtype: string (s)
 
 
 .. py:function:: Update(cmds)
 
-Works just like the ``yum install <cmds>`` command line
+   Works just like the ``yum install <cmds>`` command line
 
    :param cmds: package arguments separated by spaces
    :type cmds: string
-   :return: return code, result of resolved transaction (rc = 2 is ok, else failure)
-   :rtype: (return code, transaction) encoded as JSON string
+   :return: return code, result of resolved transaction (rc = 2 is ok, else failure) **(JSON)**
+   :rtype: string (s)
 
 
 .. py:function:: Reinstall(cmds)
 
-Works just like the ``yum install <cmds>`` command line
+   Works just like the ``yum install <cmds>`` command line
 
    :param cmds: package arguments separated by spaces
    :type cmds: string
-   :return: return code, result of resolved transaction (rc = 2 is ok, else failure)
-   :rtype: (return code, transaction) encoded as JSON string
+   :return: return code, result of resolved transaction (rc = 2 is ok, else failure) **(JSON)**
+   :rtype: string (s)
 
 
 .. py:function:: Downgrade(cmds)
 
-Works just like the ``yum install <cmds>`` command line
+   Works just like the ``yum install <cmds>`` command line
 
    :param cmds: package arguments separated by spaces
    :type cmds: string
-   :return: return code, result of resolved transaction (rc = 2 is ok, else failure)
-   :rtype: (return code, transaction) encoded as JSON string
+   :return: return code, result of resolved transaction (rc = 2 is ok, else failure) **(JSON)**
+   :rtype: string (s)
 
 
 
@@ -197,6 +233,8 @@ These methods is for handling the current yum transaction
    :type id: string
    :param action: the action to perform ( install, update, remove, obsolete, reinstall, downgrade, localinstall )
    :type action: string
+   :return: list of (pkg_id, transaction state) pairs for the added members (comma separated)
+   :rtype: array of strings (as)
 
 .. py:function:: ClearTransaction()
 
@@ -205,13 +243,16 @@ These methods is for handling the current yum transaction
 .. py:function:: GetTransaction()
 
    Get the currrent transaction
+
+   :return: list of (pkg_id, transaction state) pairs in the current transaction (comma separated)
+   :rtype: array of strings (as)
    
 .. py:function:: BuildTransaction()
 
    Depsolve the current transaction
    
-   :return: return code, result of resolved transaction (rc = 2 is ok, else failure)
-   :rtype: (return code, transaction) encoded as JSON string
+   :return: (return code, result of resolved transaction) pair (rc = 2 is ok, else failure) **(JSON)**
+   :rtype: string (s)
    
 	
 .. py:function:: RunTransaction()
@@ -225,14 +266,17 @@ Methods to work with yum groups and categories
 
 .. py:function:: GetGroups( )
 
-.. note::
+   Get available group id's
+
+.. note:: Under Development
    
    More to come in the future, methods to install groups etc. has to be defined and implemented
+
 History
 --------
 
 Methods to work with the yum history
 
-.. note::
+.. note:: Under Development
    
    Has not been defined and implemented yet

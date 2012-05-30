@@ -29,7 +29,7 @@ Usage: (Make your own subclass based on :class:`yumdaemon3.YumDaemonClient` and 
 
     from yumdaemon3 import YumDaemonClient
     
-    class MyClient(YumDaemonClient)
+    class MyClient(YumDaemonClient):
     
         def __init(self):
             YumDaemonClient.__init__(self)
@@ -37,12 +37,15 @@ Usage: (Make your own subclass based on :class:`yumdaemon3.YumDaemonClient` and 
             
         def on_UpdateProgress(self,name,frac,fread,ftime):
             # Do your stuff here
+            pass
     
         def on_TransactionEvent(self,event):
             # Do your stuff here
+            pass
     
         def on_RPMProgress(self, package, action, te_current, te_total, ts_current, ts_total):
             # Do your stuff here
+            pass
         
 
 """

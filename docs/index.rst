@@ -14,6 +14,7 @@ Contents:
    server
    client-python3
    client-python2
+   examples
 
 
 Indices and tables

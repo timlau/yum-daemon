@@ -1,5 +1,5 @@
 ==========================================
-yumdaemon DBus client API for Python 2.x
+Client API for Python 2.x
 ==========================================
 
 .. automodule:: yumdaemon2
