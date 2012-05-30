@@ -399,7 +399,7 @@ class YumDaemonClient:
         :param pattern: package pattern to install
         :type pattern: string
        '''
-        return self._run_dbus_async('Install','(s)',pattern)
+        return json.loads(self._run_dbus_async('Install','(s)',pattern))
 
 
     def Remove(self, pattern):
@@ -409,7 +409,7 @@ class YumDaemonClient:
         :param pattern: package pattern to remove
         :type pattern: string
         '''
-        return self._run_dbus_async('Remove','(s)',pattern)
+        return json.loads(self._run_dbus_async('Remove','(s)',pattern))
 
 
     def Update(self, pattern):
@@ -420,7 +420,7 @@ class YumDaemonClient:
         :type pattern: string
 
         '''
-        return self._run_dbus_async('Update','(s)',pattern)
+        return json.loads(self._run_dbus_async('Update','(s)',pattern))
 
 
     def Search(self, fields, keys, match_all):
@@ -453,7 +453,7 @@ class YumDaemonClient:
         :type pattern: string
         
         '''
-        return self._run_dbus_async('Reinstall','(s)',pattern)
+        return json.loads(self._run_dbus_async('Reinstall','(s)',pattern))
 
 
     def Downgrade(self, pattern):
@@ -463,7 +463,7 @@ class YumDaemonClient:
         :param pattern: package pattern to downgrade
         :type pattern: string
         '''
-        return self._run_dbus_async('Downgrade','(s)',pattern)
+        return json.loads(self._run_dbus_async('Downgrade','(s)',pattern))
 
 
 
@@ -485,34 +485,5 @@ class YumDaemonClient:
         ''' End the daemon'''
         self._run_dbus_async('Exit')
     
-
-if __name__ == "__main__":
-    try:
-        client = YumDaemonClient()
-        client.Lock()
-        print("=" * 70)
-        print("Getting Update")
-        print("=" * 70)
-        result = client.GetPackageObjects('updates',['summary','size'])
-        for (pkg_id,summary,size) in result:
-            print("%s\n\tsummary : %s\n\tsize : %s" % (pkg_id,summary,size))
-        print("=" * 70)
-        print("Search : yum ")
-        print("=" * 70)
-        result = client.Search(["name"],["yum"], True)
-        for id in result:
-            print(" --> %s" %id)
-        client.Unlock()
-    except AccessDeniedError as err:
-        print("Access Denied : \n\t"+str(err))
-    except YumLockedError as err:
-        print("Yum Locked : \n\t"+str(err))
-    except YumTransactionError as err:
-        print("Yum Transaction Error : \n\t"+str(err))
-    except YumDaemonError as err:    
-        print("Error in Yum Backend : \n\t"+str(err))
-        print(err)
-        sys.exit(1)
-        
 
         
