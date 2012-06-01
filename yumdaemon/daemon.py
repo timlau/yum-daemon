@@ -131,6 +131,22 @@ class RPMCallback(RPMBaseCallback):
         output (if any)."""
         pass
            
+logger = logging.getLogger('yumdaemon')
+           
+def Logger(func):
+    """
+    This decorator catch yum exceptions and send fatal signal to frontend 
+    """
+    def newFunc(*args, **kwargs):
+        logger.debug("%s started args: %s " % (func.__name__, repr(args[1:])))
+        rc = func(*args, **kwargs)
+        logger.debug("%s ended" % func.__name__)
+        return rc
+
+    newFunc.__name__ = func.__name__
+    newFunc.__doc__ = func.__doc__
+    newFunc.__dict__.update(func.__dict__)
+    return newFunc           
 
 #------------------------------------------------------------------------------ Main class
 class YumDaemon(dbus.service.Object, DownloadBaseCallback):
@@ -147,6 +163,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         self._can_quit = True
         self._is_working = False
         self._watchdog_count = 0
+        self._watchdog_disabled = False
         self._timeout_idle = 20         # time to daemon is closed when unlocked
         self._timeout_locked = 600      # time to daemon is closed when locked and not working
         self._updateMetadata = None     # Cache for yum UpdateMetadata object
@@ -164,16 +181,17 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
 # DBus Methods
 #===============================================================================
 
-
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
-                                          out_signature='i') 
+                                          out_signature='i')
     def GetVersion(self):
         '''
         Get the daemon version
         '''
         return version
 
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
                                           out_signature='b',
@@ -191,6 +209,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         else:
             return False
 
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
                                           out_signature='b',
@@ -211,10 +230,28 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                 raise YumLockedError(str(e))
         return False
 
+    @Logger
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='b', 
+                                          out_signature='b',
+                                          sender_keyword='sender')
+    def SetWatchdogState(self,state, sender=None):
+        '''
+        Set the Watchdog state 
+        :param state: True = Watchdog active, False = Watchdog disabled
+        :type state: boolean (b)
+        '''
+        self.check_permission(sender)
+        self._watchdog_disabled = not state
+        return state
+
+
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
                                           out_signature='as',
                                           sender_keyword='sender')
+
     def GetRepositories(self, filter, sender=None):
         '''
         Get the value a list of repo ids
@@ -231,6 +268,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         return self.working_ended(repos)
             
         
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
                                           out_signature='s',
@@ -253,6 +291,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             value = json.dumps(None)
         return self.working_ended(value)
         
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
                                           out_signature='s',
@@ -273,6 +312,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             value = json.dumps(None)
         return self.working_ended(value)
 
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
                                           out_signature='as',
@@ -292,6 +332,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             value = []
         return self.working_ended(value)
 
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='sas', 
                                           out_signature='s',
@@ -310,6 +351,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             value = [self._get_po_list(po,fields) for po in pkgs]
             return self.working_ended(json.dumps(value))
         
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='sb', 
                                           out_signature='as',
@@ -330,6 +372,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         return self.working_ended(value)
         
         
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='sas', 
                                           out_signature='s',
@@ -353,6 +396,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             value = json.dumps(None)        
         return self.working_ended(value)
             
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
                                           out_signature='s',
@@ -376,6 +420,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
 
     
     
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
                                           out_signature='b',
@@ -389,6 +434,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             self._lock = None
             return True
 
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
                                           out_signature='s',
@@ -406,6 +452,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         value = self._build_transaction()        
         return self.working_ended(value)
     
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
                                           out_signature='s',
@@ -423,6 +470,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         value = self._build_transaction()        
         return self.working_ended(value)
     
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
                                           out_signature='s',
@@ -444,6 +492,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         value = self._build_transaction()        
         return self.working_ended(value)
 
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
                                           out_signature='s',
@@ -461,6 +510,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         value = self._build_transaction()        
         return self.working_ended(value)
 
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='s', 
                                           out_signature='s',
@@ -479,6 +529,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         return self.working_ended(value)
 
 
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='ss', 
                                           out_signature='as',
@@ -510,6 +561,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         value = self._to_transaction_id_list(txmbrs)
         return self.working_ended(value)
     
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
                                           out_signature='',
@@ -524,6 +576,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         return self.working_ended()
         
 
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
                                           out_signature='as',
@@ -539,6 +592,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         return self.working_ended(value)
 
     
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
                                           out_signature='s',
@@ -565,6 +619,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         self.TransactionEvent('end-build')
         return json.dumps((rc,output))
     
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
                                           out_signature='',
@@ -593,6 +648,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             self.working_ended()
             raise YumTransactionError(str(e))
 
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='asasb', 
                                           out_signature='as',
@@ -614,6 +670,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             result.append(self._get_id(pkg))
         return self.working_ended(result)
 
+    @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
                                           in_signature='', 
                                           out_signature='s',
@@ -905,7 +962,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         
     def _watchdog(self):
         terminate = False
-        if self._is_working: # is working
+        if self._watchdog_disabled or self._is_working: # is working
             return True
         if not self._lock: # is locked
             if self._watchdog_count > self._timeout_idle:

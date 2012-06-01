@@ -110,6 +110,16 @@ class YumDaemonClient:
     @catch_exception
     def Unlock(self):
         self.daemon.Unlock(dbus_interface=DAEMON_INTERFACE)
+        
+    @catch_exception
+    def SetWatchdogState(self,state):
+        '''
+        Set the Watchdog state 
+        :param state: True = Watchdog active, False = Watchdog disabled
+        :type state: boolean (b)
+        '''
+        self.daemon.SetWatchdogState(state, dbus_interface=DAEMON_INTERFACE)
+        
 
     @catch_exception
     def GetRepositories(self, filter):

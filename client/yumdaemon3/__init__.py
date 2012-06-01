@@ -267,6 +267,16 @@ class YumDaemonClient:
         except Exception as err:
             self._handle_dbus_error(err)
         
+    def SetWatchdogState(self,state):
+        '''
+        Set the Watchdog state 
+        :param state: True = Watchdog active, False = Watchdog disabled
+        :type state: boolean (b)
+        '''
+        try:
+            self.daemon.SetWatchdogState("(b)",state)
+        except Exception as err:
+            self._handle_dbus_error(err)
         
     def GetPackageObjects(self, pkg_filter, fields):
         '''
@@ -474,7 +484,7 @@ class YumDaemonClient:
         '''
         Get a list of pkg ids for the current availabe updates
         '''
-        return self._run_dbus_async('BuildTransaction')
+        return json.loads(self._run_dbus_async('BuildTransaction'))
 
 
     def RunTransaction(self):
