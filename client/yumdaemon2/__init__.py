@@ -189,13 +189,13 @@ class YumDaemonClient:
         return self.daemon.GetPackages(pkg_filter, dbus_interface=DAEMON_INTERFACE, timeout=600)
 
     @catch_exception
-    def GetPackageObjects(self, pkg_filter,fields):
+    def GetPackageWithAttributes(self, pkg_filter,fields):
         '''
         Get a list of pkg list for a given package filter
         each pkg list contains [pkg_id, field,....] where field is a atrribute of the package object
         Ex. summary, size etc.
         '''
-        result = self.daemon.GetPackageObjects(pkg_filter, dbus_interface=DAEMON_INTERFACE, timeout=600)
+        result = self.daemon.GetPackageWithAttributes(pkg_filter, dbus_interface=DAEMON_INTERFACE, timeout=600)
         return json.loads(result)
 
     @catch_exception

@@ -108,7 +108,7 @@ These methods is for getting packages and information about packages
    
 
 
-.. function:: GetPackageObjects(pkg_filter, fields)
+.. function:: GetPackageWithAttributes(pkg_filter, fields)
 
    | Get a list of pkg list for a given package filter  
    | each pkg list contains [pkg_id, field,....] where field is a atrribute of the package object  

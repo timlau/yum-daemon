@@ -278,7 +278,7 @@ class YumDaemonClient:
         except Exception as err:
             self._handle_dbus_error(err)
         
-    def GetPackageObjects(self, pkg_filter, fields):
+    def GetPackageWithAttributes(self, pkg_filter, fields):
         '''
         Get a list of pkg list for a given package filter  
         each pkg list contains [pkg_id, field,....] where field is a atrribute of the package object  
@@ -289,7 +289,7 @@ class YumDaemonClient:
         :param fields: yum package objects attributes to get.
         :type fields: list of strings
         '''
-        result = self._run_dbus_async('GetPackageObjects','(sas)',pkg_filter, fields)
+        result = self._run_dbus_async('GetPackageWithAttributes','(sas)',pkg_filter, fields)
         return json.loads(result)
     
 

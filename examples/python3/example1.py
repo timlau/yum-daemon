@@ -18,7 +18,7 @@ class MyClient(YumDaemonClient):
             print("=" * 70)
             print("Getting Updates")
             print("=" * 70)
-            result = self.GetPackageObjects('updates',['summary','size'])
+            result = self.GetPackageWithAttributes('updates',['summary','size'])
             for (pkg_id,summary,size) in result:
                 print("%s\n\tsummary : %s\n\tsize : %s" % (self._fullname(pkg_id),summary,size))
             print("=" * 70)

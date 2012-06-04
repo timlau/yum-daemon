@@ -338,7 +338,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                                           in_signature='sas', 
                                           out_signature='s',
                                           sender_keyword='sender')
-    def GetPackageObjects(self, pkg_filter, fields, sender=None):
+    def GetPackageWithAttributes(self, pkg_filter, fields, sender=None):
         '''
         Get a list of package ids, based on a package pkg_filterer
         :param pkg_filter: pkg pkg_filter string ('installed','updates' etc)
