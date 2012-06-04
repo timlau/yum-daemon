@@ -167,7 +167,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         self._timeout_idle = 20         # time to daemon is closed when unlocked
         self._timeout_locked = 600      # time to daemon is closed when locked and not working
         self._updateMetadata = None     # Cache for yum UpdateMetadata object
-        
+        self._updates_list = None       # Cache for updates
+        self._obsoletes_list = None     # Cache for obsoletes
     @property    
     def yumbase(self):
         '''
@@ -395,6 +396,32 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         else:
             value = json.dumps(None)        
         return self.working_ended(value)
+
+    @Logger
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='s', 
+                                          out_signature='s',
+                                          sender_keyword='sender')
+    def GetAction(self, id, sender=None):
+        '''
+        Return the available action for a given pkg_id
+        The action is what can be performed on the package
+        an installed package will return as 'remove' as action
+        an available update will return 'update'
+        an available package will return 'install'
+        :param id: yum package id
+        :type id: string (s)
+        :return: action (remove, install, update, downgrade, obsolete)
+        :rtype: string (s)
+        '''
+        self.working_start(sender)
+        po = self._get_po(id)
+        if po:
+            value = self._get_action(po)
+        else:
+            value = ""        
+        return self.working_ended(value)
+
             
     @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
@@ -924,6 +951,39 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                 ('system-bus-name', {'name': sender}), DAEMON_ORG, {}, dbus.UInt32(1), '', timeout=600)
         if not granted:
             raise AccessDeniedError('Session is not authorized')
+    def _get_updates(self):
+        if not self._updates_list:
+            ygh = self.yumbase.doPackageLists(pkgnarrow='updates')
+            self._updates_list = ygh.updates
+        return self._updates_list
+
+    def _get_obsoletes(self):
+        if not self._obsoletes_list:
+            ygh = self.yumbase.doPackageLists(pkgnarrow='obsoletes')
+            self._obsoletes_list = ygh.obsoletes
+        return self._obsoletes_list
+
+    def _get_action(self, po):
+        updates = self._get_updates()
+        obsoletes = self._get_obsoletes()
+        action = 'install'
+        if self.yumbase.rpmdb.contains(po=po): # if the best po is installed, then return the installed po 
+            (n, a, e, v, r) = po.pkgtup
+            po = self.yumbase.rpmdb.searchNevra(name=n, arch=a, ver=v, rel=r, epoch=e)[0]
+            action = 'remove'
+        else:
+            if po in updates:
+                action = 'update'
+            elif po in obsoletes:
+                action = 'obsolete'
+            else:
+                # Check if po is and older version of a installed package
+                ipkgs = self.yumbase.rpmdb.searchNevra(name=po.name)
+                if ipkgs:
+                    ipkg = ipkgs[0]
+                    if ipkg.verGT(po) and not self.yumbase.allowedMultipleInstalls(po): # inst > po
+                        action = 'downgrade'
+        return action
 
     
     def _get_yumbase(self):

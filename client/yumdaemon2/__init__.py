@@ -166,6 +166,22 @@ class YumDaemonClient:
         return result
 
     @catch_exception
+    def GetAction(self, id):
+        '''
+        Return the available action for a given pkg_id
+        The action is what can be performed on the package
+        an installed package will return as 'remove' as action
+        an available update will return 'update'
+        an available package will return 'install'
+        :param id: yum package id
+        :type id: string (s)
+        :return: action (remove, install, update, downgrade, obsolete)
+        :rtype: string (s)
+        '''
+        result = self.daemon.GetAction(id, dbus_interface=DAEMON_INTERFACE)
+        return result
+
+    @catch_exception
     def GetPackages(self, pkg_filter):
         '''
         Get a list of pkg ids for a given package filter
