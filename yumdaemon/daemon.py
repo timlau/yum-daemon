@@ -31,6 +31,8 @@ from yum.callbacks import *
 from yum.rpmtrans import RPMBaseCallback
 from yum.constants import *
 from yum.update_md import UpdateMetadata
+from rpmUtils.arch import canCoinstall
+
 import argparse
 
 
@@ -38,6 +40,7 @@ import argparse
 version = 100 # must be integer
 DAEMON_ORG = 'org.baseurl.Yum'
 DAEMON_INTERFACE = DAEMON_ORG+'.Interface'
+FAKE_ATTR = ['downgrades','action']
 
 def _(msg):
     return msg
@@ -389,39 +392,15 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         self.working_start(sender)
         po = self._get_po(id)
         if po:
-            if hasattr(po, attr):
+            if attr in FAKE_ATTR: # is this a fake attr:
+                value = json.dumps(self._get_fake_attributes(po, attr))
+            elif hasattr(po, attr):
                 value = json.dumps(getattr(po,attr))
             else:
                 value = json.dumps(None)
         else:
             value = json.dumps(None)        
         return self.working_ended(value)
-
-    @Logger
-    @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='s', 
-                                          out_signature='s',
-                                          sender_keyword='sender')
-    def GetAction(self, id, sender=None):
-        '''
-        Return the available action for a given pkg_id
-        The action is what can be performed on the package
-        an installed package will return as 'remove' as action
-        an available update will return 'update'
-        an available package will return 'install'
-        :param id: yum package id
-        :type id: string (s)
-        :return: action (remove, install, update, downgrade, obsolete)
-        :rtype: string (s)
-        '''
-        self.working_start(sender)
-        po = self._get_po(id)
-        if po:
-            value = self._get_action(po)
-        else:
-            value = ""        
-        return self.working_ended(value)
-
             
     @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
@@ -816,7 +795,57 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         all_groups.sort()
         return json.dumps(all_groups)
 
+    def _get_fake_attributes(self,po, attr):
+        '''
+        Get Fake Attributes, a whey to useful stuff for a package there is not real
+        attritbutes to the yum package object.
+        :param attr: Fake attribute
+        :type attr: string
+        '''
+        if attr == "action":
+            return self._get_action(po)
+        elif attr == 'downgrades':
+            return self._get_downgrades(po)
 
+    def _get_downgrades(self,pkg):
+        pkg_ids = []
+        if self._is_installed(pkg): # is installed , we must find available downgrade
+            apkgs = self.yumbase.pkgSack.returnPackages(patterns=[pkg.name], ignore_case=False)
+            for po in apkgs:
+                if self._is_valid_downgrade(pkg, po):
+                    pkg_ids.append(self._get_id(po))
+        else: # Not installed, this is the package to downgrade to, find the installed one
+            ipkgs = self.yumbase.rpmdb.searchNevra(name=pkg.name, arch = pkg.arch)
+            if ipkgs:
+                pkg_ids.append(self._get_id(ipkgs[0]))
+        return pkg_ids
+        
+    def _is_installed(self, po):
+        '''
+        Check if a package is installed
+        :param po: package to check for 
+        '''
+        (n, a, e, v, r) = po.pkgtup
+        po = self.yumbase.rpmdb.searchNevra(name=n, arch=a, ver=v, rel=r, epoch=e)
+        if po:
+            return True
+        else:
+            return False
+        
+    def _is_valid_downgrade(self, po, down_po):
+        '''
+        Check if down_po is a valid downgrade to po
+        @param po:
+        @param down_po:
+        '''
+        valid = True
+        if not po.verGT(down_po):   # po must be > down_po
+            valid = False
+        elif canCoinstall(po.arch, down_po.arch): # po must not be coinstallable with down_po
+            valid = False
+        elif self.yumbase.allowedMultipleInstalls(po): # po must not be a multiple installable (ex. kernels )
+            valid = False
+        return valid
     
     def _get_transaction_list(self):
         ''' 
@@ -964,6 +993,17 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         return self._obsoletes_list
 
     def _get_action(self, po):
+        '''
+        Return the available action for a given pkg_id
+        The action is what can be performed on the package
+        an installed package will return as 'remove' as action
+        an available update will return 'update'
+        an available package will return 'install'
+        :param po: yum package
+        :type po: yum package object
+        :return: action (remove, install, update, downgrade, obsolete)
+        :rtype: string
+        '''
         updates = self._get_updates()
         obsoletes = self._get_obsoletes()
         action = 'install'

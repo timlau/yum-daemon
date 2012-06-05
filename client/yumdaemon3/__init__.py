@@ -324,21 +324,6 @@ class YumDaemonClient:
         '''
         result = json.loads(self._run_dbus_async('GetConfig','(s)',setting))
         return result
-            
-    def GetAction(self, id):
-        '''
-        Return the available action for a given pkg_id
-        The action is what can be performed on the package
-        an installed package will return as 'remove' as action
-        an available update will return 'update'
-        an available package will return 'install'
-        :param id: yum package id
-        :type id: string (s)
-        :return: action (remove, install, update, downgrade, obsolete)
-        :rtype: string (s)
-        '''
-        result = self._run_dbus_async('GetAction','(s)', id)
-        return result
 
     def GetAttribute(self, pkg_id, attr):
         '''
