@@ -673,7 +673,9 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             fkeys = found[1]
             if match_all and not len(fkeys) == len(keys): # skip the result if not all keys matches
                 continue
-            result.append(self._get_id(pkg))
+            result.append(pkg)
+        pkgs = self._limit_package_list(result, skip_old=not match_all) # remove dupes and optional old ones
+        result = [self._get_id(pkg) for pkg in pkgs]
         return self.working_ended(result)
 
     @Logger
@@ -846,6 +848,37 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         elif self.yumbase.allowedMultipleInstalls(po): # po must not be a multiple installable (ex. kernels )
             valid = False
         return valid
+    
+    def _limit_package_list(self, pkgs, skip_old=False):
+        '''
+        Limit a list of packages so we dont get the one twice
+        optional remove packages with a smaller version than the installed one
+        
+        :param pkgs:    packages to process
+        :type pkgs:    list of yum package objects
+        :param skip_old: skip older packages (default = False)
+        :type skip_old: boolean
+        '''
+        good_pkgs = set()
+        good_tups = {}
+        for po in pkgs:
+            valid = True
+            if po.pkgtup in good_tups: # dont process the same po twice
+                continue
+            elif self.yumbase.rpmdb.contains(po=po): # if the po is installed, then return the installed po 
+                (n, a, e, v, r) = po.pkgtup
+                po = self.yumbase.rpmdb.searchNevra(name=n, arch=a, ver=v, rel=r, epoch=e)[0]
+                self.logger.info("%s is installed " % str(po))
+            elif skip_old:
+                ipkgs = self.yumbase.rpmdb.searchNevra(name=po.name)
+                if ipkgs:
+                    ipkg = ipkgs[0]
+                    if ipkg.verGT(po) and not self.allowedMultipleInstalls(po): # inst > po
+                        valid = False
+            if valid:
+                good_pkgs.add(po)
+                good_tups[po.pkgtup] = 1
+        return good_pkgs
     
     def _get_transaction_list(self):
         ''' 
