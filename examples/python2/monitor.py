@@ -46,7 +46,7 @@ class YumSignalMonitor:
     def on_UpdateProgress(self,name,frac,fread,ftime):
         print("UpdateProgress : %s %s" % (name,frac))
 
-    def on_TransactionEvent(self,event):
+    def on_TransactionEvent(self,event, data):
         print("TransactionEvent : %s" % event)
 
     def on_RPMProgress(self, package, action, te_current, te_total, ts_current, ts_total):

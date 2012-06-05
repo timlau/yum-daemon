@@ -41,6 +41,7 @@ version = 100 # must be integer
 DAEMON_ORG = 'org.baseurl.Yum'
 DAEMON_INTERFACE = DAEMON_ORG+'.Interface'
 FAKE_ATTR = ['downgrades','action']
+NONE = json.dumps(None)
 
 def _(msg):
     return msg
@@ -80,17 +81,20 @@ class DownloadCallback(  DownloadBaseCallback ):
         self.base.UpdateProgress(name,frac,fread,ftime)
 
 class ProcessTransCallback:
-    STATES = { PT_DOWNLOAD  : "download",
-               PT_GPGCHECK    : "signature-check",
-               PT_TEST_TRANS  : "run-test-transaction",
-               PT_TRANSACTION : "run-transaction"}
+    STATES = { PT_DOWNLOAD      : "download",
+               PT_DOWNLOAD_PKGS : "pkg-to-download",
+               PT_GPGCHECK      : "signature-check",
+               PT_TEST_TRANS    : "run-test-transaction",
+               PT_TRANSACTION   : "run-transaction"}
 
     def __init__(self, base):
         self.base = base
         
-    def event(self,state,data=None):
+    def event(self,state,data=NONE):
         if state in ProcessTransCallback.STATES:
-            self.base.TransactionEvent(ProcessTransCallback.STATES[state])
+            if data != NONE:
+                data = [self.base._get_id(po) for po in data]
+            self.base.TransactionEvent(ProcessTransCallback.STATES[state], data)
             
 class RPMCallback(RPMBaseCallback):
     '''
@@ -616,13 +620,13 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         Resolve dependencies of current transaction
         '''
-        self.TransactionEvent('start-build')
+        self.TransactionEvent('start-build',NONE)
         rc, msgs = self.yumbase.buildTransaction()
         if rc == 2: # OK
             output = self._get_transaction_list()
         else:
             output = msgs
-        self.TransactionEvent('end-build')
+        self.TransactionEvent('end-build',NONE)
         return json.dumps((rc,output))
     
     @Logger
@@ -638,18 +642,18 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         self.check_permission(sender)
         self.check_lock(sender)
         try:
-            self.TransactionEvent('start-run')
+            self.TransactionEvent('start-run',NONE)
             self._can_quit = False
             callback = ProcessTransCallback(self)
             rpmDisplay = RPMCallback(self)
             result = self.yumbase.processTransaction(callback=callback, rpmDisplay=rpmDisplay)
             self._can_quit = True
             self._reset_yumbase()
-            self.TransactionEvent('end-run')
+            self.TransactionEvent('end-run',NONE)
             self.working_ended()
         except Errors.YumBaseError, e:
             self._can_quit = True            
-            self.TransactionEvent('fail')
+            self.TransactionEvent('fail',NONE)
             self._reset_yumbase()
             self.working_ended()
             raise YumTransactionError(str(e))
@@ -727,7 +731,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         pass
 
     @dbus.service.signal(DAEMON_INTERFACE)
-    def TransactionEvent(self,event):
+    def TransactionEvent(self,event,data):
         '''
         DBus signal with Transaction information        
         :param event:

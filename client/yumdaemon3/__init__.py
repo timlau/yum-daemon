@@ -39,7 +39,7 @@ Usage: (Make your own subclass based on :class:`yumdaemon3.YumDaemonClient` and 
             # Do your stuff here
             pass
     
-        def on_TransactionEvent(self,event):
+        def on_TransactionEvent(self,event, data):
             # Do your stuff here
             pass
     
@@ -158,8 +158,10 @@ class YumDaemonClient:
         else:
             print("downloading : %s %s" % (name,frac))
 
-    def on_TransactionEvent(self,event):
+    def on_TransactionEvent(self,event, data):
         print("TransactionEvent : %s" % event)
+        if data:
+            print("Data :\n", data)
 
     def on_RPMProgress(self, package, action, te_current, te_total, ts_current, ts_total):
         print("RPMProgress : %s %s" % (action, package))
