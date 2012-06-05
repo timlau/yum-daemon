@@ -233,14 +233,22 @@ class YumDaemonClient:
         return self.daemon.Update(pattern, dbus_interface=DAEMON_INTERFACE, timeout=600)
 
     @catch_exception
-    def Search(self, fields, keys, match_all):
+    def Search(self, fields, keys, match_all, newest_only):
         '''
+        Search for packages where keys is matched in fields
         
-        :param fields:
-        :param keys:
-        :param match_all:
+        :param fields: yum po attributes to search in
+        :type fields: list of strings
+        :param keys: keys to search for
+        :type keys: list of strings
+        :param match_all: match all keys or only one
+        :type match_all: boolean
+        :param newest_only: return only the newest version of packages
+        :type newest_only: boolean
+        :return: list of pkg_id's
+
         '''
-        return self.daemon.Search(fields, keys, match_all, dbus_interface=DAEMON_INTERFACE, timeout=600)
+        return self.daemon.Search(fields, keys, match_all, newest_only,dbus_interface=DAEMON_INTERFACE, timeout=600)
 
     @catch_exception
     def GetGroups(self):

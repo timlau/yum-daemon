@@ -31,6 +31,7 @@ from yum.callbacks import *
 from yum.rpmtrans import RPMBaseCallback
 from yum.constants import *
 from yum.update_md import UpdateMetadata
+from yum.packageSack import packagesNewestByName
 from rpmUtils.arch import canCoinstall
 
 import argparse
@@ -660,15 +661,16 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
 
     @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='asasb', 
+                                          in_signature='asasbb', 
                                           out_signature='as',
                                           sender_keyword='sender')
-    def Search(self, fields, keys, match_all, sender=None ):
+    def Search(self, fields, keys, match_all, newest_only, sender=None ):
         '''
         Search for for packages, where given fields contain given key words
         :param fields: list of fields to search in
         :param keys: list of keywords to search for
         :param match_all: match all flag, if True return only packages matching all keys
+        :param newest_only: return only the newest version of a package
         '''
         self.working_start(sender)
         result = []
@@ -679,6 +681,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                 continue
             result.append(pkg)
         pkgs = self._limit_package_list(result, skip_old=not match_all) # remove dupes and optional old ones
+        if newest_only:
+            pkgs = packagesNewestByName(pkgs)
         result = [self._get_id(pkg) for pkg in pkgs]
         return self.working_ended(result)
 

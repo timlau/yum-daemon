@@ -437,7 +437,7 @@ class YumDaemonClient:
         return json.loads(self._run_dbus_async('Update','(s)',pattern))
 
 
-    def Search(self, fields, keys, match_all):
+    def Search(self, fields, keys, match_all, newest_only):
         '''
         Search for packages where keys is matched in fields
         
@@ -447,9 +447,12 @@ class YumDaemonClient:
         :type keys: list of strings
         :param match_all: match all keys or only one
         :type match_all: boolean
+        :param newest_only: return only the newest version of packages
+        :type newest_only: boolean
         :return: list of pkg_id's
+    
         '''
-        return self._run_dbus_async('Search','(asasb)',fields, keys, match_all)
+        return self._run_dbus_async('Search','(asasbb)',fields, keys, match_all, newest_only)
 
 
     def GetGroups(self):
