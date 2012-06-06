@@ -177,6 +177,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         self._updateMetadata = None     # Cache for yum UpdateMetadata object
         self._updates_list = None       # Cache for updates
         self._obsoletes_list = None     # Cache for obsoletes
+
     @property    
     def yumbase(self):
         '''

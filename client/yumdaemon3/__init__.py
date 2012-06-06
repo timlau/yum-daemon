@@ -234,7 +234,7 @@ class YumDaemonClient:
         main_loop = GObject.MainLoop()
         data = {'main_loop': main_loop}
         func = getattr(self.daemon,cmd)
-        func(*args, result_handler=self._return_handler, user_data=data, timeout=60000)
+        func(*args, result_handler=self._return_handler, user_data=data, timeout=1200000) # timeout = 20 min
         data['main_loop'].run()
         result = self._get_result(data)
         return result      
