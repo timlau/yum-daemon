@@ -46,7 +46,7 @@ or this to just run the unit tests.
    
 to make the daemon exit run:
 
-    python client/yumdaemon2/client.py quit
+    python examples/yumdaemon2/exit.py
    
 if you want to monitor the yum progress signals send by the daemon
 the start the following in another shell window.
