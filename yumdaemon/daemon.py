@@ -425,7 +425,10 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         if po:
             md = self.update_metadata
             notices = md.get_notices(po.name)
-            value = json.dumps(notices)
+            result = []
+            for notice in notices:
+                result.append(notice._md)
+            value = json.dumps(result)
         else:
             value = json.dumps(None)        
         return self.working_ended(value)
