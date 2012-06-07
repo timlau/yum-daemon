@@ -58,11 +58,11 @@ If you run as root it will just execute
 
 If you want to test the the daemon without installing it:
 
-    su -c "./daemon.py"
+    su -c "./yumdaemon/daemon.py -v --notimeout"
 
 in a separate shell window.
 
 API Definitions: 
 ====================================
 
-The yumdaemon api is documented [git@github.com:timlau/yum-daemon.git](Here)
+The yumdaemon api is documented [here](http://timlau.fedorapeople.org/yumdaemon)
