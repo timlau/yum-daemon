@@ -60,8 +60,9 @@ If you want to test the the daemon without installing it:
 
     su -c "./yumdaemon/daemon.py -v --notimeout"
 
-**-v** gives extra verbose outout from the daemon
-**--notimeout** disable the daemon watchdog, there normally will quit the daemon after 20 second, if not in use
+**-v** gives extra verbose outout from the daemon  
+**--notimeout** disable the daemon watchdog, there normally will quit the daemon after 20 second, if not in use 
+ 
 in a separate shell window.
 
 API Definitions: 
