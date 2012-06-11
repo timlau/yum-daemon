@@ -910,7 +910,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                 evr = txmbr.po.printVer()
                 repoid = txmbr.repoid
                 pkgsize = float(txmbr.po.size)
-                size = format_number(pkgsize)
+                size = pkgsize
                 alist = []
                 for (obspo, relationship) in txmbr.relatedto:
                     if relationship == 'obsoletes':
