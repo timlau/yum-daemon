@@ -280,7 +280,7 @@ class TestAPI(TestBase):
         '''
         fields = ['name','summary']
         keys = ['yum','plugin']
-        pkgs = self.client.Search(fields, keys ,True)
+        pkgs = self.client.Search(fields, keys ,True,True)
         self.assertIsInstance(pkgs, dbus.Array)
         for p in pkgs:
             summary = self.client.GetAttribute(p,'summary')
@@ -288,12 +288,12 @@ class TestAPI(TestBase):
             self.assertTrue(keys[0] in str(p) or keys[0] in summary)
             self.assertTrue(keys[1] in str(p) or keys[1] in summary)
         keys = ['yum','zzzzddddsss'] # second key should not be found
-        pkgs = self.client.Search(fields, keys ,True)
+        pkgs = self.client.Search(fields, keys ,True,True)
         self.assertIsInstance(pkgs, dbus.Array)
         print "found %i packages" % len(pkgs)
         self.assertEqual(len(pkgs), 0) # when should not find any matches
         keys = ['yum','zzzzddddsss'] # second key should not be found
-        pkgs = self.client.Search(fields, keys ,False)
+        pkgs = self.client.Search(fields, keys ,False, True)
         self.assertIsInstance(pkgs, dbus.Array)
         print "found %i packages" % len(pkgs)
         self.assertGreater(len(pkgs), 0) # we should find some matches
@@ -314,15 +314,29 @@ class TestAPI(TestBase):
 
 
 
-    def test_GetPackageObjects(self):
+    def test_GetPackageWithAttributes(self):
         print()
         for pkg_filter in ['installed','available','updates','obsoletes','recent','extras']:
             print(" --> Checking filter : %s" % pkg_filter)
-            result = self.client.GetPackageObjects(pkg_filter)
+            result = self.client.GetPackageWithAttributes(pkg_filter, ['summary','size'])
             self.assertIsInstance(result, list) # cat is a list
             print("     Got %i packages" % len(result))            
             if len(result) > 1:
                 self.assertIsInstance(result[1], list) # cat is a list
                 self.assertEqual(len(result[1]),3)
             
-        
+
+    def test_History(self):
+        result = self.client.GetHistoryByDays(0, 5)
+        self.assertIsInstance(result, list)
+        for tx_mbr in result:
+            tid, dt = tx_mbr
+            print("%-4i - %s" % (tid, dt))
+            self.assertIsInstance(dt, unicode)
+            pkgs = self.client.GetHistoryPackages(tid)
+            self.assertIsInstance(pkgs, list)
+            for (id, state, is_installed) in pkgs:
+                print id, state, is_installed
+                self.assertIsInstance(id, unicode)
+                self.assertIsInstance(state, unicode)                
+                self.assertIsInstance(is_installed, bool)        

@@ -166,6 +166,34 @@ class YumDaemonClient:
         return result
 
     @catch_exception
+    def GetHistoryByDays(self, start_days, end_days):
+        '''
+        Get History transaction in a interval of days from today
+        
+        :param start_days: start of interval in days from now (0 = today)
+        :type start_days: integer
+        :param end_days:end of interval in days from now
+        :type end_days: integer
+        :return: a list of (transaction is, date-time) pairs
+        :type sender: json encoded string
+        '''
+        value = self.daemon.GetHistoryByDays(start_days, end_days, dbus_interface=DAEMON_INTERFACE, timeout=600)
+        return json.loads(value)
+    
+    @catch_exception
+    def GetHistoryPackages(self, tid):
+        '''
+        Get packages from a given yum history transaction id
+        
+        :param tid: history transaction id
+        :type tid: integer
+        :return: list of (pkg_id, state, installed) pairs
+        :rtype: list
+        '''
+        value = self.daemon.GetHistoryPackages(tid, dbus_interface=DAEMON_INTERFACE, timeout=600)
+        return json.loads(value)
+
+    @catch_exception
     def GetPackages(self, pkg_filter):
         '''
         Get a list of pkg ids for a given package filter
@@ -179,7 +207,7 @@ class YumDaemonClient:
         each pkg list contains [pkg_id, field,....] where field is a atrribute of the package object
         Ex. summary, size etc.
         '''
-        result = self.daemon.GetPackageWithAttributes(pkg_filter, dbus_interface=DAEMON_INTERFACE, timeout=600)
+        result = self.daemon.GetPackageWithAttributes(pkg_filter, fields, dbus_interface=DAEMON_INTERFACE, timeout=600)
         return json.loads(result)
 
     @catch_exception

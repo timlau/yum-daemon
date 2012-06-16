@@ -24,6 +24,7 @@ import os
 import subprocess
 import json
 import logging
+from datetime import datetime
 import yum
 import yum.Errors as Errors
 from urlgrabber.progress import format_number
@@ -384,7 +385,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         
     @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='sas', 
+                                          in_signature='ss', 
                                           out_signature='s',
                                           sender_keyword='sender')
     def GetAttribute(self, id, attr,sender=None):
@@ -433,6 +434,45 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             value = json.dumps(None)        
         return self.working_ended(value)
 
+
+    @Logger
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='i', 
+                                          out_signature='s',
+                                          sender_keyword='sender')
+    def GetHistoryPackages(self, tid,sender=None):
+        '''
+        Get packages from a given yum history transaction id
+        
+        :param tid: history transaction id
+        :type tid: integer
+        :return: list of (pkg_id, state, installed) pairs
+        :rtype: json encoded string
+        '''
+        self.working_start(sender)
+        value = json.dumps(self._get_history_transaction_pkgs(tid))
+        return self.working_ended(value)
+
+
+    @Logger
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='ii', 
+                                          out_signature='s',
+                                          sender_keyword='sender')
+    def GetHistoryByDays(self, start_days, end_days ,sender=None):
+        '''
+        Get History transaction in a interval of days from today
+        
+        :param start_days: start of interval in days from now (0 = today)
+        :type start_days: integer
+        :param end_days:end of interval in days from now
+        :type end_days: integer
+        :return: a list of (transaction is, date-time) pairs
+        :type sender: json encoded string
+        '''
+        self.working_start(sender)
+        value = json.dumps(self._get_history_by_days(start_days, end_days))
+        return self.working_ended(value)
     
     
     @Logger
@@ -808,6 +848,53 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             print str(e)
         all_groups.sort()
         return json.dumps(all_groups)
+    
+    def _get_history_by_days(self, start, end):
+        '''
+        Get the yum history transaction member located in a date interval from today
+        :param start: start days from today
+        :param end: end days from today
+        '''
+        now = datetime.now()
+        history = self.yumbase.history.old()
+        i = 0
+        result = []
+        while i < len(history):
+            ht = history[i]
+            i += 1
+            tm = datetime.fromtimestamp(ht.end_timestamp)
+            delta = now-tm
+            if delta.days < start: # before start days
+                continue
+            elif delta.days > end: # after end days
+                break
+            result.append(ht)
+        return self._get_id_time_list(result)
+
+    def _get_id_time_list(self, hist_trans):
+        '''
+        return a list of (tid, isodate) pairs from a list of yum history transactions
+        '''
+        result = []
+        for ht in hist_trans:
+            tm = datetime.fromtimestamp(ht.end_timestamp)
+            result.append((ht.tid, tm.isoformat()))
+        return result
+
+    def _get_history_transaction_pkgs(self, tid):
+        '''
+        return a list of (pkg_id, tx_state, installed_state) pairs from a given
+        yum history transaction id
+        '''
+        tx = self.yumbase.history.old([tid])
+        result = []
+        for pkg in tx[0].trans_data:
+            values = [pkg.name, pkg.epoch, pkg.version, pkg.release, pkg.arch, pkg.ui_from_repo]
+            id = ",".join(values)
+            elem = (id, pkg.state, pkg.state_installed)
+            result.append(elem)
+        return result
+    
 
     def _get_fake_attributes(self,po, attr):
         '''
@@ -885,7 +972,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                 ipkgs = self.yumbase.rpmdb.searchNevra(name=po.name)
                 if ipkgs:
                     ipkg = ipkgs[0]
-                    if ipkg.verGT(po) and not self.allowedMultipleInstalls(po): # inst > po
+                    if ipkg.verGT(po) and not self.yumbase.allowedMultipleInstalls(po): # inst > po
                         valid = False
             if valid:
                 good_pkgs.add(po)

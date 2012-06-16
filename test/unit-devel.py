@@ -42,3 +42,20 @@ class TestAPIDevel(TestBase):
 #        self.client.RunTransaction()
 
 
+#    def test_History(self):
+#        result = self.client.GetHistoryByDays(0, 5)
+#        self.assertIsInstance(result, list)
+#        for tx_mbr in result:
+#            tid, dt = tx_mbr
+#            print("%-4i - %s" % (tid, dt))
+#            self.assertIsInstance(dt, unicode)
+#            pkgs = self.client.GetHistoryPackages(tid)
+#            self.assertIsInstance(pkgs, list)
+#            for (id, state, is_installed) in pkgs:
+#                print id, state, is_installed
+#                self.assertIsInstance(id, unicode)
+#                self.assertIsInstance(state, unicode)                
+#                self.assertIsInstance(is_installed, bool)
+                
+            
+        
