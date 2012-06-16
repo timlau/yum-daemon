@@ -376,6 +376,32 @@ class YumDaemonClient:
         '''
         return self._run_dbus_async('GetPackagesByName','(sb)',name, newest_only)
 
+    def GetHistoryByDays(self, start_days, end_days):
+        '''
+        Get History transaction in a interval of days from today
+        
+        :param start_days: start of interval in days from now (0 = today)
+        :type start_days: integer
+        :param end_days:end of interval in days from now
+        :type end_days: integer
+        :return: a list of (transaction is, date-time) pairs
+        :type sender: json encoded string
+        '''
+        value = self._run_dbus_async('GetHistoryByDays','(ii)',name, start_days, end_days, newest_only)
+        return json.loads(value)
+
+    def GetHistoryPackages(self, tid):
+        '''
+        Get packages from a given yum history transaction id
+        
+        :param tid: history transaction id
+        :type tid: integer
+        :return: list of (pkg_id, state, installed) pairs
+        :rtype: list
+        '''
+        value = self._run_dbus_async('GetHistoryPackages','(i)',name, start_days, end_days, newest_only)
+        return json.loads(value)
+
 
     def ClearTransaction(self):
         '''
