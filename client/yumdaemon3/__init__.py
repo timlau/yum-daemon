@@ -387,7 +387,19 @@ class YumDaemonClient:
         :return: a list of (transaction is, date-time) pairs
         :type sender: json encoded string
         '''
-        value = self._run_dbus_async('GetHistoryByDays','(ii)',name, start_days, end_days, newest_only)
+        value = self._run_dbus_async('GetHistoryByDays','(ii)', start_days, end_days)
+        return json.loads(value)
+
+    def HistorySearch(self, pattern):
+        '''
+        Search the history for transaction matching a pattern
+        
+        :param pattern: patterne to match
+        :type pattern: list (strings)
+        :return: list of (tid,isodates)
+        :type sender: json encoded string
+        '''
+        value = self._run_dbus_async('HistorySearch','(as)', pattern)
         return json.loads(value)
 
     def GetHistoryPackages(self, tid):
@@ -399,7 +411,7 @@ class YumDaemonClient:
         :return: list of (pkg_id, state, installed) pairs
         :rtype: list
         '''
-        value = self._run_dbus_async('GetHistoryPackages','(i)',name, start_days, end_days, newest_only)
+        value = self._run_dbus_async('GetHistoryPackages','(i)',tid)
         return json.loads(value)
 
 

@@ -179,6 +179,20 @@ class YumDaemonClient:
         '''
         value = self.daemon.GetHistoryByDays(start_days, end_days, dbus_interface=DAEMON_INTERFACE, timeout=600)
         return json.loads(value)
+
+    @catch_exception
+    def HistorySearch(self, pattern):
+        '''
+        Search the history for transaction matching a list of  patterns
+        
+        :param pattern: patterne to match
+        :type pattern: list (string)
+        :return: list of (tid,isodates)
+        :type sender: json encoded string
+        '''
+        value = self.daemon.HistorySearch(pattern, dbus_interface=DAEMON_INTERFACE, timeout=600)
+        return json.loads(value)
+
     
     @catch_exception
     def GetHistoryPackages(self, tid):

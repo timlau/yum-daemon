@@ -474,6 +474,23 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         value = json.dumps(self._get_history_by_days(start_days, end_days))
         return self.working_ended(value)
     
+    @Logger
+    @dbus.service.method(DAEMON_INTERFACE, 
+                                          in_signature='as', 
+                                          out_signature='s',
+                                          sender_keyword='sender')
+    def HistorySearch(self, pattern ,sender=None):
+        '''
+        Search the history for transaction matching a pattern
+        :param pattern: patterne to match
+        :type pattern: string
+        :return: list of (tid,isodates)
+        :type sender: json encoded string
+        '''
+        self.working_start(sender)
+        value = json.dumps(self._history_search(pattern))
+        return self.working_ended(value)
+
     
     @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
@@ -869,6 +886,16 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             elif delta.days > end: # after end days
                 break
             result.append(ht)
+        return self._get_id_time_list(result)
+
+    def _history_search(self, pattern):
+        '''
+        search in yum history
+        :param pattern: list of search patterns
+        :type pattern: list
+        '''
+        tids = self.yumbase.history.search(pattern)
+        result = self.yumbase.history.old(tids)
         return self._get_id_time_list(result)
 
     def _get_id_time_list(self, hist_trans):
