@@ -1,4 +1,4 @@
 [D-BUS Service]
 Name=org.baseurl.Yum
-Exec=/usr/share/yumdaemon/yum-daemon
+Exec=/usr/share/yumdaemon/yumdaemon
 User=root
