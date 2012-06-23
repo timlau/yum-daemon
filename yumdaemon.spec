@@ -59,7 +59,7 @@ Python 2 api for communicating with the yum-daemon DBus service
 %{_datadir}/dbus-1/system-services/*
 %{_datadir}/%{name}/*
 %{_datadir}/polkit-1/actions
-%{_sysconfdir}//dbus-1/system.d/*
+%{_sysconfdir}/dbus-1/system.d/*
 
 
 %changelog
