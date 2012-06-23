@@ -1,6 +1,6 @@
 Name:           yumdaemon
-Version:        0.1
-Release:        0.1%{?dist}
+Version:        0.9.0
+Release:        1%{?dist}
 Summary:        Dbus daemon for yum package actions
 
 License:        GPLv2+
@@ -63,5 +63,5 @@ Python 2 api for communicating with the yum-daemon DBus service
 
 
 %changelog
-* Sat May 26 2012 Tim Lauridsen <timlau@fedoraproject.org> 0.1-0.1
+* Sat May 26 2012 Tim Lauridsen <timlau@fedoraproject.org> 0.9.0-1
 - Initial rpm for yum-daemon
