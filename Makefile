@@ -36,9 +36,7 @@ uninstall:
 	rm -r $(DESTDIR)/usr/share/polkit-1/actions/$(ORG_NAME).*		
 	rm -rf $(DESTDIR)/$(PKGDIR)/
 	
-clean:
-	@rm *.pyc *.pyo	
-	
+
 # Run as root or you will get a password prompt for each test method :)
 test-verbose: FORCE
 	@nosetests -v -s test/
