@@ -26,7 +26,8 @@ install:
 	install -m644 dbus/$(ORG_NAME).service $(DESTDIR)/usr/share/dbus-1/system-services/.				
 	install -m644 dbus/$(ORG_NAME).conf $(DESTDIR)/etc/dbus-1/system.d/.				
 	install -m644 policykit1/$(ORG_NAME).policy $(DESTDIR)/usr/share/polkit-1/actions/.				
-	install -m755 yumdaemon/yum-daemon $(DESTDIR)/$(PKGDIR)/.
+	install -m755 yumdaemon/yumdaemon $(DESTDIR)/$(PKGDIR)/.
+	chcon -t rpm_exec_t  $(DESTDIR)/$(PKGDIR)/yumdaemon
 	for d in $(SUBDIRS); do make DESTDIR=$(DESTDIR) -C $$d install; [ $$? = 0 ] || exit 1; done
 
 uninstall:
