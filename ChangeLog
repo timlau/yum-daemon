@@ -1,0 +1,518 @@
+2012-06-23  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* yumdaemon.spec: bumped yumdaemon version Version:
+	0.1-0.1.git20120623
+
+2012-06-23  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* Makefile: added get-builddeps target to Makefile
+
+2012-06-23  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* tools/git2cl: added Changelog build tool
+
+2012-06-23  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* yumdaemon.spec: minor .spec fixup
+
+2012-06-23  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* Makefile: fix installation of daemon and apply the right selinux
+	type (rpm_exec_t) to daemon
+
+2012-06-23  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* Makefile, dbus/org.baseurl.Yum.service, yumdaemon/__init__.py,
+	yumdaemon/daemon.py, yumdaemon/yum-daemon, yumdaemon/yumdaemon: move
+	all daemon code into one file yumdaemon
+
+2012-06-17  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/yumdaemon2/__init__.py, client/yumdaemon3/__init__.py,
+	yumdaemon/daemon.py: Added HistorySearch method to service and
+	client API's
+
+2012-06-16  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/yumdaemon3/__init__.py: Add GetHitsory... metods to python3
+	client API
+
+2012-06-16  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/yumdaemon2/__init__.py, test/test-api.py,
+	test/unit-devel.py, yumdaemon/daemon.py: Added GetHistoryByDays
+	method Added GetHistoryPackages method Added new testcases for
+	GetHistory.... Fixed errors when running testcases
+
+2012-06-11  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* yumdaemon/daemon.py: returm pkg in bytes in transaction result
+
+2012-06-07  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* yumdaemon/daemon.py: Fix GetUpdateInfo to return the update notice
+	values
+
+2012-06-07  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README.md: updated README
+
+2012-06-07  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README.md: updated README
+
+2012-06-07  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README.md: updated README
+
+2012-06-07  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README.md: updated README
+
+2012-06-07  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README.md: updated README
+
+2012-06-06  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/yumdaemon3/__init__.py, yumdaemon/daemon.py: increase the
+	dbus async call timeout to 20 min (120 s), a big yum transation can
+	take long time
+
+2012-06-05  Tim Lauridsen <timlau@fedoraproject.org>
+
+	fix merge problems
+
+2012-06-05  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/yumdaemon2/__init__.py, client/yumdaemon3/__init__.py,
+	docs/server.rst, yumdaemon/daemon.py: Added extra newest_only
+	paramter to Search method, to limit the result to the newest version
+	of packages
+
+2012-06-05  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/yumdaemon3/__init__.py, examples/python2/monitor.py,
+	yumdaemon/daemon.py: Add extra parameter to TransactionEvent and new
+	'pkg-to-download' event
+
+2012-06-05  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* yumdaemon/daemon.py: Fix Search method to return only each package
+	once and always the installed one first over the available one
+
+2012-06-05  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/yumdaemon2/__init__.py, client/yumdaemon3/__init__.py,
+	yumdaemon/daemon.py: - Removed GetAction method (replaced by "action" pseudo attribute) -
+	implemented "pseudo" attributes.   "action" : get package action for
+	a given package   "downgrades" : get available downgrades for a
+	given pkg
+
+2012-06-05  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/yumdaemon2/__init__.py, client/yumdaemon3/__init__.py,
+	yumdaemon/daemon.py: - Removed GetAction method (replaced by "action" pseudo attribute) -
+	implemented "pseudo" attributes.   "action" : get package action for
+	a given package   "downgrades" : get available downgrades for a
+	given pkg
+
+2012-06-04  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/yumdaemon2/__init__.py, client/yumdaemon3/__init__.py,
+	docs/server.rst, examples/python3/example1.py, yumdaemon/daemon.py: 
+	Rename GetPackageObjects to GetPackageWithAttributes
+
+2012-06-04  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/yumdaemon2/__init__.py, client/yumdaemon3/__init__.py,
+	yumdaemon/daemon.py: Added GetAction(id) to return current action
+	for a given package.
+
+2012-06-01  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/yumdaemon2/__init__.py, client/yumdaemon3/__init__.py,
+	yumdaemon/daemon.py: - Added new SetWatchdogState(boolean) method to disable/enable the
+	watchdog - Added method in/out logging to method in daemon in debug
+	mode.
+
+2012-05-30  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/yumdaemon3/__init__.py, docs/Makefile,
+	docs/client-python2.rst, docs/client-python3.rst,
+	docs/examples.rst, docs/index.rst, docs/server.rst,
+	examples/python2/exit.py, examples/python3/example1.py,
+	examples/python3/example2.py: A lot of doc updates and extra
+	examples added
+
+2012-05-30  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/yumdaemon3/__init__.py: adding missing JSON convertion to
+	Install, Remove ....
+
+2012-05-29  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/yumdaemon3/__init__.py, docs/conf.py, docs/index.rst,
+	docs/server.rst: Doc updates
+
+2012-05-29  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/yumdaemon3/__init__.py: Added doc strings and made helper
+	functions private
+
+2012-05-29  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* Makefile, server/__init__.py, server/daemon.py,
+	server/yum-daemon, yumdaemon/__init__.py, yumdaemon/daemon.py,
+	yumdaemon/yum-daemon: mv code from server/ to yumdaemon/
+
+2012-05-28  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/yumdaemon3/__init__.py: updated doc strings
+
+2012-05-28  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/yumdaemon2/__init__.py, client/yumdaemon3/__init__.py,
+	docs/client-python2.rst, docs/client-python3.rst: Updated docs and
+	doc strings
+
+2012-05-28  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* docs/Makefile, docs/client-python2.rst, docs/client-python3.rst,
+	docs/conf.py, docs/index.rst: Updated doc
+
+2012-05-28  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* Makefile, client/python2/Makefile, client/python2/__init__.py,
+	client/python2/client.py, client/python3/Makefile,
+	client/python3/__init__.py, client/python3/client.py,
+	client/yumdaemon2/Makefile, client/yumdaemon2/__init__.py,
+	client/yumdaemon3/Makefile, client/yumdaemon3/__init__.py,
+	test/base.py, test/test-api.py, test/unit-devel.py: refactor the
+	client API to  yumdaemon2 & yumdaemon3
+
+2012-05-28  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* docs/server.rst: Add some API docs
+
+2012-05-28  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* .gitignore, docs/Makefile, docs/client-python2.rst,
+	docs/client-python3.rst, docs/conf.py, docs/index.rst,
+	docs/server.rst: Added inital sphinx docs
+
+2012-05-28  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* Makefile, client/python2/Makefile, client/python2/client.py,
+	client/python3/Makefile, client/python3/client.py,
+	dbus/org.baseurl.Yum.service, server/__init__.py, server/daemon.py: 
+	Change GetPackageObjects to take a parameter to define what pkg
+	attributes to get besides the pkg_id.
+
+2012-05-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README.md: Cleanup Readme markup
+
+2012-05-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README.md: Cleanup Readme markup
+
+2012-05-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README.md: Cleanup Readme markup
+
+2012-05-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README.md: Cleanup Readme markup
+
+2012-05-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README.md: Cleanup Readme markup
+
+2012-05-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README.md: Cleanup Readme markup
+
+2012-05-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README.md: Cleanup Readme markup
+
+2012-05-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README.md: Cleanup Readme markup
+
+2012-05-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README.md: Added API to Readme
+
+2012-05-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	fix README.md conflict :(
+
+2012-05-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README.md, yumdaemon.spec: updated README.md
+
+2012-05-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README.md, yumdaemon.spec: updated README.md
+
+2012-05-26  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* Makefile, yumdaemon.spec: Added spec & extra Makefile targets
+
+2012-05-26  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/python2/client.py, test/test-api.py, test/unit-devel.py: - Add GetPackageObject to python 2 client API - Added unittest for
+	GetPackageObject (python 2)
+
+2012-05-26  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* test/base.py, test/test-api.py: Fix unittest to work again
+
+2012-05-26  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README, README.md: Rename README
+
+2012-05-26  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* Makefile, client/python3/Makefile, client/python3/client.py: - Added GetUpdateInfo for getting Update Information from a package
+	- Cleanup some Makefile issues (python should use print() )
+
+2012-05-26  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* Makefile, client/python2/Makefile, client/python2/__init__.py,
+	client/python3/Makefile, client/python3/__init__.py: Add Makefile
+	magic to install client python modules
+
+2012-05-26  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* .gitignore, Makefile: Update Makefile to handle moved files
+
+2012-05-26  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* examples/python/async-calls.py, examples/python/async-calls2.py,
+	examples/python2/async-calls.py, examples/python2/async-calls2.py,
+	examples/python2/monitor.py, monitor.py: More reorganization of the
+	code
+
+2012-05-26  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client/python3/client.py: Add a python 3.x client api for
+	communicating with the yum-daemon DBus service
+
+2012-05-26  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* .gitignore, server/daemon.py: Change GetPackageObject to return a
+	json encode string there contains a list of tuples each tuple
+	contains (pkg_id, summary, size). Some docstring modifications
+
+2012-05-26  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client.py, client/python2/client.py, daemon.py, server/daemon.py,
+	server/yum-daemon, yum-daemon: reorganice to code into subfolder
+
+2012-05-24  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* daemon.py: Added GetPackageObjects method there returns a list of
+	po_dict po_dict is a dictionary containing  'id'		 	: Package id
+	'summary'	: package summary 'size' 		: package size in bytes
+
+2012-05-23  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* daemon.py: updated .gitignore
+
+2012-05-23  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* examples/python/async-calls.py: Added GetUpdateInfo(pkg_id) method
+	to get update information from an given package changed @param to
+	:param in all docstings to work with python-sphinx for future use
+
+2012-05-18  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* dbus/org.baseurl.Yum.service, yum-daemon: Fix the org.baseurl.Yum
+	exec helper shebang to make the daemon work on F17
+
+2012-05-18  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* daemon.py, test/base.py, yum-daemon: Fix unit test so they work
+	with current F17 repos. fix issue in GetPackagesByName to not return
+	the same installed package more than one time, even if it available
+	in multiple repos.
+
+2011-03-13  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client.py, daemon.py, test/test-api.py, test/unit-devel.py: Added
+	GetGroups
+
+2011-03-13  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client.py, daemon.py, test/test-api.py, test/unit-devel.py: Add
+	Search with unit test
+
+2011-03-03  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* Makefile, daemon.py, test/test-api.py, test/unit-devel.py: - Added logging. - Fixed yum locking, so daemon dont keep yum locked
+	- Better transaction result return values. - Added watchdog to
+	terminate daemon if idle for a periode of time (20s)   If daemon is
+	locked and dont have done any work for a long periode of time then
+	terminate too. - Added command line option -v, --verbose to show
+	output from daemon - Added command line option -d, --debug to show
+	debug output - Added unit devel file to use while developing unit
+	test (make test-devel), so not all unit test has be run while
+	developing.
+
+2011-03-01  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* Makefile, test/test-api.py: add comment and removed some debug
+	code
+
+2011-03-01  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client.py, daemon.py, test/test-api.py: Added Downgrade,
+	Reinstall, Update + unittests
+
+2011-02-28  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README: Update README
+
+2011-02-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client.pyc, daemon.py, test/base.py, test/test-api.py: Added
+	support for multiple arguments to Install & Removed and update unit
+	tests
+
+2011-02-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* test/base.py, test/test-api.py: Added more unittests and removed
+	testcode from client API
+
+2011-02-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client.py, test/test-api.py: Added more unittests and removed
+	testcode from client API
+
+2011-02-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* examples/python/output.txt: remove output.txt
+
+2011-02-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* .gitignore: Added .gitignore
+
+2011-02-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client.pyc, examples/python/output.txt, test/base.py,
+	test/test-api.py: Add the testcases to git, DOOGH git add test
+
+2011-02-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client.py, daemon.py: More testcases and fixes for brokeness in
+	the API
+
+2011-02-27  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* Makefile: testcase cleanup and and more content
+
+2011-02-26  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* Makefile, client.py, daemon.py: Added test cases
+
+2011-02-26  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* daemon.py: Added permission and lock chek to all functions
+
+2011-02-21  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* examples/python/async-calls2.py: Another async example
+
+2011-02-21  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* examples/python/async-calls.py: Add some output to better see the
+	flow
+
+2011-02-21  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* examples/python/async-calls.py: Added a python example to show how
+	to make async calls to the Yum D-Bus API :)
+
+2011-02-15  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* examples/c/Makefile, examples/c/dbus-yum-test.c: Added c (glib)
+	examples of api usage
+
+2011-02-12  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client.py, daemon.py: Added GetRepository & GetRepo
+
+2011-02-12  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client.py, daemon.py: added GetConfig
+
+2011-02-12  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client.py, daemon.py: use json for returning non simple data types
+	(GetAttribute, BuildTransaction)
+
+2011-02-11  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* examples/vala/Makefile, examples/vala/yum-api-test.vala: Add api
+	usage examples in vala :)
+
+2011-02-11  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client.py, daemon.py: Make DBus method names CamelCase to follow
+	the conventions
+
+	http://dbus.freedesktop.org/doc/dbus-specification.html#naming-conventions
+
+2011-02-11  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* daemon.py: Better RPM callback messages
+
+2011-02-10  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README, client.py, daemon.py, monitor.py: Add DBus signal progress
+	callback to track the state of the running transaction.
+
+2011-02-10  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client.py, daemon.py: Added support for adding/buildin/running
+	transaction
+
+2011-02-10  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client.py: Cleanup test output
+
+2011-02-10  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* daemon.py: Added comments and doc strings
+
+2011-02-10  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client.py, daemon.py: Added get_packages_by_name
+
+2011-02-10  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* client.py, daemon.py: Added support to get attributes from yum
+	package object
+
+2011-02-10  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* README, client.py, daemon.py: added quit to client, updated README
+
+
+2011-02-10  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* Makefile, README: Added README and cleanup Makefile
+
+2011-02-10  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* Makefile, client.py, daemon.py, dbus/org.baseurl.Yum.service: Code
+	cleanup
+
+2011-02-09  Tim Lauridsen <timlau@fedoraproject.org>
+
+	* Added yum dbus daemon basics  Signed-off-by: Tim Lauridsen
+	<timlau@fedoraproject.org>
+
