@@ -118,7 +118,7 @@ test-builds:
 	@scp ~/rpmbuild/SRPMS/${PKGNAME}-${NEW_VER}*.rpm timlau.fedorapeople.org:public_html/files/${PKGNAME}/.
 
 get-builddeps:
-	yum install perl-TimeDate python-devel gettext intltool rpmdevtools
+	yum install perl-TimeDate gettext intltool rpmdevtools python-devel python3-devel
 
 FORCE:
     
