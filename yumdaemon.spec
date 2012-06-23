@@ -39,7 +39,7 @@ Python 3 api for communicating with the yum-daemon DBus service
 
 
 %files -n  python3-%{name}
-%{python3_sitelib}/%{name}/*
+%{python3_sitelib}/%{name}3/*
 
 %package -n python-%{name}
 Summary:        Python 2 api for communicating with the yum-daemon DBus service
@@ -52,12 +52,12 @@ Python 2 api for communicating with the yum-daemon DBus service
 
 
 %files -n  python-%{name}
-%{python_sitelib}/%{name}/*
+%{python_sitelib}/%{name}2/*
 
 %files
-%doc README.md examples/
+%doc README.md examples/ ChangeLog
 %{_datadir}/dbus-1/system-services/*
-%{_datadir}/%{name}/*
+%{_datadir}/%{name}/%{name}
 %{_datadir}/polkit-1/actions
 %{_sysconfdir}/dbus-1/system.d/*
 
