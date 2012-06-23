@@ -117,7 +117,8 @@ test-builds:
 	@scp ~/rpmbuild/RPMS/noarch/${PKGNAME}-${NEW_VER}*.rpm timlau.fedorapeople.org:public_html/files/${PKGNAME}/.
 	@scp ~/rpmbuild/SRPMS/${PKGNAME}-${NEW_VER}*.rpm timlau.fedorapeople.org:public_html/files/${PKGNAME}/.
 
-
+get-builddeps:
+	yum install perl-TimeDate python-devel gettext intltool rpmdevtools
 
 FORCE:
     
