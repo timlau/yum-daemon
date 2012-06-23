@@ -54,6 +54,9 @@ Python 2 api for communicating with the yum-daemon DBus service
 %files -n  python-%{name}
 %{python_sitelib}/%{name}2/*
 
+%post
+/usr/bin/chcon -t rpm_exec_t %{_datadir}/%{name}/%{name}
+
 %files
 %doc README.md examples/ ChangeLog
 %{_datadir}/dbus-1/system-services/*
