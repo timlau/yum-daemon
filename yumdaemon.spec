@@ -13,6 +13,9 @@ Requires:       dbus-python
 Requires:       yum >= 3.4.0
 Requires:       polkit
 
+Requires(post): 	policycoreutils-python
+Requires(postun): 	policycoreutils-python
+
 %description
 Dbus daemon for yum package actions
 
@@ -54,8 +57,17 @@ Python 2 api for communicating with the yum-daemon DBus service
 %files -n  python-%{name}
 %{python_sitelib}/%{name}2/*
 
+# apply the right selinux file context
+# http://fedoraproject.org/wiki/PackagingDrafts/SELinux#File_contexts
+
 %post
-/usr/bin/chcon -t rpm_exec_t %{_datadir}/%{name}/%{name}
+semanage fcontext -a -t rpm_exec_t '%{_datadir}/%{name}/%{name}' 2>/dev/null || :
+restorecon -R %{_datadir}/%{name}/%{name} || :
+
+%postun
+if [ $1 -eq 0 ] ; then  # final removal
+semanage fcontext -d -t rpm_exec_t '%{_datadir}/%{name}/%{name}' 2>/dev/null || :
+fi
 
 %files
 %doc README.md examples/ ChangeLog

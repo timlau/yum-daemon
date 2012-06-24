@@ -27,7 +27,6 @@ install:
 	install -m644 dbus/$(ORG_NAME).conf $(DESTDIR)/etc/dbus-1/system.d/.				
 	install -m644 policykit1/$(ORG_NAME).policy $(DESTDIR)/usr/share/polkit-1/actions/.				
 	install -m755 yumdaemon/yumdaemon $(DESTDIR)/$(PKGDIR)/.
-	chcon -t rpm_exec_t  $(DESTDIR)/$(PKGDIR)/yumdaemon
 	for d in $(SUBDIRS); do make DESTDIR=$(DESTDIR) -C $$d install; [ $$? = 0 ] || exit 1; done
 
 uninstall:
@@ -35,6 +34,11 @@ uninstall:
 	rm -f $(DESTDIR)/etc/dbus-1/system.d/$(ORG_NAME).*				
 	rm -r $(DESTDIR)/usr/share/polkit-1/actions/$(ORG_NAME).*		
 	rm -rf $(DESTDIR)/$(PKGDIR)/
+
+selinux:
+	@$(MAKE) install
+	semanage fcontext -a -t rpm_exec_t $(DESTDIR)/$(PKGDIR)/yumdaemon
+	restorecon $(DESTDIR)/$(PKGDIR)/yumdaemon
 	
 
 # Run as root or you will get a password prompt for each test method :)
@@ -67,7 +71,7 @@ changelog:
 	
 upload: FORCE
 	@scp ~/rpmbuild/SOURCES/${PKGNAME}-${VERSION}.tar.gz yum-extender.org:public_html/dnl/${PKGNAME}/source/.
-    
+	
 release:
 	@git commit -a -m "bumped version to $(VERSION)"
 	@git push
@@ -96,7 +100,7 @@ test-release:
 	# Make Changelog
 	@git log --pretty --numstat --summary | ./tools/git2cl > ChangeLog
 	@git commit -a -m "updated ChangeLog"
-    	# Make archive
+		# Make archive
 	@rm -rf ${PKGNAME}-${NEW_VER}.tar.gz
 	@git archive --format=tar --prefix=$(PKGNAME)-$(NEW_VER)/ HEAD | gzip -9v >${PKGNAME}-$(NEW_VER).tar.gz
 	# Build RPMS
@@ -121,4 +125,4 @@ get-builddeps:
 	yum install perl-TimeDate gettext intltool rpmdevtools python-devel python3-devel
 
 FORCE:
-    
+	
