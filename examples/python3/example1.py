@@ -24,7 +24,7 @@ class MyClient(YumDaemonClient):
             print("=" * 70)
             print("Search : yum ")
             print("=" * 70)
-            result = self.Search(["name"],["yum"], True)
+            result = self.Search(["name"],["yum"], True, False)
             for id in result:
                 print(" --> %s" % self._fullname(id))
         except AccessDeniedError as err:
