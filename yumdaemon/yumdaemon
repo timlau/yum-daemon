@@ -1196,6 +1196,10 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         #self._yumbase.doConfigSetup()
         # setup the download callback handler
         self._yumbase.repos.setProgressBar( DownloadCallback(self) )
+        # Disable parallel down for this repo, we dont support it
+        for repo in self._yumbase.repos.listEnabled():
+            repo._async = False
+        
         self._yumbase.doLock()
         self.logger.debug(' --> YUM LOCKED: Lockfile = %s' % self._yumbase._lockfile)
         
