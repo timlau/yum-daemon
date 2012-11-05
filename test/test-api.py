@@ -2,16 +2,16 @@ import sys, os
 sys.path.insert(0,os.path.abspath('client'))
 import dbus
 from base import TestBase
-from yumdaemon2 import YumLockedError
+from yumdaemon import YumLockedError
 import unittest
 import json
 
 
 class TestAPI(TestBase):
-    
+
     def __init__(self, methodName='runTest'):
         TestBase.__init__(self, methodName)
-        
+
     def test_Locking(self):
         '''
         Test Unlock and Lock
@@ -25,15 +25,15 @@ class TestAPI(TestBase):
         self.assertRaises(YumLockedError,self.client.Unlock)
         # get the Lock again, else tearDown will fail
         self.client.Lock()
-        
+
     def test_InstallRemove(self):
         '''
         Test Install and Remove
         '''
         print
         # Make sure that the test packages is not installed
-        result = self.client.Remove('0xFFFF Hermes')                
-        self.assertIsInstance(result, dbus.String)
+        result = self.client.Remove('0xFFFF Hermes')
+        self.assertIsInstance(result, str)
         rc, output = json.loads(result)
         if rc == 2:
             self.show_transaction_result(output)
@@ -41,18 +41,18 @@ class TestAPI(TestBase):
         # Both test packages should be uninstalled now
         self.assertFalse(self._is_installed('0xFFFF'))
         self.assertFalse(self._is_installed('Hermes'))
-        # Install the test packages    
+        # Install the test packages
         print "Installing Test Packages : 0xFFFF Hermes"
         result = self.client.Install('0xFFFF Hermes')
-        # result should be a dbus.String instance
-        self.assertIsInstance(result, dbus.String)
+        # result should be a str instance
+        self.assertIsInstance(result, str)
         rc, output = json.loads(result)
         print('  Return Code : %i' % rc)
         self.assertEqual(rc,2)
         self.show_transaction_result(output)
         self.assertGreater(len(output),0)
         for action, pkgs in output:
-            self.assertEqual(action,u'install')                    
+            self.assertEqual(action,u'install')
             self.assertGreater(len(pkgs),0)
         self.client.RunTransaction()
         # Both test packages should be installed now
@@ -60,9 +60,9 @@ class TestAPI(TestBase):
         self.assertTrue(self._is_installed('Hermes'))
         # Remove the test packages
         print "Removing Test Packages : 0xFFFF Hermes"
-        result = self.client.Remove('0xFFFF Hermes')                
-        # result should be a dbus.String instance
-        self.assertIsInstance(result, dbus.String)
+        result = self.client.Remove('0xFFFF Hermes')
+        # result should be a str instance
+        self.assertIsInstance(result, str)
         rc, output = json.loads(result)
         print('  Return Code : %i' % rc)
         self.assertEqual(rc,2)
@@ -78,14 +78,14 @@ class TestAPI(TestBase):
         Test Reinstall
         '''
         result = self.client.Reinstall('gedit yumex')
-        self.assertIsInstance(result, dbus.String)
+        self.assertIsInstance(result, str)
         rc, output = json.loads(result)
         print('  Return Code : %i' % rc)
         self.assertEqual(rc,2)
         self.show_transaction_result(output)
         self.assertGreater(len(output),0)
         for action, pkgs in output:
-            self.assertEqual(action,u'install')                    
+            self.assertEqual(action,u'install')
             self.assertEqual(len(pkgs),2)
         self.client.RunTransaction()
 
@@ -100,7 +100,7 @@ class TestAPI(TestBase):
         if not len(pkgs) > 1:
             unittest.skip('more than one available version of yumex is needed for downgrade test')
         result = self.client.Downgrade('yumex')
-        self.assertIsInstance(result, dbus.String)
+        self.assertIsInstance(result, str)
         rc, output = json.loads(result)
         print('  Return Code : %i' % rc)
         self.assertEqual(rc,2)
@@ -108,18 +108,18 @@ class TestAPI(TestBase):
         self.assertGreater(len(output),0)
         for action, pkgs in output:
             # old version of yumex might need python-enum
-            self.assertIn(action,[u'install',u'remove',u'install'])                    
+            self.assertIn(action,[u'install',u'remove',u'install'])
             self.assertGreater(len(pkgs),0)
         self.client.RunTransaction()
         result = self.client.Update('yumex')
-        self.assertIsInstance(result, dbus.String)
+        self.assertIsInstance(result, str)
         rc, output = json.loads(result)
         print('  Return Code : %i' % rc)
         self.assertEqual(rc,2)
         self.show_transaction_result(output)
         self.assertGreater(len(output),0)
         for action, pkgs in output:
-            self.assertEqual(action,u'update')                    
+            self.assertEqual(action,u'update')
             self.assertGreater(len(pkgs),0)
         self.client.RunTransaction()
 
@@ -131,9 +131,9 @@ class TestAPI(TestBase):
         print
         print "Get all available versions of yum"
         pkgs = self.client.GetPackagesByName('yum', newest_only=False)
-        # pkgs should be a dbus.Array instance
-        self.assertIsInstance(pkgs, dbus.Array)
-        num1 = len(pkgs)            
+        # pkgs should be a list instance
+        self.assertIsInstance(pkgs, list)
+        num1 = len(pkgs)
         self.assertNotEqual(num1, 0) # yum should always be there
         for pkg in pkgs:
             print "  Package : %s" % pkg
@@ -141,9 +141,9 @@ class TestAPI(TestBase):
             self.assertEqual(n,"yum")
         print "Get newest versions of yum"
         pkgs = self.client.GetPackagesByName('yum', newest_only=True)
-        # pkgs should be a dbus.Array instance
-        self.assertIsInstance(pkgs, dbus.Array)
-        num2 = len(pkgs)            
+        # pkgs should be a list instance
+        self.assertIsInstance(pkgs, list)
+        num2 = len(pkgs)
         self.assertEqual(num2, 1) # there can only be one :)
         for pkg in pkgs:
             print "  Package : %s" % pkg
@@ -151,9 +151,9 @@ class TestAPI(TestBase):
             self.assertEqual(n,"yum")
         print "Get the newest packages starting with yum-plugin-"
         pkgs = self.client.GetPackagesByName('yum-plugin-*', newest_only=True)
-        # pkgs should be a dbus.Array instance
-        self.assertIsInstance(pkgs, dbus.Array)
-        num3 = len(pkgs)            
+        # pkgs should be a list instance
+        self.assertIsInstance(pkgs, list)
+        num3 = len(pkgs)
         self.assertGreater(num3, 1) # there should be more than one :)
         for pkg in pkgs:
             print "  Package : %s" % pkg
@@ -161,7 +161,7 @@ class TestAPI(TestBase):
             self.assertTrue(n.startswith('yum'))
 
 
-    
+
     def test_AddTransaction(self):
         '''
         Test AddTransaction
@@ -173,9 +173,9 @@ class TestAPI(TestBase):
         (n, e, v, r, a, repo_id, ts_state) = self.client.to_txmbr_tuple(txmbrs[0])
         if repo_id[0] == '@': # is installed ?
             self.assertEqual(ts_state,'e') # if package is install, then remove
-        else:                                        
+        else:
             self.assertEqual(ts_state,'u') # if package is not install, then install
-            
+
     def test_GetTransaction(self):
         '''
         Test GetTransaction
@@ -183,29 +183,29 @@ class TestAPI(TestBase):
         print
         self._add_to_transaction('0xFFFF')
         txmbrs = self.client.GetTransaction()
-        self.assertIsInstance(txmbrs, dbus.Array)
+        self.assertIsInstance(txmbrs, list)
         self.assertEqual(len(txmbrs),1)
         (n, e, v, r, a, repo_id, ts_state) = self.client.to_txmbr_tuple(txmbrs[0])
         self.assertEqual(n,'0xFFFF')
         # clear the transaction
         self.client.ClearTransaction()
         txmbrs = self.client.GetTransaction()
-        self.assertIsInstance(txmbrs, dbus.Array)
+        self.assertIsInstance(txmbrs, list)
         self.assertEqual(len(txmbrs),0) # Transaction should be empty
-        
-        
+
+
     def test_RunTransaction(self):
         '''
         Test RunTransaction
         '''
         print
-        # Do it twice to revert it 
+        # Do it twice to revert it
         for x in range(2):
             txmbrs = self._add_to_transaction('0xFFFF')
             self.assertEqual(len(txmbrs),1)
             self.show_transaction_list(txmbrs)
             self._run_transaction()
-            
+
 
     def test_GetPackages(self):
         '''
@@ -215,7 +215,7 @@ class TestAPI(TestBase):
         for narrow in ['installed','available']:
             print(' Getting packages : %s' % narrow)
             pkgs = self.client.GetPackages(narrow)
-            self.assertIsInstance(pkgs, dbus.Array)
+            self.assertIsInstance(pkgs, list)
             self.assertGreater(len(pkgs),0) # the should be more than once
             print('  packages found : %s ' % len(pkgs))
             id = pkgs[-1] # last pkg in list
@@ -223,7 +223,7 @@ class TestAPI(TestBase):
         for narrow in ['updates','obsoletes','recent','extras']:
             print(' Getting packages : %s' % narrow)
             pkgs = self.client.GetPackages(narrow)
-            self.assertIsInstance(pkgs, dbus.Array)
+            self.assertIsInstance(pkgs, list)
             print('  packages found : %s ' % len(pkgs))
             if len(pkgs) > 0:
                 id = pkgs[0] # last pkg in list
@@ -231,12 +231,12 @@ class TestAPI(TestBase):
         for narrow in ['notfound']: # Dont exist, but it should not blow up
             print(' Getting packages : %s' % narrow)
             pkgs = self.client.GetPackages(narrow)
-            self.assertIsInstance(pkgs, dbus.Array)
+            self.assertIsInstance(pkgs, list)
             self.assertEqual(len(pkgs),0) # the should be notting
             print('  packages found : %s ' % len(pkgs))
 
     def test_GetConfig(self):
-        ''' 
+        '''
         Test GetConfig
         '''
         all_conf = self.client.GetConfig('*')
@@ -245,14 +245,14 @@ class TestAPI(TestBase):
             print "   %s = %s" % (key,all_conf[key])
         kpn = self.client.GetConfig('kernelpkgnames')
         self.assertIsInstance(kpn, list)
-        print "kernelpkgnames : %s" % kpn        
+        print "kernelpkgnames : %s" % kpn
         skip_broken = self.client.GetConfig('skip_broken')
         self.assertIn(skip_broken, [True,False])
         print "skip_broken : %s" % skip_broken
         not_found = self.client.GetConfig('not_found')
         print "not_found : %s" % not_found
         self.assertIsNone(not_found)
-    
+
     def test_GetRepositories(self):
         '''
         Test GetRepository and GetRepo
@@ -273,7 +273,7 @@ class TestAPI(TestBase):
         # check for a repo not there
         repo = self.client.GetRepo('XYZCYZ')
         self.assertIsNone(repo)
-    
+
     def test_Search(self):
         '''
         Testing Search
@@ -281,7 +281,7 @@ class TestAPI(TestBase):
         fields = ['name','summary']
         keys = ['yum','plugin']
         pkgs = self.client.Search(fields, keys ,True,True)
-        self.assertIsInstance(pkgs, dbus.Array)
+        self.assertIsInstance(pkgs, list)
         for p in pkgs:
             summary = self.client.GetAttribute(p,'summary')
             print str(p),summary
@@ -289,12 +289,12 @@ class TestAPI(TestBase):
             self.assertTrue(keys[1] in str(p) or keys[1] in summary)
         keys = ['yum','zzzzddddsss'] # second key should not be found
         pkgs = self.client.Search(fields, keys ,True,True)
-        self.assertIsInstance(pkgs, dbus.Array)
+        self.assertIsInstance(pkgs, list)
         print "found %i packages" % len(pkgs)
         self.assertEqual(len(pkgs), 0) # when should not find any matches
         keys = ['yum','zzzzddddsss'] # second key should not be found
         pkgs = self.client.Search(fields, keys ,False, True)
-        self.assertIsInstance(pkgs, dbus.Array)
+        self.assertIsInstance(pkgs, list)
         print "found %i packages" % len(pkgs)
         self.assertGreater(len(pkgs), 0) # we should find some matches
 
@@ -304,12 +304,12 @@ class TestAPI(TestBase):
             # cat: [category_id, category_name, category_desc]
             self.assertIsInstance(cat, list) # cat is a list
             self.assertIsInstance(grps, list) # grps is a list
-            self.assertEqual(len(cat),3) # cat has 3 elements                    
+            self.assertEqual(len(cat),3) # cat has 3 elements
             print " --> %s" % cat[0]
             for grp in grps:
                 # [group_id, group_name, group_desc, group_is_installed]
                 self.assertIsInstance(grp, list) # grp is a list
-                self.assertEqual(len(grp),4) # grp has 4 elements                    
+                self.assertEqual(len(grp),4) # grp has 4 elements
                 print "   tag: %s name: %s \n   desc: %s \n   installed : %s " % tuple(grp)
 
 
@@ -320,11 +320,11 @@ class TestAPI(TestBase):
             print(" --> Checking filter : %s" % pkg_filter)
             result = self.client.GetPackageWithAttributes(pkg_filter, ['summary','size'])
             self.assertIsInstance(result, list) # cat is a list
-            print("     Got %i packages" % len(result))            
+            print("     Got %i packages" % len(result))
             if len(result) > 1:
                 self.assertIsInstance(result[1], list) # cat is a list
                 self.assertEqual(len(result[1]),3)
-            
+
 
     def test_History(self):
         result = self.client.GetHistoryByDays(0, 5)
@@ -338,5 +338,5 @@ class TestAPI(TestBase):
             for (id, state, is_installed) in pkgs:
                 print id, state, is_installed
                 self.assertIsInstance(id, unicode)
-                self.assertIsInstance(state, unicode)                
-                self.assertIsInstance(is_installed, bool)        
+                self.assertIsInstance(state, unicode)
+                self.assertIsInstance(is_installed, bool)

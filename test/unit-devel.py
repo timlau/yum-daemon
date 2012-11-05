@@ -2,7 +2,7 @@ import sys, os
 sys.path.insert(0,os.path.abspath('client'))
 import dbus
 from base import TestBase
-from yumdaemon2 import YumLockedError
+from yumdaemon import YumLockedError
 import unittest
 import json
 
@@ -14,7 +14,7 @@ use 'nosetest -v -s unit-devel.py' to run the tests
 """
 
 class TestAPIDevel(TestBase):
-    
+
     def __init__(self, methodName='runTest'):
         TestBase.__init__(self, methodName)
 
@@ -37,7 +37,7 @@ class TestAPIDevel(TestBase):
 #        self.show_transaction_result(output)
 #        self.assertGreater(len(output),0)
 #        for action, pkgs in output:
-#            self.assertEqual(action,u'Updating')                    
+#            self.assertEqual(action,u'Updating')
 #            self.assertGreater(len(pkgs),0)
 #        self.client.RunTransaction()
 
@@ -54,8 +54,7 @@ class TestAPIDevel(TestBase):
 #            for (id, state, is_installed) in pkgs:
 #                print id, state, is_installed
 #                self.assertIsInstance(id, unicode)
-#                self.assertIsInstance(state, unicode)                
+#                self.assertIsInstance(state, unicode)
 #                self.assertIsInstance(is_installed, bool)
-                
-            
-        
+
+
