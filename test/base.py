@@ -27,14 +27,14 @@ class TestBase(unittest.TestCase, YumDaemonClient):
                 print("%s" % line)
 
     def show_package_list(self, pkgs):
-        for id in pkgs:
-            (n, e, v, r, a, repo_id) = self.to_pkg_tuple(id)
+        for pkg_id in pkgs:
+            (n, e, v, r, a, repo_id) = self.to_pkg_tuple(pkg_id)
             print " --> %s-%s:%s-%s.%s (%s)" % (n, e, v, r, a, repo_id)
 
     def show_transaction_list(self, pkgs):
-        for id in pkgs:
-            id = str(id)
-            (n, e, v, r, a, repo_id, ts_state) = self.to_txmbr_tuple(id)
+        for pkg_id in pkgs:
+            pkg_id = str(pkg_id)
+            (n, e, v, r, a, repo_id, ts_state) = self.to_txmbr_tuple(pkg_id)
             print " --> %s-%s:%s-%s.%s (%s) - %s" % (n, e, v, r, a, repo_id, ts_state)
 
     def show_transaction_result(self, output):
