@@ -206,16 +206,16 @@ class TestAPI(TestBase):
             self.assertIsInstance(pkgs, list)
             self.assertGreater(len(pkgs),0) # the should be more than once
             print('  packages found : %s ' % len(pkgs))
-            id = pkgs[-1] # last pkg in list
-            self._show_package(id)
+            pkg_id = pkgs[-1] # last pkg in list
+            self._show_package(pkg_id)
         for narrow in ['updates','obsoletes','recent','extras']:
             print(' Getting packages : %s' % narrow)
             pkgs = self.GetPackages(narrow)
             self.assertIsInstance(pkgs, list)
             print('  packages found : %s ' % len(pkgs))
             if len(pkgs) > 0:
-                id = pkgs[0] # last pkg in list
-                self._show_package(id)
+                pkg_id = pkgs[0] # last pkg in list
+                self._show_package(pkg_id)
         for narrow in ['notfound']: # Dont exist, but it should not blow up
             print(' Getting packages : %s' % narrow)
             pkgs = self.GetPackages(narrow)

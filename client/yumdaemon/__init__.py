@@ -54,7 +54,7 @@ import sys
 import re
 import weakref
 
-from gi.repository import GLib, Gio, GObject
+from gi.repository import Gio, GObject
 
 DAEMON_ORG = 'org.baseurl.Yum'
 DAEMON_INTERFACE = DAEMON_ORG+'.Interface'

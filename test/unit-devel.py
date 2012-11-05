@@ -2,8 +2,7 @@ import sys, os
 sys.path.insert(0,os.path.abspath('client'))
 from base import TestBase
 from yumdaemon import YumLockedError
-import unittest
-from nose.exc import SkipTest
+#from nose.exc import SkipTest
 
 """
 This module is used for testing new unit tests
