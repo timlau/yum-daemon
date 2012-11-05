@@ -1,11 +1,10 @@
-#!/usr/bin/python3
 '''
-A simple example of how to use the yumdaemon client API for python 3 
+A simple example of how to use the yumdaemon client API for python 2 or 3 
 
 The example show how to install & remove the '0xFFFF' package
 
 '''
-from yumdaemon3 import YumDaemonClient, AccessDeniedError, YumLockedError, YumDaemonError, YumTransactionError
+from yumdaemon import YumDaemonClient, AccessDeniedError, YumLockedError, YumDaemonError, YumTransactionError
 
 class MyClient(YumDaemonClient):
 

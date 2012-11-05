@@ -1,5 +1,5 @@
 Name:           yumdaemon
-Version:        0.9.0
+Version:        0.9.1
 Release:        1%{?dist}
 Summary:        Dbus daemon for yum package actions
 
@@ -42,20 +42,21 @@ Python 3 api for communicating with the yum-daemon DBus service
 
 
 %files -n  python3-%{name}
-%{python3_sitelib}/%{name}3/*
+%{python3_sitelib}/%{name}/*
 
 %package -n python-%{name}
 Summary:        Python 2 api for communicating with the yum-daemon DBus service
 Group:          Applications/System
 BuildRequires:  python2-devel
 Requires:       %{name} = %{version}-%{release}
+Requires:       gobject-introspection
 
 %description -n python-%{name}
 Python 2 api for communicating with the yum-daemon DBus service
 
 
 %files -n  python-%{name}
-%{python_sitelib}/%{name}2/*
+%{python_sitelib}/%{name}/*
 
 # apply the right selinux file context
 # http://fedoraproject.org/wiki/PackagingDrafts/SELinux#File_contexts
@@ -78,5 +79,7 @@ fi
 
 
 %changelog
+* Mon Nov 5 2012 Tim Lauridsen <timlau@fedoraproject.org> 0.9.1-1
+- both python2 & python3 uses same sources
 * Sat May 26 2012 Tim Lauridsen <timlau@fedoraproject.org> 0.9.0-1
 - Initial rpm for yum-daemon

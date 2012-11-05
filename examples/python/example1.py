@@ -1,11 +1,10 @@
-#!/usr/bin/python3
 '''
-A simple example of how to use the yumdaemon client API for python 3 
+A simple example of how to use the yumdaemon client API for python 2 or 3 
 
 This example show how to get available updates (incl. summary & size) and
 how to search for packages where 'yum' is in the name.
 '''
-from yumdaemon3 import YumDaemonClient, AccessDeniedError, YumLockedError, YumDaemonError, YumTransactionError
+from yumdaemon import YumDaemonClient, AccessDeniedError, YumLockedError, YumDaemonError, YumTransactionError
 
 class MyClient(YumDaemonClient):
 

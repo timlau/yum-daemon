@@ -1,4 +1,3 @@
-#!/usr/bin/python3 -tt
 #coding: utf-8
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -17,7 +16,7 @@
 # (C) 2012 - Tim Lauridsen <timlau@fedoraproject.org>
 
 """
-This is a Python 3.x client API for the yum-daemon Dbus Service
+This is a Python 2.x & 3.x client API for the yum-daemon Dbus Service
 
 This module gives a simple pythonic interface to doing Yum package action using the 
 yum-daemon Dbus service.
@@ -27,7 +26,7 @@ It use async call to the yum-daemon, so signal can be catched and a Gtk gui dont
 Usage: (Make your own subclass based on :class:`yumdaemon3.YumDaemonClient` and overload the signal handlers)::
 
 
-    from yumdaemon3 import YumDaemonClient
+    from yumdaemon import YumDaemonClient
     
     class MyClient(YumDaemonClient):
     
