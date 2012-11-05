@@ -2,21 +2,19 @@ import sys
 import os.path
 sys.path.insert(0,os.path.abspath('client'))
 import unittest
-import dbus
-import json
 from datetime import date
 from yumdaemon import YumDaemonClient
 
-class TestBase(unittest.TestCase):
+class TestBase(unittest.TestCase, YumDaemonClient):
     def __init__(self, methodName='runTest'):
         unittest.TestCase.__init__(self, methodName)
-        self.client = YumDaemonClient()
+        YumDaemonClient.__init__(self)
 
     def setUp(self):
-        self.client.Lock()
+        self.Lock()
 
     def tearDown(self):
-        self.client.Unlock()
+        self.Unlock()
 
     def show_changelog(self, changelog, max_elem=3):
         i = 0
@@ -30,13 +28,13 @@ class TestBase(unittest.TestCase):
 
     def show_package_list(self, pkgs):
         for id in pkgs:
-            (n, e, v, r, a, repo_id) = self.client.to_pkg_tuple(id)
+            (n, e, v, r, a, repo_id) = self.to_pkg_tuple(id)
             print " --> %s-%s:%s-%s.%s (%s)" % (n, e, v, r, a, repo_id)
 
     def show_transaction_list(self, pkgs):
         for id in pkgs:
             id = str(id)
-            (n, e, v, r, a, repo_id, ts_state) = self.client.to_txmbr_tuple(id)
+            (n, e, v, r, a, repo_id, ts_state) = self.to_txmbr_tuple(id)
             print " --> %s-%s:%s-%s.%s (%s) - %s" % (n, e, v, r, a, repo_id, ts_state)
 
     def show_transaction_result(self, output):
@@ -50,17 +48,17 @@ class TestBase(unittest.TestCase):
         '''
         Helper to add a package to transaction
         '''
-        pkgs = self.client.GetPackagesByName(name, newest_only=True)
+        pkgs = self.GetPackagesByName(name, newest_only=True)
         # pkgs should be a list instance
         self.assertIsInstance(pkgs, list)
         self.assertEqual(len(pkgs),1)
         pkg = pkgs[0]
-        (n, e, v, r, a, repo_id) = self.client.to_pkg_tuple(pkg)
+        (n, e, v, r, a, repo_id) = self.to_pkg_tuple(pkg)
         if repo_id[0] == '@':
             action='remove'
         else:
             action='install'
-        txmbrs = self.client.AddTransaction(pkg,action)
+        txmbrs = self.AddTransaction(pkg,action)
         self.assertIsInstance(txmbrs, list)
         return txmbrs
 
@@ -70,43 +68,53 @@ class TestBase(unittest.TestCase):
         '''
         print('************** Running the current transaction *********************')
         if build:
-            result = self.client.BuildTransaction()
-            self.assertIsInstance(result, str)
-            rc, output = json.loads(result)
+            rc, output = self.BuildTransaction()
             self.assertEqual(rc,2)
             self.show_transaction_result(output)
             self.assertGreater(len(output),0)
-        self.client.RunTransaction()
+        self.RunTransaction()
 
     def _is_installed(self, name):
-        pkgs = self.client.GetPackagesByName(name, newest_only=True)
+        pkgs = self.GetPackagesByName(name, newest_only=True)
         # pkgs should be a list instance
         self.assertIsInstance(pkgs, list)
         self.assertTrue(len(pkgs)>0)
         for pkg in pkgs:
-            (n, e, v, r, a, repo_id) = self.client.to_pkg_tuple(pkg)
+            (n, e, v, r, a, repo_id) = self.to_pkg_tuple(pkg)
             if repo_id[0] == '@':
                 return True
         return False
 
     def _show_package(self, id):
-        (n, e, v, r, a, repo_id) = self.client.to_pkg_tuple(id)
+        (n, e, v, r, a, repo_id) = self.to_pkg_tuple(id)
         print "\nPackage attributes"
         self.assertIsInstance(n, str)
         print "Name : %s " % n
-        summary = self.client.GetAttribute(id, 'summary')
+        summary = self.GetAttribute(id, 'summary')
         self.assertIsInstance(summary, unicode)
         print "Summary : %s" % summary
         print "\nDescription:"
-        desc = self.client.GetAttribute(id, 'description')
+        desc = self.GetAttribute(id, 'description')
         self.assertIsInstance(desc, unicode)
         print desc
         print "\nChangelog:"
-        changelog = self.client.GetAttribute(id, 'changelog')
+        changelog = self.GetAttribute(id, 'changelog')
         self.assertIsInstance(changelog, list)
         self.show_changelog(changelog, max_elem=2)
         # Check a not existing attribute dont make it blow up
-        notfound = self.client.GetAttribute(id, 'notfound')
+        notfound = self.GetAttribute(id, 'notfound')
         self.assertIsNone(notfound)
         print " Value of attribute 'notfound' : %s" % notfound
 
+###############################################################################
+# Dbus Signal Handlers
+###############################################################################
+
+    def on_UpdateProgress(self,name,frac,fread,ftime):
+        pass
+
+    def on_TransactionEvent(self,event, data):
+        pass
+
+    def on_RPMProgress(self, package, action, te_current, te_total, ts_current, ts_total):
+        pass

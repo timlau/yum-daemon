@@ -61,6 +61,11 @@ DAEMON_INTERFACE = DAEMON_ORG+'.Interface'
 
 DBUS_ERR_RE = re.compile('^GDBus.Error:([\w\.]*): (.*)$')
 
+###############################################################################
+# Exceptions
+###############################################################################
+
+
 class YumDaemonError(Exception):
     'Error from the backend'
 
@@ -72,6 +77,11 @@ class YumLockedError(YumDaemonError):
 
 class YumTransactionError(YumDaemonError):
     'The yum transaction failed'
+
+###############################################################################
+# Helper Classes
+###############################################################################
+
 
 class DBus:
     '''
@@ -109,6 +119,9 @@ class WeakMethod:
 # Get the system bus
 system = DBus(Gio.bus_get_sync(Gio.BusType.SYSTEM, None))
 
+###############################################################################
+# Main Client Class
+###############################################################################
 
 
 class YumDaemonClient:
@@ -148,24 +161,6 @@ class YumDaemonClient:
         else:
             print("Unhandled Signal : "+signal," Param: ",args)
 
-    def on_UpdateProgress(self,name,frac,fread,ftime):
-        if name.startswith('repomd'):
-            print("repo metadata : %.2f" % frac)
-        elif "/" in name:
-            repo,file = name.split("/")
-            print("getting %s from %s repository : %.2f" % (file,repo,frac))
-        else:
-            print("downloading : %s %s" % (name,frac))
-
-    def on_TransactionEvent(self,event, data):
-        print("TransactionEvent : %s" % event)
-        if data:
-            print("Data :\n", data)
-
-    def on_RPMProgress(self, package, action, te_current, te_total, ts_current, ts_total):
-        print("RPMProgress : %s %s" % (action, package))
-
-
     def _handle_dbus_error(self, err):
         '''
         Parse error from service and raise python Exceptions
@@ -173,6 +168,7 @@ class YumDaemonClient:
         :type err:
         '''
         exc, msg = self._parse_error()
+        print (exc,msg)
         if exc == DAEMON_ORG+'.AccessDeniedError':
             raise AccessDeniedError(msg)
         elif exc == DAEMON_ORG+'.YumLockedError':
@@ -247,6 +243,32 @@ class YumDaemonClient:
         '''
         func = getattr(self.daemon,cmd)
         return func(*args)
+
+###############################################################################
+# Dbus Signal Handlers (Overload in child class)
+###############################################################################
+
+    def on_UpdateProgress(self,name,frac,fread,ftime):
+        if name.startswith('repomd'):
+            print("repo metadata : %.2f" % frac)
+        elif "/" in name:
+            repo,file = name.split("/")
+            print("getting %s from %s repository : %.2f" % (file,repo,frac))
+        else:
+            print("downloading : %s %s" % (name,frac))
+
+    def on_TransactionEvent(self,event, data):
+        print("TransactionEvent : %s" % event)
+        if data:
+            print("Data :\n", data)
+
+    def on_RPMProgress(self, package, action, te_current, te_total, ts_current, ts_total):
+        print("RPMProgress : %s %s" % (action, package))
+
+
+###############################################################################
+# API Methods
+###############################################################################
 
 
     def Lock(self):
