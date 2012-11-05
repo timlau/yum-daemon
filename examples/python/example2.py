@@ -1,5 +1,5 @@
 '''
-A simple example of how to use the yumdaemon client API for python 2 or 3 
+A simple example of how to use the yumdaemon client API for python 2 or 3
 
 The example show how to install & remove the '0xFFFF' package
 
@@ -10,7 +10,7 @@ class MyClient(YumDaemonClient):
 
     def __init(self):
         YumDaemonClient.__init__(self)
-        
+
     def do_something(self):
         try:
             self.Lock()
@@ -48,7 +48,7 @@ class MyClient(YumDaemonClient):
             print("Yum Locked : \n\t"+str(err))
         except YumTransactionError as err:
             print("Yum Transaction Error : \n\t"+str(err))
-        except YumDaemonError as err:    
+        except YumDaemonError as err:
             print("Error in Yum Backend : \n\t"+str(err))
             print(err)
         finally:
@@ -57,7 +57,7 @@ class MyClient(YumDaemonClient):
                 self.Unlock()
             except:
                 pass
-            
+
     def _fullname(self,id):
         ''' Package fullname  '''
         (n, e, v, r, a, repo_id)  = str(id).split(',')
@@ -73,21 +73,8 @@ class MyClient(YumDaemonClient):
                 id, size, obs_list = pkg_list  # (pkg_id, size, list with id's obsoleted by this pkg)
                 print ("    --> %-50s : %s" % (self._fullname(id),size))
 
-                    
-    def on_UpdateProgress(self,name,frac,fread,ftime):
-        print("   --> Downloading : %s (%i %%) " % (name, int(frac*100)))
-
-    def on_TransactionEvent(self,event):
-        print("Event: ", event)
-
-    def on_RPMProgress(self, package, action, te_current, te_total, ts_current, ts_total):
-        if action == 'erase':
-            print("   --> %s : %s :" % (action,package))
-        else:
-            print("   --> %s : %s : (%.2f / %.2f)" % (action,self._fullname(package),te_current, te_total))
-
 if __name__ == "__main__":
-    
+
     cli = MyClient()
     cli.do_something()
 

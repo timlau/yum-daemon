@@ -1,5 +1,5 @@
 '''
-A simple example of how to use the yumdaemon client API for python 2 or 3 
+A simple example of how to use the yumdaemon client API for python 2 or 3
 
 This example show how to get available updates (incl. summary & size) and
 how to search for packages where 'yum' is in the name.
@@ -10,7 +10,7 @@ class MyClient(YumDaemonClient):
 
     def __init(self):
         YumDaemonClient.__init__(self)
-        
+
     def do_something(self):
         try:
             self.Lock()
@@ -32,7 +32,7 @@ class MyClient(YumDaemonClient):
             print("Yum Locked : \n\t"+str(err))
         except YumTransactionError as err:
             print("Yum Transaction Error : \n\t"+str(err))
-        except YumDaemonError as err:    
+        except YumDaemonError as err:
             print("Error in Yum Backend : \n\t"+str(err))
             print(err)
         finally:
@@ -41,7 +41,7 @@ class MyClient(YumDaemonClient):
                 self.Unlock()
             except:
                 pass
-            
+
     def _fullname(self,id):
         ''' Package fullname  '''
         (n, e, v, r, a, repo_id)  = str(id).split(',')
@@ -50,18 +50,9 @@ class MyClient(YumDaemonClient):
         else:
             return "%s-%s-%s.%s (%s)" % (n, v, r, a, repo_id)
 
-                    
-    def on_UpdateProgress(self,name,frac,fread,ftime):
-        pass
-
-    def on_TransactionEvent(self,event):
-        pass
-
-    def on_RPMProgress(self, package, action, te_current, te_total, ts_current, ts_total):
-        pass
 
 if __name__ == "__main__":
-    
+
     cli = MyClient()
     cli.do_something()
 
