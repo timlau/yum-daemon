@@ -56,7 +56,10 @@ test-devel: FORCE
 
 
 instdeps:
-	sudo yum install python-nose	
+	sudo yum install python-nose python3-gobject pygobject3	
+
+get-builddeps:
+	yum install perl-TimeDate gettext intltool rpmdevtools python-devel python3-devel
 
 archive:
 	@rm -rf ${PKGNAME}-${VERSION}.tar.gz
@@ -121,8 +124,6 @@ test-builds:
 	@scp ~/rpmbuild/RPMS/noarch/python3-${PKGNAME}-${NEW_VER}*.rpm timlau.fedorapeople.org:public_html/files/${PKGNAME}/.
 	@scp ~/rpmbuild/SRPMS/${PKGNAME}-${NEW_VER}*.rpm timlau.fedorapeople.org:public_html/files/${PKGNAME}/.
 
-get-builddeps:
-	yum install perl-TimeDate gettext intltool rpmdevtools python-devel python3-devel
 
 FORCE:
 	

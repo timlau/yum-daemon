@@ -35,7 +35,7 @@ Summary:        Python 3 api for communicating with the yum-daemon DBus service
 Group:          Applications/System
 BuildRequires:  python3-devel
 Requires:       %{name} = %{version}-%{release}
-Requires:       gobject-introspection
+Requires:       python3-gobject
 
 %description -n python3-%{name}
 Python 3 api for communicating with the yum-daemon DBus service
@@ -49,7 +49,7 @@ Summary:        Python 2 api for communicating with the yum-daemon DBus service
 Group:          Applications/System
 BuildRequires:  python2-devel
 Requires:       %{name} = %{version}-%{release}
-Requires:       gobject-introspection
+Requires:       pygobject3
 
 %description -n python-%{name}
 Python 2 api for communicating with the yum-daemon DBus service
