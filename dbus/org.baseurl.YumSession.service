@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=org.baseurl.YumSession
+Exec=/usr/share/yumdaemon/yumdaemon-session

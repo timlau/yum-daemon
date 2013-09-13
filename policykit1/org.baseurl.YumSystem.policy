@@ -5,7 +5,7 @@
 <policyconfig>
   <vendor>Yum</vendor>
   <vendor_url>http://yum.baseurl.org/</vendor_url>
-  <action id="org.baseurl.Yum">
+  <action id="org.baseurl.YumSystem">
     <description>Yum</description>
     <message>Starting Yum backend with root access</message>
     <defaults>

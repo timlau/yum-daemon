@@ -23,6 +23,13 @@ yum-daemon Dbus service.
 
 It use async call to the yum-daemon, so signal can be catched and a Gtk gui dont get unresonsive
 
+There is 2 classes YumDaemonClient & YumDaemonClientReadOnly
+
+YumDaemonClient uses a system DBus service running as root and can make chages to the system.
+
+YumDaemonReadOnlyClient uses a session DBus service running as current user and can only do readonly
+actions.
+
 Usage: (Make your own subclass based on :class:`yumdaemon3.YumDaemonClient` and overload the signal handlers)::
 
 
@@ -47,6 +54,21 @@ Usage: (Make your own subclass based on :class:`yumdaemon3.YumDaemonClient` and 
             pass
 
 
+Usage: (Make your own subclass based on :class:`yumdaemon.YumDaemonReadonlyClient` and overload the signal handlers)::
+
+
+    from yumdaemon import YumDaemonReadOnlyClient
+
+    class MyClient(YumDaemonReadOnlyClient):
+
+        def __init(self):
+            YumDaemonClient.__init__(self)
+            # Do your stuff here
+
+        def on_UpdateProgress(self,name,frac,fread,ftime):
+            # Do your stuff here
+            pass
+
 """
 
 import json
@@ -56,8 +78,11 @@ import weakref
 
 from gi.repository import Gio, GObject
 
-DAEMON_ORG = 'org.baseurl.Yum'
-DAEMON_INTERFACE = DAEMON_ORG+'.Interface'
+ORG = 'org.baseurl.YumSystem'
+INTERFACE = ORG+'.Interface'
+
+ORG_READONLY = 'org.baseurl.YumSession'
+INTERFACE_READONLY = ORG_READONLY+'.Interface'
 
 DBUS_ERR_RE = re.compile('^GDBus.Error:([\w\.]*): (.*)$')
 
@@ -118,25 +143,23 @@ class WeakMethod:
 
 # Get the system bus
 system = DBus(Gio.bus_get_sync(Gio.BusType.SYSTEM, None))
+session = DBus(Gio.bus_get_sync(Gio.BusType.SESSION, None))
 
 ###############################################################################
 # Main Client Class
 ###############################################################################
-
-
-class YumDaemonClient:
-    '''
-    A class to communicate with the yumdaemon DBus services in a easy way
-    '''
-
-    def __init__(self):
-        self.daemon = self._get_daemon()
+class YumDaemonBase:
+    def __init__(self, bus, org, interface):
+        self.bus = bus
+        self.dbus_org = org
+        self.dbus_interface = interface
+        self.daemon = self._get_daemon(bus, org, interface)
         print("daemon version : ",self.daemon.GetVersion())
 
-    def _get_daemon(self):
+    def _get_daemon(self,bus, org, interface):
         ''' Get the daemon dbus proxy object'''
         try:
-            proxy = system.get( DAEMON_ORG, "/", DAEMON_INTERFACE)
+            proxy = bus.get( org, "/", interface)
             proxy.GetVersion() # Get daemon version, to check if it is alive
             proxy.connect('g-signal', WeakMethod(self, '_on_g_signal')) # Connect the Dbus signal handler
             return proxy
@@ -152,14 +175,13 @@ class YumDaemonClient:
         :param params: DBus signal parameters
         '''
         args = params.unpack() # unpack the glib variant
-        if signal == "UpdateProgress":
-            self.on_UpdateProgress(*args)
-        elif signal == "TransactionEvent":
-            self.on_TransactionEvent(*args)
-        elif signal == "RPMProgress":
-            self.on_RPMProgress(*args)
-        else:
-            print("Unhandled Signal : "+signal," Param: ",args)
+        self.handle_dbus_signals(proxy, sender, signal, args)
+
+    def handle_dbus_signals(self, proxy, sender, signal, args):
+        """
+        Overload in child class
+        """
+        pass
 
     def _handle_dbus_error(self, err):
         '''
@@ -169,13 +191,13 @@ class YumDaemonClient:
         '''
         exc, msg = self._parse_error()
         print (exc,msg)
-        if exc == DAEMON_ORG+'.AccessDeniedError':
+        if exc == self.dbus_org+'.AccessDeniedError':
             raise AccessDeniedError(msg)
-        elif exc == DAEMON_ORG+'.YumLockedError':
+        elif exc == self.dbus_org+'.YumLockedError':
             raise YumLockedError(msg)
-        elif exc == DAEMON_ORG+'.YumTransactionError':
+        elif exc == self.dbus_org+'.YumTransactionError':
             raise YumTransactionError(msg)
-        elif exc == DAEMON_ORG+'.YumNotImplementedError':
+        elif exc == self.dbus_org+'.YumNotImplementedError':
             raise YumTransactionError(msg)
         else:
             raise YumDaemonError(str(err))
@@ -252,7 +274,7 @@ class YumDaemonClient:
         if name.startswith('repomd'):
             print("repo metadata : %.2f" % frac)
         elif "/" in name:
-            repo,file = name.split("/")
+            repo,file = name.split("/",1)
             print("getting %s from %s repository : %.2f" % (file,repo,frac))
         else:
             print("downloading : %s %s" % (name,frac))
@@ -264,7 +286,6 @@ class YumDaemonClient:
 
     def on_RPMProgress(self, package, action, te_current, te_total, ts_current, ts_total):
         print("RPMProgress : %s %s" % (action, package))
-
 
 ###############################################################################
 # API Methods
@@ -435,6 +456,93 @@ class YumDaemonClient:
         value = self._run_dbus_async('GetHistoryPackages','(i)',tid)
         return json.loads(value)
 
+    def GetGroups(self):
+        '''
+        Get list of Groups
+        '''
+        return json.loads(self._run_dbus_async('GetGroups'))
+
+    def Search(self, fields, keys, match_all, newest_only):
+        '''
+        Search for packages where keys is matched in fields
+
+        :param fields: yum po attributes to search in
+        :type fields: list of strings
+        :param keys: keys to search for
+        :type keys: list of strings
+        :param match_all: match all keys or only one
+        :type match_all: boolean
+        :param newest_only: return only the newest version of packages
+        :type newest_only: boolean
+        :return: list of pkg_id's
+
+        '''
+        return self._run_dbus_async('Search','(asasbb)',fields, keys, match_all, newest_only)
+
+    def Exit(self):
+        ''' End the daemon'''
+        self._run_dbus_async('Exit')
+
+###############################################################################
+# Helper methods
+###############################################################################
+
+    def to_pkg_tuple(self, id):
+        ''' split the pkg_id into a tuple'''
+        (n, e, v, r, a, repo_id)  = str(id).split(',')
+        return (n, e, v, r, a, repo_id)
+
+    def to_txmbr_tuple(self, id):
+        ''' split the txmbr_id into a tuple'''
+        (n, e, v, r, a, repo_id, ts_state)  = str(id).split(',')
+        return (n, e, v, r, a, repo_id, ts_state)
+
+
+
+class YumDaemonReadOnlyClient(YumDaemonBase):
+    '''
+    A class to communicate with the yumdaemon DBus services in a easy way
+    '''
+
+    def __init__(self):
+        YumDaemonBase.__init__(self, session,ORG_READONLY,INTERFACE_READONLY)
+
+    def handle_dbus_signals(self, proxy, sender, signal, args):
+        '''
+        DBUS signal Handler
+        '''
+        if signal == "UpdateProgress":
+            self.on_UpdateProgress(*args)
+        else:
+            print("Unhandled Signal : "+signal," Param: ",args)
+
+
+class YumDaemonClient(YumDaemonBase):
+    '''
+    A class to communicate with the yumdaemon DBus services in a easy way
+    '''
+
+    def __init__(self):
+        YumDaemonBase.__init__(self, session,ORG,INTERFACE)
+
+    def handle_dbus_signals(self, proxy, sender, signal, args):
+        '''
+        DBUS signal Handler
+        '''
+        if signal == "UpdateProgress":
+            self.on_UpdateProgress(*args)
+        elif signal == "TransactionEvent":
+            self.on_TransactionEvent(*args)
+        elif signal == "RPMProgress":
+            self.on_RPMProgress(*args)
+        else:
+            print("Unhandled Signal : "+signal," Param: ",args)
+
+###############################################################################
+# API Methods
+###############################################################################
+
+
 
     def ClearTransaction(self):
         '''
@@ -496,31 +604,6 @@ class YumDaemonClient:
         return json.loads(self._run_dbus_async('Update','(s)',pattern))
 
 
-    def Search(self, fields, keys, match_all, newest_only):
-        '''
-        Search for packages where keys is matched in fields
-
-        :param fields: yum po attributes to search in
-        :type fields: list of strings
-        :param keys: keys to search for
-        :type keys: list of strings
-        :param match_all: match all keys or only one
-        :type match_all: boolean
-        :param newest_only: return only the newest version of packages
-        :type newest_only: boolean
-        :return: list of pkg_id's
-
-        '''
-        return self._run_dbus_async('Search','(asasbb)',fields, keys, match_all, newest_only)
-
-
-    def GetGroups(self):
-        '''
-        Get list of Groups
-        '''
-        return json.loads(self._run_dbus_async('GetGroups'))
-
-
     def Reinstall(self, pattern):
         '''
         Do a reinstall <pattern string>, same as yum reinstall <pattern string>
@@ -556,22 +639,4 @@ class YumDaemonClient:
         '''
         self._run_dbus_async('RunTransaction')
 
-
-    def Exit(self):
-        ''' End the daemon'''
-        self._run_dbus_async('Exit')
-
-###############################################################################
-# Helper methods
-###############################################################################
-
-    def to_pkg_tuple(self, id):
-        ''' split the pkg_id into a tuple'''
-        (n, e, v, r, a, repo_id)  = str(id).split(',')
-        return (n, e, v, r, a, repo_id)
-
-    def to_txmbr_tuple(self, id):
-        ''' split the txmbr_id into a tuple'''
-        (n, e, v, r, a, repo_id, ts_state)  = str(id).split(',')
-        return (n, e, v, r, a, repo_id, ts_state)
 

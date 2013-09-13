@@ -62,18 +62,19 @@ Python 2 api for communicating with the yum-daemon DBus service
 # http://fedoraproject.org/wiki/PackagingDrafts/SELinux#File_contexts
 
 %post
-semanage fcontext -a -t rpm_exec_t '%{_datadir}/%{name}/%{name}' 2>/dev/null || :
-restorecon -R %{_datadir}/%{name}/%{name} || :
+semanage fcontext -a -t rpm_exec_t '%{_datadir}/%{name}/%{name}-system' 2>/dev/null || :
+restorecon -R %{_datadir}/%{name}/%{name}-system || :
 
 %postun
 if [ $1 -eq 0 ] ; then  # final removal
-semanage fcontext -d -t rpm_exec_t '%{_datadir}/%{name}/%{name}' 2>/dev/null || :
+semanage fcontext -d -t rpm_exec_t '%{_datadir}/%{name}/%{name}-system' 2>/dev/null || :
 fi
 
 %files
 %doc README.md examples/ ChangeLog
 %{_datadir}/dbus-1/system-services/*
-%{_datadir}/%{name}/%{name}
+%{_datadir}/dbus-1/services/*
+%{_datadir}/%{name}/%{name}-*
 %{_datadir}/polkit-1/actions
 %{_sysconfdir}/dbus-1/system.d/*
 

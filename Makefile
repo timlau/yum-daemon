@@ -1,6 +1,7 @@
 PKGNAME = yumdaemon
 PKGDIR = /usr/share/$(PKGNAME)
-ORG_NAME = org.baseurl.Yum
+ORG_NAME = org.baseurl.YumSystem
+ORG_RO_NAME = org.baseurl.YumSession
 SUBDIRS = client/yumdaemon
 VERSION=$(shell awk '/Version:/ { print $$2 }' ${PKGNAME}.spec)
 PYTHON=python
@@ -20,25 +21,29 @@ clean:
 
 install:
 	mkdir -p $(DESTDIR)/usr/share/dbus-1/system-services
+	mkdir -p $(DESTDIR)/usr/share/dbus-1/services
 	mkdir -p $(DESTDIR)/etc/dbus-1/system.d
 	mkdir -p $(DESTDIR)/usr/share/polkit-1/actions
 	mkdir -p $(DESTDIR)/$(PKGDIR)
 	install -m644 dbus/$(ORG_NAME).service $(DESTDIR)/usr/share/dbus-1/system-services/.				
+	install -m644 dbus/$(ORG_RO_NAME).service $(DESTDIR)/usr/share/dbus-1/services/.				
 	install -m644 dbus/$(ORG_NAME).conf $(DESTDIR)/etc/dbus-1/system.d/.				
 	install -m644 policykit1/$(ORG_NAME).policy $(DESTDIR)/usr/share/polkit-1/actions/.				
-	install -m755 yumdaemon/yumdaemon $(DESTDIR)/$(PKGDIR)/.
+	install -m755 yumdaemon/yumdaemon-system $(DESTDIR)/$(PKGDIR)/.
+	install -m755 yumdaemon/yumdaemon-session $(DESTDIR)/$(PKGDIR)/.
 	for d in $(SUBDIRS); do make DESTDIR=$(DESTDIR) -C $$d install; [ $$? = 0 ] || exit 1; done
 
 uninstall:
 	rm -f $(DESTDIR)/usr/share/dbus-1/system-services/$(ORG_NAME).*
+	rm -f $(DESTDIR)/usr/share/dbus-1/services/$(ORG_RO_NAME).*
 	rm -f $(DESTDIR)/etc/dbus-1/system.d/$(ORG_NAME).*				
 	rm -r $(DESTDIR)/usr/share/polkit-1/actions/$(ORG_NAME).*		
 	rm -rf $(DESTDIR)/$(PKGDIR)/
 
 selinux:
 	@$(MAKE) install
-	semanage fcontext -a -t rpm_exec_t $(DESTDIR)/$(PKGDIR)/yumdaemon
-	restorecon $(DESTDIR)/$(PKGDIR)/yumdaemon
+	semanage fcontext -a -t rpm_exec_t $(DESTDIR)/$(PKGDIR)/yumdaemon-system
+	restorecon $(DESTDIR)/$(PKGDIR)/yumdaemon-system
 	
 
 # Run as root or you will get a password prompt for each test method :)
