@@ -175,12 +175,9 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         :param sender:
         '''
         if not self._lock:
-            try:
-                self._lock = sender
-                self.logger.info('LOCK: Locked by : %s' % sender)
-                return True
-            except Errors.LockError, e:
-                raise YumLockedError(str(e))
+            self._lock = sender
+            self.logger.info('LOCK: Locked by : %s' % sender)
+            return True
         return False
 
     @Logger
