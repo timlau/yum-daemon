@@ -16,6 +16,11 @@
 #
 # (C) 2011 - Tim Lauridsen <timlau@fedoraproject.org>
 
+
+#
+# Yum session bus dBus service (Readonly)
+#
+
 import dbus
 import dbus.service
 import dbus.glib
@@ -33,14 +38,14 @@ from yum.rpmtrans import RPMBaseCallback
 from yum.constants import *
 from yum.update_md import UpdateMetadata
 from yum.packageSack import packagesNewestByName
+from yum.Errors import *
+
 from rpmUtils.arch import canCoinstall
 
 import argparse
 
-
-
 version = 100 # must be integer
-DAEMON_ORG = 'org.baseurl.Yum'
+DAEMON_ORG = 'org.baseurl.YumSession'
 DAEMON_INTERFACE = DAEMON_ORG+'.Interface'
 FAKE_ATTR = ['downgrades','action']
 NONE = json.dumps(None)
@@ -54,9 +59,6 @@ class AccessDeniedError(dbus.DBusException):
 
 class YumLockedError(dbus.DBusException):
     _dbus_error_name = DAEMON_ORG+'.YumLockedError'
-
-class YumTransactionError(dbus.DBusException):
-    _dbus_error_name = DAEMON_ORG+'.YumTransactionError'
 
 class YumNotImplementedError(dbus.DBusException):
     _dbus_error_name = DAEMON_ORG+'.YumNotImplementedError'
@@ -82,65 +84,8 @@ class DownloadCallback(  DownloadBaseCallback ):
         # send a DBus signal with progress info
         self.base.UpdateProgress(name,frac,fread,ftime)
 
-class ProcessTransCallback:
-    STATES = { PT_DOWNLOAD      : "download",
-               PT_DOWNLOAD_PKGS : "pkg-to-download",
-               PT_GPGCHECK      : "signature-check",
-               PT_TEST_TRANS    : "run-test-transaction",
-               PT_TRANSACTION   : "run-transaction"}
-
-    def __init__(self, base):
-        self.base = base
-        
-    def event(self,state,data=NONE):
-        if state in ProcessTransCallback.STATES:
-            if data != NONE:
-                data = [self.base._get_id(po) for po in data]
-            self.base.TransactionEvent(ProcessTransCallback.STATES[state], data)
-            
-class RPMCallback(RPMBaseCallback):
-    '''
-    RPMTransaction display callback class
-    '''
-    ACTIONS = { TS_UPDATE : 'update', 
-                TS_ERASE: 'erase',
-                TS_INSTALL: 'install', 
-                TS_TRUEINSTALL : 'install',
-                TS_OBSOLETED: 'obsolete',
-                TS_OBSOLETING: 'install',
-                TS_UPDATED: 'cleanup',
-                'repackaging': 'repackage'}
-
-    def __init__(self, base):
-        RPMBaseCallback.__init__(self)
-        self.base = base
-        
-    def event(self, package, action, te_current, te_total, ts_current, ts_total):
-        """
-        :param package: A yum package object or simple string of a package name
-        :param action: A yum.constant transaction set state or in the obscure 
-                       rpm repackage case it could be the string 'repackaging'
-        :param te_current: Current number of bytes processed in the transaction
-                           element being processed
-        :param te_total: Total number of bytes in the transaction element being
-                         processed
-        :param ts_current: number of processes completed in whole transaction
-        :param ts_total: total number of processes in the transaction.
-        """
-        if not isinstance(package, str): # package can be both str or yum package object
-            id = self.base._get_id(package)
-        else:
-            id = package
-        if action in RPMCallback.ACTIONS:
-            action = RPMCallback.ACTIONS[action]
-        self.base.RPMProgress(id, action, te_current, te_total, ts_current, ts_total)
-
-    def scriptout(self, package, msgs):
-        """package is the package.  msgs is the messages that were
-        output (if any)."""
-        pass
            
-logger = logging.getLogger('yumdaemon')
+logger = logging.getLogger('yumdaemon-session')
            
 def Logger(func):
     """
@@ -166,7 +111,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         self.mainloop = mainloop # use to terminate mainloop
         self.authorized_sender = set()
         self._lock = None
-        bus_name = dbus.service.BusName(DAEMON_ORG, bus = dbus.SystemBus())
+        bus_name = dbus.service.BusName(DAEMON_ORG, bus = dbus.SessionBus())
         dbus.service.Object.__init__(self, bus_name, '/')
         self._yumbase = None
         self._can_quit = True
@@ -212,7 +157,6 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         Exit the daemon
         :param sender:
         '''
-        self.check_permission(sender)
         if self._can_quit:
             self._reset_yumbase()            
             self.mainloop.quit()
@@ -230,10 +174,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         Get the yum lock
         :param sender:
         '''
-        self.check_permission(sender)
         if not self._lock:
             try:
-                self.yumbase.doLock()
                 self._lock = sender
                 self.logger.info('LOCK: Locked by : %s' % sender)
                 return True
@@ -246,13 +188,13 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                                           in_signature='b', 
                                           out_signature='b',
                                           sender_keyword='sender')
+
     def SetWatchdogState(self,state, sender=None):
         '''
         Set the Watchdog state 
         :param state: True = Watchdog active, False = Watchdog disabled
         :type state: boolean (b)
         '''
-        self.check_permission(sender)
         self._watchdog_disabled = not state
         return state
 
@@ -375,11 +317,14 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         :param sender:
         '''
         self.working_start(sender)
-        if newest_only:
-            pkgs = self.yumbase.pkgSack.returnNewestByName(patterns=[name], ignore_case=False)
-        else:
-            pkgs = self.yumbase.pkgSack.returnPackages(patterns=[name], ignore_case=False)
-        value = self._to_package_id_list(pkgs) 
+        try:
+            if newest_only:
+                pkgs = self.yumbase.pkgSack.returnNewestByName(patterns=[name], ignore_case=False)
+            else:
+                pkgs = self.yumbase.pkgSack.returnPackages(patterns=[name], ignore_case=False)
+            value = self._to_package_id_list(pkgs) 
+        except PackageSackError,e:
+            value = []
         return self.working_ended(value)
         
         
@@ -499,226 +444,11 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                                           sender_keyword='sender')
     def Unlock(self, sender=None):
         ''' release the lock'''
-        self.check_permission(sender)
         if self.check_lock(sender):
             self._reset_yumbase()
             self.logger.info('UNLOCK: Lock Release by %s' % self._lock)
             self._lock = None
             return True
-
-    @Logger
-    @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='s', 
-                                          out_signature='s',
-                                          sender_keyword='sender')
-    def Install(self, cmds, sender=None):
-        '''
-        Install packages based on command patterns separated by spaces
-        sinulate what 'yum install <arguments>' does
-        :param cmds: command patterns separated by spaces
-        :param sender:
-        '''
-        self.working_start(sender)
-        for cmd in cmds.split(' '):
-            self.yumbase.install(pattern=cmd)
-        value = self._build_transaction()        
-        return self.working_ended(value)
-    
-    @Logger
-    @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='s', 
-                                          out_signature='s',
-                                          sender_keyword='sender')
-    def Remove(self, cmds, sender=None):
-        '''
-        Remove packages based on command patterns separated by spaces
-        sinulate what 'yum remove <arguments>' does
-        :param cmds: command patterns separated by spaces
-        :param sender:
-        '''
-        self.working_start(sender)
-        for cmd in cmds.split(' '):
-            self.yumbase.remove(pattern=cmd)
-        value = self._build_transaction()        
-        return self.working_ended(value)
-    
-    @Logger
-    @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='s', 
-                                          out_signature='s',
-                                          sender_keyword='sender')
-    def Update(self, cmds, sender=None):
-        '''
-        Update packages based on command patterns separated by spaces
-        sinulate what 'yum update <arguments>' does
-        :param cmds: command patterns separated by spaces
-        :param sender:
-        '''
-        self.working_start(sender)        
-        if cmds == "":
-            txmbrs = self.yumbase.update()
-            self.logger.debug([str(txmbr.po) for txmbr in txmbrs]) 
-        else:
-            for cmd in cmds.split(' '):
-                self.yumbase.update(pattern=cmd)
-        value = self._build_transaction()        
-        return self.working_ended(value)
-
-    @Logger
-    @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='s', 
-                                          out_signature='s',
-                                          sender_keyword='sender')
-    def Reinstall(self, cmds, sender=None):
-        '''
-        Reinstall packages based on command patterns separated by spaces
-        sinulate what 'yum reinstall <arguments>' does
-        :param cmds: command patterns separated by spaces
-        :param sender:
-        '''
-        self.working_start(sender)
-        for cmd in cmds.split(' '):
-            self.yumbase.reinstall(pattern=cmd)
-        value = self._build_transaction()        
-        return self.working_ended(value)
-
-    @Logger
-    @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='s', 
-                                          out_signature='s',
-                                          sender_keyword='sender')
-    def Downgrade(self, cmds, sender=None):
-        '''
-        Downgrade packages based on command patterns separated by spaces
-        sinulate what 'yum downgrade <arguments>' does
-        :param cmds: command patterns separated by spaces
-        :param sender:
-        '''
-        self.working_start(sender)
-        for cmd in cmds.split(' '):
-            self.yumbase.downgrade(pattern=cmd)
-        value = self._build_transaction()        
-        return self.working_ended(value)
-
-
-    @Logger
-    @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='ss', 
-                                          out_signature='as',
-                                          sender_keyword='sender')
-
-    def AddTransaction(self, id, action, sender=None):
-        '''
-        Add an package to the current transaction 
-        
-        :param id: package id for the package to add
-        :param action: the action to perform ( install, update, remove, obsolete, reinstall, downgrade, localinstall )
-        '''
-        self.working_start(sender)
-        if action != 'localinstall': # Dont get a po if it is at local package
-            po = self._get_po(id)
-        txmbrs = []
-        if action == "install":
-            txmbrs = self.yumbase.install(po)
-        elif action == "update" or action == "obsolete":
-            txmbrs = self.yumbase.update(po)
-        elif action == "remove":
-            txmbrs = self.yumbase.remove(po)
-        elif action == "reinstall":
-            txmbrs = self.yumbase.reinstall(po)
-        elif action == "downgrade":
-            txmbrs = self.yumbase.downgrade(po)
-        elif action == "localinstall":
-            txmbrs = self.yumbase.installLocal(id)
-        value = self._to_transaction_id_list(txmbrs)
-        return self.working_ended(value)
-    
-    @Logger
-    @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='', 
-                                          out_signature='',
-                                          sender_keyword='sender')
-    def ClearTransaction(self, sender):
-        '''
-        Clear the transactopm
-        '''
-        self.working_start(sender)
-        # Reset the transaction
-        self.yumbase._tsInfo = None 
-        return self.working_ended()
-        
-
-    @Logger
-    @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='', 
-                                          out_signature='as',
-                                          sender_keyword='sender')
-
-    def GetTransaction(self, sender=None):
-        '''
-        Return the members of the current transaction
-        '''
-        self.working_start(sender)
-        txmbrs = self.yumbase.tsInfo
-        value = self._to_transaction_id_list(txmbrs)
-        return self.working_ended(value)
-
-    
-    @Logger
-    @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='', 
-                                          out_signature='s',
-                                          sender_keyword='sender')
-    def BuildTransaction(self, sender):
-        '''
-        Resolve dependencies of current transaction
-        '''
-        self.working_start(sender)
-        value = self._build_transaction()
-        return self.working_ended(value)
-
-    
-    def _build_transaction(self):
-        '''
-        Resolve dependencies of current transaction
-        '''
-        self.TransactionEvent('start-build',NONE)
-        rc, msgs = self.yumbase.buildTransaction()
-        if rc == 2: # OK
-            output = self._get_transaction_list()
-        else:
-            output = msgs
-        self.TransactionEvent('end-build',NONE)
-        return json.dumps((rc,output))
-    
-    @Logger
-    @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='', 
-                                          out_signature='',
-                                          sender_keyword='sender')
-    def RunTransaction(self, sender = None):
-        '''
-        Run the current yum transaction
-        '''
-        self.working_start(sender)
-        self.check_permission(sender)
-        self.check_lock(sender)
-        try:
-            self.TransactionEvent('start-run',NONE)
-            self._can_quit = False
-            callback = ProcessTransCallback(self)
-            rpmDisplay = RPMCallback(self)
-            result = self.yumbase.processTransaction(callback=callback, rpmDisplay=rpmDisplay)
-            self._can_quit = True
-            self._reset_yumbase()
-            self.TransactionEvent('end-run',NONE)
-            self.working_ended()
-        except Errors.YumBaseError, e:
-            self._can_quit = True            
-            self.TransactionEvent('fail',NONE)
-            self._reset_yumbase()
-            self.working_ended()
-            raise YumTransactionError(str(e))
 
     @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
@@ -795,37 +525,10 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         '''
         pass
 
-    @dbus.service.signal(DAEMON_INTERFACE)
-    def TransactionEvent(self,event,data):
-        '''
-        DBus signal with Transaction information        
-        :param event:
-        '''
-        #print "event: %s" % event
-        pass
-    
-    
-    @dbus.service.signal(DAEMON_INTERFACE)
-    def RPMProgress(self, package, action, te_current, te_total, ts_current, ts_total):
-        """
-        RPM Progress DBus signal
-        :param package: A yum package object or simple string of a package name
-        :param action: A yum.constant transaction set state or in the obscure 
-                       rpm repackage case it could be the string 'repackaging'
-        :param te_current: Current number of bytes processed in the transaction
-                           element being processed
-        :param te_total: Total number of bytes in the transaction element being
-                         processed
-        :param ts_current: number of processes completed in whole transaction
-        :param ts_total: total number of processes in the transaction.
-        """
-        pass
-    
 #===============================================================================
 # Helper methods
 #===============================================================================
     def working_start(self,sender):
-        self.check_permission(sender)
         self.check_lock(sender)        
         self._is_working = True
         self._watchdog_count = 0
@@ -1006,63 +709,6 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
                 good_tups[po.pkgtup] = 1
         return good_pkgs
     
-    def _get_transaction_list(self):
-        ''' 
-        Generate a list of the current transaction 
-        '''
-        out_list = []
-        sublist = []
-        self.yumbase.tsInfo.makelists()
-        for (action, pkglist) in [('install', self.yumbase.tsInfo.installed),
-                            ('update', self.yumbase.tsInfo.updated),
-                            ('remove', self.yumbase.tsInfo.removed),
-                            ('install-deps', self.yumbase.tsInfo.depinstalled),
-                            ('update-deps', self.yumbase.tsInfo.depupdated),
-                            ('remove-deps', self.yumbase.tsInfo.depremoved)]:
-            for txmbr in pkglist:
-                (n, a, e, v, r) = txmbr.pkgtup
-                evr = txmbr.po.printVer()
-                repoid = txmbr.repoid
-                pkgsize = float(txmbr.po.size)
-                size = pkgsize
-                alist = []
-                for (obspo, relationship) in txmbr.relatedto:
-                    if relationship == 'obsoletes':
-                        alist.append(self._get_id(obspo))
-                el = (self._get_id(txmbr.po), size, alist)
-                sublist.append(el)
-            if pkglist:
-                out_list.append([action, sublist])
-                sublist = []
-        for (action, pkglist) in [('skipped',
-                                   self.yumbase.skipped_packages), ]:
-            lines = []
-            for po in pkglist:
-                (n, a, e, v, r) = po.pkgtup
-                evr = po.printVer()
-                repoid = po.repoid
-                pkgsize = float(po.size)
-                size = format_number(pkgsize)
-                el = (self._get_id(po), size, alist)
-                sublist.append(el)
-            if pkglist:
-                out_list.append([action, sublist])
-                sublist = []
-
-        return out_list
-
-    def _to_transaction_id_list(self, txmbrs):
-        '''
-        return a sorted list of package ids from a list of packages
-        if and po is installed, the installed po id will be returned
-        :param pkgs:
-        '''
-        result = []
-        for txmbr in txmbrs:
-            po = txmbr.po
-            result.append("%s,%s" % (self._get_id(po), txmbr.ts_state ))
-        return result
-
     @property
     def update_metadata(self):
         if not self._updateMetadata:
@@ -1117,28 +763,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         else:
             raise YumLockedError('Yum is locked by another application')
 
-    def check_permission(self, sender):
-        ''' Check for senders permission to run root stuff'''
-        if sender in self.authorized_sender:
-            return
-        else:
-            self._check_permission(sender)
-            self.authorized_sender.add(sender)
 
-
-    def _check_permission(self, sender):
-        '''
-        check senders permissions using PolicyKit1
-        :param sender:
-        '''
-        if not sender: raise ValueError('sender == None')
-        
-        obj = dbus.SystemBus().get_object('org.freedesktop.PolicyKit1', '/org/freedesktop/PolicyKit1/Authority')
-        obj = dbus.Interface(obj, 'org.freedesktop.PolicyKit1.Authority')
-        (granted, _, details) = obj.CheckAuthorization(
-                ('system-bus-name', {'name': sender}), DAEMON_ORG, {}, dbus.UInt32(1), '', timeout=600)
-        if not granted:
-            raise AccessDeniedError('Session is not authorized')
     def _get_updates(self):
         if not self._updates_list:
             ygh = self.yumbase.doPackageLists(pkgnarrow='updates')
@@ -1193,14 +818,13 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         # make yum silent
         self._yumbase.preconf.errorlevel=0
         self._yumbase.preconf.debuglevel=0
-        #self._yumbase.doConfigSetup()
+        self._yumbase.setCacheDir()
         # setup the download callback handler
         self._yumbase.repos.setProgressBar( DownloadCallback(self) )
         # Disable parallel down for this repo, we dont support it
         for repo in self._yumbase.repos.listEnabled():
             repo._async = False
-        
-        self._yumbase.doLock()
+            
         self.logger.debug(' --> YUM LOCKED: Lockfile = %s' % self._yumbase._lockfile)
         
         
@@ -1254,7 +878,7 @@ def doTextLoggerSetup(logroot='yumdaemon', logfmt='%(asctime)s: %(message)s', lo
         
 
 def main():
-    parser = argparse.ArgumentParser(description='Yum D-Bus Daemon')
+    parser = argparse.ArgumentParser(description='Yum D-Bus Session Daemon')
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('-d', '--debug', action='store_true')
     parser.add_argument('--notimeout', action='store_true')
