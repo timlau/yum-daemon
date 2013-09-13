@@ -46,7 +46,7 @@ import argparse
 
 version = 100 # must be integer
 DAEMON_ORG = 'org.baseurl.YumSession'
-DAEMON_INTERFACE = DAEMON_ORG+'.Interface'
+DAEMON_INTERFACE = DAEMON_ORG
 FAKE_ATTR = ['downgrades','action']
 NONE = json.dumps(None)
 

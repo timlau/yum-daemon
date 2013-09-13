@@ -79,10 +79,10 @@ import weakref
 from gi.repository import Gio, GObject
 
 ORG = 'org.baseurl.YumSystem'
-INTERFACE = ORG+'.Interface'
+INTERFACE = ORG
 
 ORG_READONLY = 'org.baseurl.YumSession'
-INTERFACE_READONLY = ORG_READONLY+'.Interface'
+INTERFACE_READONLY = ORG_READONLY
 
 DBUS_ERR_RE = re.compile('^GDBus.Error:([\w\.]*): (.*)$')
 
