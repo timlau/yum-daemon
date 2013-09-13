@@ -523,7 +523,7 @@ class YumDaemonClient(YumDaemonBase):
     '''
 
     def __init__(self):
-        YumDaemonBase.__init__(self, session,ORG,INTERFACE)
+        YumDaemonBase.__init__(self, system,ORG,INTERFACE)
 
     def handle_dbus_signals(self, proxy, sender, signal, args):
         '''
