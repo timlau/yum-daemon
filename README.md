@@ -1,12 +1,16 @@
 yum-daemon
 ===========
 
-Yum-daemon is a DBus system service there make part for Yum's API available for application via DBus calls.
+Yum-daemon is a 2 DBus services there make part for Yum's API available for application via DBus calls.
+
+There is a DBus session bus service runnning as current user for performing readonly actions.
+
+There is a DBus system bus service runnning as root for performing actions there is making changes to the system
 
 This make it easy to do packaging action from your application no matter what language it is written in, as long as there
 is DBus binding for it.
 
-Yum-daemon uses PolicyKit for authentication, so when you call one of the commands (as normal users) you will get a  
+Yum-daemon uses PolicyKit for authentication for the system service, so when you call one of the commands (as normal users) you will get a  
 PolicyKit dialog to ask for password of a priviledged user like root.
 
 **yum-daemon is still under heavy development and the API is not stable or complete yet**
@@ -14,22 +18,23 @@ PolicyKit dialog to ask for password of a priviledged user like root.
 Source overview
 ----------------
 
-    server/         Contains the daemon python source
-    client/
-      yumdaemon2/      Contains the client API bindings for python 2.x
-      yumdaemon3/      Contains the client API bindings for python 3.x
-    test/           Unit test for the daemon and python 2.x bindings
+    yumdaemon/         Contains the daemon python source
+    client/         Contains the client API bindings for python 2.x & 3.x
+    test/           Unit test for the daemon and python bindings
     dbus/           DBus system service setup files
     policykit1/     PolicyKit authentication setup files
 
 
 
-How to install:
-----------------
+How to install services and python bindings:
+-----------------------------------------------
 
 Run the following as root
 
-`make install DESTDIR=/`
+git clone ...
+cd yum-daemon
+make test-release
+sudo yum install ~/rpmbuild/RPMS/noarch/*yumdaemon*.rpm
 
 How to test:
 -------------
@@ -44,28 +49,27 @@ or this to just run the unit tests.
 
     make test
    
-to make the daemon exit run:
+to make the daemons exit run:
+-------------------------------
 
-    python examples/yumdaemon2/exit.py
+    make kill-both
    
-if you want to monitor the yum progress signals send by the daemon
-the start the following in another shell window.
 
-    python examples/yumdaemon2/monitor.py
-   
-If you run it as normal user, you well get PolicyKit dialog asking for root password
-If you run as root it will just execute
+to run the daemons in debug mode from checkout:
+------------------------------------------------
 
-If you want to test the the daemon without installing it:
+session (readonly as current user)
 
-    su -c "./yumdaemon/daemon.py -v --notimeout"
+	make run-session
 
-**-v** gives extra verbose outout from the daemon  
-**--notimeout** disable the daemon watchdog, there normally will quit the daemon after 20 second, if not in use 
- 
-in a separate shell window.
+system (as root)
+	
+	make run-system
+
 
 API Definitions: 
 ====================================
 
 The yumdaemon api is documented [here](http://timlau.fedorapeople.org/yumdaemon)
+
+
