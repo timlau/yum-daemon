@@ -1,18 +1,18 @@
 import sys, os
 sys.path.insert(0,os.path.abspath('client'))
-from base import TestBase
+from base import TestBaseReadonly
 from yumdaemon import YumLockedError
 from nose.exc import SkipTest
 
 
-class TestAPI(TestBase):
+class TestAPI(TestBaseReadonly):
 
     def __init__(self, methodName='runTest'):
-        TestBase.__init__(self, methodName)
+        TestBaseReadonly.__init__(self, methodName)
 
     def test_Locking(self):
         '''
-        Test Unlock and Lock
+        Session: Unlock and Lock
         '''
         print
         # release the lock (grabbed by setUp)
@@ -24,97 +24,10 @@ class TestAPI(TestBase):
         # get the Lock again, else tearDown will fail
         self.Lock()
 
-    def test_InstallRemove(self):
-        '''
-        Test Install and Remove
-        '''
-        print
-        # Make sure that the test packages is not installed
-        rc, output = self.Remove('0xFFFF Hermes')
-        if rc == 2:
-            self.show_transaction_result(output)
-            self.RunTransaction()
-        # Both test packages should be uninstalled now
-        self.assertFalse(self._is_installed('0xFFFF'))
-        self.assertFalse(self._is_installed('Hermes'))
-        # Install the test packages
-        print "Installing Test Packages : 0xFFFF Hermes"
-        rc, output = self.Install('0xFFFF Hermes')
-        print('  Return Code : %i' % rc)
-        self.assertEqual(rc,2)
-        self.show_transaction_result(output)
-        self.assertGreater(len(output),0)
-        for action, pkgs in output:
-            self.assertEqual(action,u'install')
-            self.assertGreater(len(pkgs),0)
-        self.RunTransaction()
-        # Both test packages should be installed now
-        self.assertTrue(self._is_installed('0xFFFF'))
-        self.assertTrue(self._is_installed('Hermes'))
-        # Remove the test packages
-        print "Removing Test Packages : 0xFFFF Hermes"
-        rc, output = self.Remove('0xFFFF Hermes')
-        print('  Return Code : %i' % rc)
-        self.assertEqual(rc,2)
-        self.show_transaction_result(output)
-        self.assertGreater(len(output),0)
-        for action, pkgs in output:
-            self.assertEqual(action,u'remove')
-            self.assertGreater(len(pkgs),0)
-        self.RunTransaction()
-
-    def test_Reinstall(self):
-        '''
-        Test Reinstall
-        '''
-        pkgs = self.GetPackagesByName('yumex',False)
-        if not len(pkgs) > 0:
-            raise SkipTest('yumex not installed')
-        rc, output = self.Reinstall('yumex')
-        print('  Return Code : %i' % rc)
-        self.assertEqual(rc,2)
-        self.show_transaction_result(output)
-        self.assertGreater(len(output),0)
-        for action, pkgs in output:
-            self.assertEqual(action,u'install')
-            self.assertEqual(len(pkgs),2)
-        self.RunTransaction()
-
-    def test_DowngradeUpdate(self):
-        '''
-        Test DownGrade & Update
-        '''
-        print
-        # Test if more then one version if yumex is available
-        # use the fedora-yumex repo to get more than one (http:/repos.fedorapeople.org)
-        pkgs = self.GetPackagesByName('yumex',False)
-        print(pkgs)
-        if not len(pkgs) > 1:
-            raise SkipTest('more than one available version of yumex is needed for downgrade test')
-        rc, output = self.Downgrade('yumex')
-        print('  Return Code : %i' % rc)
-        self.assertEqual(rc,2)
-        self.show_transaction_result(output)
-        self.assertGreater(len(output),0)
-        for action, pkgs in output:
-            # old version of yumex might need python-enum
-            self.assertIn(action,[u'install',u'remove',u'install'])
-            self.assertGreater(len(pkgs),0)
-        self.RunTransaction()
-        rc, output = self.Update('yumex')
-        print('  Return Code : %i' % rc)
-        self.assertEqual(rc,2)
-        self.show_transaction_result(output)
-        self.assertGreater(len(output),0)
-        for action, pkgs in output:
-            self.assertEqual(action,u'update')
-            self.assertGreater(len(pkgs),0)
-        self.RunTransaction()
-
 
     def test_GetPackagesByName(self):
         '''
-        Test GetPackagesByName
+        Session: GetPackagesByName
         '''
         print
         print "Get all available versions of yum"
@@ -148,56 +61,9 @@ class TestAPI(TestBase):
             (n, e, v, r, a, repo_id) = self.to_pkg_tuple(pkg)
             self.assertTrue(n.startswith('yum'))
 
-
-
-    def test_AddTransaction(self):
-        '''
-        Test AddTransaction
-        '''
-        print
-        txmbrs = self._add_to_transaction('0xFFFF')
-        self.assertEqual(len(txmbrs),1)
-        self.show_transaction_list(txmbrs)
-        (n, e, v, r, a, repo_id, ts_state) = self.to_txmbr_tuple(txmbrs[0])
-        if repo_id[0] == '@': # is installed ?
-            self.assertEqual(ts_state,'e') # if package is install, then remove
-        else:
-            self.assertEqual(ts_state,'u') # if package is not install, then install
-
-    def test_GetTransaction(self):
-        '''
-        Test GetTransaction
-        '''
-        print
-        self._add_to_transaction('0xFFFF')
-        txmbrs = self.GetTransaction()
-        self.assertIsInstance(txmbrs, list)
-        self.assertEqual(len(txmbrs),1)
-        (n, e, v, r, a, repo_id, ts_state) = self.to_txmbr_tuple(txmbrs[0])
-        self.assertEqual(n,'0xFFFF')
-        # clear the transaction
-        self.ClearTransaction()
-        txmbrs = self.GetTransaction()
-        self.assertIsInstance(txmbrs, list)
-        self.assertEqual(len(txmbrs),0) # Transaction should be empty
-
-
-    def test_RunTransaction(self):
-        '''
-        Test RunTransaction
-        '''
-        print
-        # Do it twice to revert it
-        for x in range(2):
-            txmbrs = self._add_to_transaction('0xFFFF')
-            self.assertEqual(len(txmbrs),1)
-            self.show_transaction_list(txmbrs)
-            self._run_transaction()
-
-
     def test_GetPackages(self):
         '''
-        Test GetPackages and GetAttribute
+        Session: GetPackages and GetAttribute
         '''
         print
         for narrow in ['installed','available']:
@@ -225,7 +91,7 @@ class TestAPI(TestBase):
 
     def test_GetConfig(self):
         '''
-        Test GetConfig
+        Session: GetConfig
         '''
         all_conf = self.GetConfig('*')
         self.assertIsInstance(all_conf, dict)
@@ -243,7 +109,7 @@ class TestAPI(TestBase):
 
     def test_GetRepositories(self):
         '''
-        Test GetRepository and GetRepo
+        Session: GetRepository and GetRepo
         '''
         print
         print "  Getting source repos"
@@ -264,7 +130,7 @@ class TestAPI(TestBase):
 
     def test_Search(self):
         '''
-        Testing Search
+        Session: Search
         '''
         fields = ['name','summary']
         keys = ['yum','plugin']
@@ -287,6 +153,10 @@ class TestAPI(TestBase):
         self.assertGreater(len(pkgs), 0) # we should find some matches
 
     def test_GetGroups(self):
+        """
+        Session: GetGroups
+        """
+        
         result = self.GetGroups()
         for cat, grps in result:
             # cat: [category_id, category_name, category_desc]
@@ -300,9 +170,10 @@ class TestAPI(TestBase):
                 self.assertEqual(len(grp),4) # grp has 4 elements
                 print "   tag: %s name: %s \n   desc: %s \n   installed : %s " % tuple(grp)
 
-
-
     def test_GetPackageWithAttributes(self):
+        """
+        Session: GetPackageWithAttributes
+        """
         print()
         for pkg_filter in ['installed','available','updates','obsoletes','recent','extras']:
             print(" --> Checking filter : %s" % pkg_filter)
@@ -314,17 +185,3 @@ class TestAPI(TestBase):
                 self.assertEqual(len(result[1]),3)
 
 
-    def test_History(self):
-        result = self.GetHistoryByDays(0, 5)
-        self.assertIsInstance(result, list)
-        for tx_mbr in result:
-            tid, dt = tx_mbr
-            print("%-4i - %s" % (tid, dt))
-            self.assertIsInstance(dt, unicode)
-            pkgs = self.GetHistoryPackages(tid)
-            self.assertIsInstance(pkgs, list)
-            for (id, state, is_installed) in pkgs:
-                print id, state, is_installed
-                self.assertIsInstance(id, unicode)
-                self.assertIsInstance(state, unicode)
-                self.assertIsInstance(is_installed, bool)

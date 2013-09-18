@@ -3,7 +3,7 @@ import os.path
 sys.path.insert(0,os.path.abspath('client'))
 import unittest
 from datetime import date
-from yumdaemon import YumDaemonClient
+from yumdaemon import YumDaemonClient,YumDaemonReadOnlyClient
 
 class TestBase(unittest.TestCase, YumDaemonClient):
     def __init__(self, methodName='runTest'):
@@ -73,6 +73,79 @@ class TestBase(unittest.TestCase, YumDaemonClient):
             self.show_transaction_result(output)
             self.assertGreater(len(output),0)
         self.RunTransaction()
+
+    def _is_installed(self, name):
+        pkgs = self.GetPackagesByName(name, newest_only=True)
+        # pkgs should be a list instance
+        self.assertIsInstance(pkgs, list)
+        self.assertTrue(len(pkgs)>0)
+        for pkg in pkgs:
+            (n, e, v, r, a, repo_id) = self.to_pkg_tuple(pkg)
+            if repo_id[0] == '@':
+                return True
+        return False
+
+    def _show_package(self, id):
+        (n, e, v, r, a, repo_id) = self.to_pkg_tuple(id)
+        print "\nPackage attributes"
+        self.assertIsInstance(n, str)
+        print "Name : %s " % n
+        summary = self.GetAttribute(id, 'summary')
+        self.assertIsInstance(summary, unicode)
+        print "Summary : %s" % summary
+        print "\nDescription:"
+        desc = self.GetAttribute(id, 'description')
+        self.assertIsInstance(desc, unicode)
+        print desc
+        print "\nChangelog:"
+        changelog = self.GetAttribute(id, 'changelog')
+        self.assertIsInstance(changelog, list)
+        self.show_changelog(changelog, max_elem=2)
+        # Check a not existing attribute dont make it blow up
+        notfound = self.GetAttribute(id, 'notfound')
+        self.assertIsNone(notfound)
+        print " Value of attribute 'notfound' : %s" % notfound
+
+###############################################################################
+# Dbus Signal Handlers
+###############################################################################
+
+    def on_UpdateProgress(self,name,frac,fread,ftime):
+        pass
+
+    def on_TransactionEvent(self,event, data):
+        pass
+
+    def on_RPMProgress(self, package, action, te_current, te_total, ts_current, ts_total):
+        pass
+
+
+class TestBaseReadonly(unittest.TestCase, YumDaemonReadOnlyClient):
+    def __init__(self, methodName='runTest'):
+        unittest.TestCase.__init__(self, methodName)
+        YumDaemonReadOnlyClient.__init__(self)
+
+    def setUp(self):
+        self.Lock()
+
+    def tearDown(self):
+        self.Unlock()
+
+    def show_changelog(self, changelog, max_elem=3):
+        i = 0
+        for (c_date, c_ver, msg) in changelog:
+            i += 1
+            if i > max_elem:
+                return
+            print("* %s %s" % (date.fromtimestamp(c_date).isoformat(), c_ver))
+            for line in msg.split('\n'):
+                print("%s" % line)
+
+    def show_package_list(self, pkgs):
+        for pkg_id in pkgs:
+            (n, e, v, r, a, repo_id) = self.to_pkg_tuple(pkg_id)
+            print " --> %s-%s:%s-%s.%s (%s)" % (n, e, v, r, a, repo_id)
+
 
     def _is_installed(self, name):
         pkgs = self.GetPackagesByName(name, newest_only=True)
