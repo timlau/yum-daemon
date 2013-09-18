@@ -163,7 +163,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
 
     def __init__(self, mainloop):
         DownloadBaseCallback.__init__(self)
-        self.logger = logging.getLogger('yumdaemon')
+        self.logger = logging.getLogger('yumdaemon-system')
         self.mainloop = mainloop # use to terminate mainloop
         self.authorized_sender = set()
         self._lock = None
@@ -1248,7 +1248,7 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             self.logger.debug("Watchdog : %i" % self._watchdog_count )
             return True
         
-def doTextLoggerSetup(logroot='yumdaemon', logfmt='%(asctime)s: %(message)s', loglvl=logging.INFO):
+def doTextLoggerSetup(logroot='yumdaemon-system', logfmt='%(asctime)s: %(message)s', loglvl=logging.INFO):
     ''' Setup Python logging  '''
     logger = logging.getLogger(logroot)
     logger.setLevel(loglvl)

@@ -130,5 +130,22 @@ test-builds:
 	@scp ~/rpmbuild/SRPMS/${PKGNAME}-${NEW_VER}*.rpm timlau.fedorapeople.org:public_html/files/${PKGNAME}/.
 
 
+kill-session:
+	@/usr/bin/dbus-send --session --print-reply --dest="org.baseurl.YumSession" / org.baseurl.YumSession.Exit
+
+kill-system:
+	@sudo /usr/bin/dbus-send --system --print-reply --dest="org.baseurl.YumSystem" / org.baseurl.YumSystem.Exit
+	
+kill-both:
+	@/usr/bin/dbus-send --session --print-reply --dest="org.baseurl.YumSession" / org.baseurl.YumSession.Exit
+	@sudo /usr/bin/dbus-send --system --print-reply --dest="org.baseurl.YumSystem" / org.baseurl.YumSystem.Exit
+	
+start-session:
+	yumdaemon/yumdaemon-session -d -v --notimeout
+
+
+start-system:
+	yumdaemon/yumdaemon-system -d -v --notimeout
+
 FORCE:
 	
