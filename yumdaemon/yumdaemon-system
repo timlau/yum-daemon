@@ -1206,6 +1206,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         
         self._yumbase.doLock()
         self.logger.debug(' --> YUM LOCKED: Lockfile = %s' % self._yumbase._lockfile)
+        ygh = self._yumbase.doPackageLists("updates") # make sure the basic stuff is up and running
+
         
         
     def _reset_yumbase(self):
