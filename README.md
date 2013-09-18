@@ -18,7 +18,7 @@ PolicyKit dialog to ask for password of a priviledged user like root.
 Source overview
 ----------------
 
-    yumdaemon/         Contains the daemon python source
+    yumdaemon/      Contains the daemon python source
     client/         Contains the client API bindings for python 2.x & 3.x
     test/           Unit test for the daemon and python bindings
     dbus/           DBus system service setup files
@@ -49,8 +49,18 @@ or this to just run the unit tests.
 
     make test
    
-to make the daemons exit run:
+To make the daemons shutdown
 -------------------------------
+
+Session:
+	
+	make kill-session
+	
+System
+	
+	make kill-system
+	
+Both
 
     make kill-both
    
