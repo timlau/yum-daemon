@@ -3,8 +3,8 @@
 #include	<dbus/dbus.h>
 #include	<dbus/dbus-glib.h>
 
-#define 	YUM_SERVICE_NAME   "org.baseurl.Yum"
-#define 	YUM_INTERFACE	"org.baseurl.Yum.Interface"
+#define 	YUM_SERVICE_NAME   "org.baseurl.YumSession"
+#define 	YUM_INTERFACE	"org.baseurl.YumSession"
 #define 	YUM_OBJECT_PATH	"/"
 
 gboolean yum_dbus_init();
@@ -22,7 +22,7 @@ gboolean yum_dbus_init()
 {
 	GError *error = NULL;
 	
-	conn = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error);
+	conn = dbus_g_bus_get(DBUS_BUS_SESSION, &error);
 	
 	if (conn == NULL) {
 		g_warning("Error %s\n", error->message);
@@ -34,12 +34,11 @@ gboolean yum_dbus_init()
 		g_debug("conn object is %d\n", conn);
 	}
 
-	proxy = dbus_g_proxy_new_for_name_owner(conn,
+	proxy = dbus_g_proxy_new_for_name(conn,
 						YUM_SERVICE_NAME,
 						YUM_OBJECT_PATH,
-						YUM_INTERFACE,
-					        &error);
-    dbus_g_proxy_set_default_timeout(proxy, 60000);		
+						YUM_INTERFACE);
+    /*dbus_g_proxy_set_default_timeout(proxy, 60000);		*/
 	g_debug("proxy %d\n", proxy);
 									
 	if (proxy == NULL || error != NULL)
@@ -168,7 +167,7 @@ gboolean yum_dbus_get_packages_by_name(gchar* pattern, gboolean use_newest)
 
 int main(int argc, char** argv)
 {
-	g_type_init();	
+	/*g_type_init();	*/
 	
 	if (yum_dbus_init() == FALSE)
 		g_error("yum_dbus_init, unable to connect yum DBUS service");
