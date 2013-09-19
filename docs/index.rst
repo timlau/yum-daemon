@@ -12,8 +12,7 @@ Contents:
    :maxdepth: 2
 
    server
-   client-python3
-   client-python2
+   client-python
    examples
 
 

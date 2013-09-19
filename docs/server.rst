@@ -43,6 +43,20 @@ Transaction result::
 	<obs_list>           ::= <obs_id>, <obs_id>, ...., <obs_id>
 	<obs_id>             ::= name, epoch, version, release, arch, repo_id for packages obsoletes by <pkg_id>
    
+
+==========================================
+System Service
+==========================================
+
+.. table:: **DBus Names**
+
+   ========================  =========================================================
+   Attribute				 Value	
+   ========================  =========================================================
+   object                    org.baseurl.YumSystem
+   interface                 org.baseurl.YumSystem
+   path                      /
+   ========================  =========================================================
  
 Misc methods
 -------------
@@ -279,6 +293,186 @@ History
 
 Methods to work with the yum history
 
+.. py:function:: GetHistoryByDays(start_days, end_days)
+
+        Get History transaction in a interval of days from today
+        
+        :param start_days: start of interval in days from now (0 = today)
+        :type start_days: integer
+        :param end_days: end of interval in days from now
+        :type end_days: integer
+        :return: a list of (transaction ids, date-time) pairs (JSON)
+		:rtype: string (s)
+
+.. py:function:: GetHistoryPackages(tid)
+
+        Get packages from a given yum history transaction id
+        
+        :param tid: history transaction id
+        :type tid: integer
+        :return: list of (pkg_id, state, installed) pairs
+        :rtype: json encoded string
+
+.. py:function:: HistorySearch(pattern)
+
+        Search the history for transaction matching a pattern
+
+        :param pattern: patterne to match
+        :type pattern: string
+        :return: list of (tid,isodates)
+        :type sender: json encoded string
+
+   
+==========================================
+Session Service
+==========================================
+.. table:: **DBus Names**
+
+   ========================  =========================================================
+   Attribute				 Value	
+   ========================  =========================================================
+   object                    org.baseurl.YumSession
+   interface                 org.baseurl.YumSession
+   path                      /
+   ========================  =========================================================
+
+
+ 
+Misc methods
+-------------
+
+.. function:: GetVersion()
+
+   Get the API version
+
+   :return: string with API version
+
+.. function:: Lock()
+
+   Get the daemon Lock, if posible
+
+.. function:: Unlock()
+
+   Get the daemon Lock, if posible
+
+Repository and config methods
+------------------------------
+
+.. py:function:: GetRepositories(filter)
+
+   Get the value a list of repo ids
+
+   :param filter: filter to limit the listed repositories
+   :type filter: string
+   :return: list of repo id's
+   :rtype: array for stings (as)
+
+.. py:function:: GetRepo(repo_id)
+
+   Get information about a give repo_id
+
+   :param repo_id: repo id 
+   :type repo_id: string
+   :return: a dictionary with repo information **(JSON)**
+   :rtype: string (s)
+
+
+.. py:function:: GetConfig(setting)
+
+   Get the value of a yum config setting
+
+   :param setting: name of setting (debuglevel etc..)
+   :type setting: string
+   :return: the config value of the requested setting **(JSON)**
+   :rtype: string (s)
+
+Package methods
+----------------
+
+These methods is for getting packages and information about packages
+
+.. function:: GetPackages(pkg_filter)
+
+   get a list of packages matching the filter type
+   
+   :param pkg_filter: package filter ('installed','available','updates','obsoletes','recent','extras')
+   :type pkg_filter: string
+   :return: list of pkg_id's
+   :rtype: array of strings (as)
+   
+
+
+.. function:: GetPackageWithAttributes(pkg_filter, fields)
+
+   | Get a list of pkg list for a given package filter  
+   | each pkg list contains [pkg_id, field,....] where field is a atrribute of the package object  
+   | Ex. summary, size etc.  
+	
+   :param pkg_filter: package filter ('installed','available','updates','obsoletes','recent','extras')
+   :type pkg_filter: string
+   :param fields: yum package objects attributes to get.
+   :type fields: array of strings (as)
+   :return: list of (id, field1, field2...) **(JSON)**, each JSON Sting contains (id, field1, field2...)
+   :rtype: array of strings (as) 
+
+.. py:function:: GetPackagesByName(name, newest_only)
+
+   Get a list of pkg ids for starts with name
+        
+   :param name: name prefix to match
+   :type name: string
+   :param newest_only: show only the newest match or every match.
+   :type newest_only: boolean
+   :return: list of pkg_id's
+   :rtype: array of strings (as)
+
+
+.. py:function:: GetAttribute(id, attr,)
+
+   get yum package attribute (description, filelist, changelog etc)
+
+   :param pkg_id: pkg_id to get attribute from
+   :type pkg_id: string
+   :param attr: name of attribute to get
+   :type attr: string
+   :return: the value of the attribute **(JSON)**, the content depend on attribute being read
+   :rtype:  string (s)
+   
+.. py:function:: GetUpdateInfo(id)
+ 
+   Get Updateinfo for a package
+        
+   :param pkg_id: pkg_id to get update info from
+   :type pkg_id: string
+   :return: update info for the package **(JSON)**
+   :rtype: string (s)
+
+.. py:function:: Search(fields, keys, match_all, newest_only )
+
+   Search for packages where keys is matched in fields
+        
+   :param fields: yum po attributes to search in
+   :type fields: array of strings
+   :param keys: keys to search for
+   :type keys: array of strings
+   :param match_all: match all keys or only one
+   :type match_all: boolean
+   :param newest_only: match all keys or only one
+   :type newest_only: boolean
+   :return: list of pkg_id's for matches
+   :rtype: array of stings (as)
+
+
+Groups
+-------
+
+Methods to work with yum groups and categories
+
+.. py:function:: GetGroups( )
+
+   Get available group id's
+
 .. note:: Under Development
    
-   Has not been defined and implemented yet
+   More to come in the future, methods to install groups etc. has to be defined and implemented
+

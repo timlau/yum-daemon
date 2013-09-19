@@ -23,14 +23,14 @@ yum-daemon Dbus service.
 
 It use async call to the yum-daemon, so signal can be catched and a Gtk gui dont get unresonsive
 
-There is 2 classes YumDaemonClient & YumDaemonClientReadOnly
+There is 2 classes :class:`YumDaemonClient` & :class:`YumDaemonReadOnlyClient`
 
-YumDaemonClient uses a system DBus service running as root and can make chages to the system.
+:class:`YumDaemonClient` uses a system DBus service running as root and can make chages to the system.
 
-YumDaemonReadOnlyClient uses a session DBus service running as current user and can only do readonly
+:class:`YumDaemonReadOnlyClient` uses a session DBus service running as current user and can only do readonly
 actions.
 
-Usage: (Make your own subclass based on :class:`yumdaemon3.YumDaemonClient` and overload the signal handlers)::
+Usage: (Make your own subclass based on :class:`yumdaemon.YumDaemonClient` and overload the signal handlers)::
 
 
     from yumdaemon import YumDaemonClient
@@ -54,7 +54,7 @@ Usage: (Make your own subclass based on :class:`yumdaemon3.YumDaemonClient` and 
             pass
 
 
-Usage: (Make your own subclass based on :class:`yumdaemon.YumDaemonReadonlyClient` and overload the signal handlers)::
+Usage: (Make your own subclass based on :class:`yumdaemon.YumDaemonReadOnlyClient` and overload the signal handlers)::
 
 
     from yumdaemon import YumDaemonReadOnlyClient
@@ -418,43 +418,6 @@ class YumDaemonBase:
         '''
         return self._run_dbus_async('GetPackagesByName','(sb)',name, newest_only)
 
-    def GetHistoryByDays(self, start_days, end_days):
-        '''
-        Get History transaction in a interval of days from today
-
-        :param start_days: start of interval in days from now (0 = today)
-        :type start_days: integer
-        :param end_days:end of interval in days from now
-        :type end_days: integer
-        :return: a list of (transaction is, date-time) pairs
-        :type sender: json encoded string
-        '''
-        value = self._run_dbus_async('GetHistoryByDays','(ii)', start_days, end_days)
-        return json.loads(value)
-
-    def HistorySearch(self, pattern):
-        '''
-        Search the history for transaction matching a pattern
-
-        :param pattern: patterne to match
-        :type pattern: list (strings)
-        :return: list of (tid,isodates)
-        :type sender: json encoded string
-        '''
-        value = self._run_dbus_async('HistorySearch','(as)', pattern)
-        return json.loads(value)
-
-    def GetHistoryPackages(self, tid):
-        '''
-        Get packages from a given yum history transaction id
-
-        :param tid: history transaction id
-        :type tid: integer
-        :return: list of (pkg_id, state, installed) pairs
-        :rtype: list
-        '''
-        value = self._run_dbus_async('GetHistoryPackages','(i)',tid)
-        return json.loads(value)
 
     def GetGroups(self):
         '''
@@ -639,4 +602,42 @@ class YumDaemonClient(YumDaemonBase):
         '''
         self._run_dbus_async('RunTransaction')
 
+
+    def GetHistoryByDays(self, start_days, end_days):
+        '''
+        Get History transaction in a interval of days from today
+
+        :param start_days: start of interval in days from now (0 = today)
+        :type start_days: integer
+        :param end_days:end of interval in days from now
+        :type end_days: integer
+        :return: a list of (transaction is, date-time) pairs
+        :type sender: json encoded string
+        '''
+        value = self._run_dbus_async('GetHistoryByDays','(ii)', start_days, end_days)
+        return json.loads(value)
+
+    def HistorySearch(self, pattern):
+        '''
+        Search the history for transaction matching a pattern
+
+        :param pattern: patterne to match
+        :type pattern: list (strings)
+        :return: list of (tid,isodates)
+        :type sender: json encoded string
+        '''
+        value = self._run_dbus_async('HistorySearch','(as)', pattern)
+        return json.loads(value)
+
+    def GetHistoryPackages(self, tid):
+        '''
+        Get packages from a given yum history transaction id
+
+        :param tid: history transaction id
+        :type tid: integer
+        :return: list of (pkg_id, state, installed) pairs
+        :rtype: list
+        '''
+        value = self._run_dbus_async('GetHistoryPackages','(i)',tid)
+        return json.loads(value)
 

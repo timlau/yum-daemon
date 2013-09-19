@@ -1,5 +1,5 @@
 ==========================================
-Client API for Python 2.x &3.x
+Client API for Python 2.x and 3.x
 ==========================================
 
 .. automodule:: yumdaemon
@@ -7,12 +7,22 @@ Client API for Python 2.x &3.x
 Classes
 ========
 
+System API
+-------------
+
 .. autoclass:: yumdaemon.YumDaemonClient
-    :members:
+    :members: Exit, Lock, Unlock, SetWatchdogState,GetPackageWithAttributes, GetRepositoriesGetRepo, GetConfig, 
+    		  GetAttribute, GetUpdateInfo, GetPackages, GetPackagesByName, GetHistoryByDays, HistorySearch, GetHistoryPackages,
+    		  GetGroups, Search, ClearTransaction, GetTransaction, AddTransaction, Install, Remove, Update, Reinstal, Downgrade,
+    		  BuildTransaction, RunTransaction
     
+Session API
+------------
 
 .. autoclass:: yumdaemon.YumDaemonReadOnlyClient
-    :members:
+    :members: Exit, Lock, Unlock, SetWatchdogState,GetPackageWithAttributes, GetRepositoriesGetRepo, GetConfig, 
+    		  GetAttribute, GetUpdateInfo, GetPackages, GetPackagesByName, GetGroups, Search
+    		  BuildTransaction, RunTransaction
     
 Exceptions
 ============
