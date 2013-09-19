@@ -1,15 +1,18 @@
 ==========================================
-Client API for Python 3.x
+Client API for Python 2.x &3.x
 ==========================================
 
-.. automodule:: yumdaemon3
+.. automodule:: yumdaemon
 
 Classes
 ========
 
-.. autoclass:: yumdaemon3.YumDaemonClient
+.. autoclass:: yumdaemon.YumDaemonClient
     :members:
     
+
+.. autoclass:: yumdaemon.YumDaemonReadOnlyClient
+    :members:
     
 Exceptions
 ============

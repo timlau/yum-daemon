@@ -2,13 +2,16 @@
 Examples
 *********
 
-Python 3.x
-===========
+Python 2.x &3.x
+================
 
-.. literalinclude:: ../examples/python3/example1.py
+.. literalinclude:: ../examples/python/example1.py
 	:language: python
 
-.. literalinclude:: ../examples/python3/example2.py
+.. literalinclude:: ../examples/python/example2.py
+	:language: python
+
+.. literalinclude:: ../examples/python/ro-example1.py
 	:language: python
 
 Vala
