@@ -375,64 +375,6 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
         else:
             value = json.dumps(None)        
         return self.working_ended(value)
-
-
-    @Logger
-    @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='i', 
-                                          out_signature='s',
-                                          sender_keyword='sender')
-    def GetHistoryPackages(self, tid,sender=None):
-        '''
-        Get packages from a given yum history transaction id
-        
-        :param tid: history transaction id
-        :type tid: integer
-        :return: list of (pkg_id, state, installed) pairs
-        :rtype: json encoded string
-        '''
-        self.working_start(sender)
-        value = json.dumps(self._get_history_transaction_pkgs(tid))
-        return self.working_ended(value)
-
-
-    @Logger
-    @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='ii', 
-                                          out_signature='s',
-                                          sender_keyword='sender')
-    def GetHistoryByDays(self, start_days, end_days ,sender=None):
-        '''
-        Get History transaction in a interval of days from today
-        
-        :param start_days: start of interval in days from now (0 = today)
-        :type start_days: integer
-        :param end_days:end of interval in days from now
-        :type end_days: integer
-        :return: a list of (transaction is, date-time) pairs
-        :type sender: json encoded string
-        '''
-        self.working_start(sender)
-        value = json.dumps(self._get_history_by_days(start_days, end_days))
-        return self.working_ended(value)
-    
-    @Logger
-    @dbus.service.method(DAEMON_INTERFACE, 
-                                          in_signature='as', 
-                                          out_signature='s',
-                                          sender_keyword='sender')
-    def HistorySearch(self, pattern ,sender=None):
-        '''
-        Search the history for transaction matching a pattern
-        :param pattern: patterne to match
-        :type pattern: string
-        :return: list of (tid,isodates)
-        :type sender: json encoded string
-        '''
-        self.working_start(sender)
-        value = json.dumps(self._history_search(pattern))
-        return self.working_ended(value)
-
     
     @Logger
     @dbus.service.method(DAEMON_INTERFACE, 
