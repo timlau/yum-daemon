@@ -120,7 +120,7 @@ test-release:
 
 test-inst:
 	@$(MAKE) test-release
-	sudo yum install ~/rpmbuild/RPMS/noarch/*yumdaemon*.rpm
+	sudo yum reinstall ~/rpmbuild/RPMS/noarch/*yumdaemon*.rpm
 	
 rpm:
 	@$(MAKE) archive

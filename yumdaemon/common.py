@@ -310,16 +310,6 @@ class YumDaemonBase(dbus.service.Object, DownloadBaseCallback):
         values = [pkg.name, pkg.epoch, pkg.ver, pkg.rel, pkg.arch, pkg.ui_from_repo]
         return ",".join(values)
 
-    def check_lock(self, sender):
-        '''
-        Check that the current sender is owning the yum lock
-        :param sender:
-        '''
-        if self._lock == sender:
-            return True
-        else:
-            raise YumLockedError('Yum is locked by another application')
-
 
     def _get_updates(self):
         if not self._updates_list:

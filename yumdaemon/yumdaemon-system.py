@@ -34,7 +34,7 @@ from yum.Errors import *
 
 import argparse
 
-from common import YumDaemonBase, doTextLoggerSetup, Logger, DownloadCallback, NONE
+from common import YumDaemonBase, doTextLoggerSetup, Logger, DownloadCallback, NONE, FAKE_ATTR
 
 version = 100 # must be integer
 DAEMON_ORG = 'org.baseurl.YumSystem'
@@ -679,7 +679,7 @@ class YumDaemon(YumDaemonBase):
         '''
         self.working_start(sender)
         result = []
-        for found in self.yumbase.searchGenerator(fields, keys, keys=True, searchtags=tags):
+        for found in self.yumbase.searchGenerator(fields, keys, keys=True,searchtags=tags):
             pkg = found[0]
             fkeys = found[1]
             if match_all and not len(fkeys) == len(keys): # skip the result if not all keys matches
@@ -881,6 +881,17 @@ class YumDaemon(YumDaemonBase):
             po = txmbr.po
             result.append("%s,%s" % (self._get_id(po), txmbr.ts_state ))
         return result
+    
+    def check_lock(self, sender):
+        '''
+        Check that the current sender is owning the yum lock
+        :param sender:
+        '''
+        if self._lock == sender:
+            return True
+        else:
+            raise YumLockedError('Yum is locked by another application')
+    
 
     def check_permission(self, sender):
         ''' Check for senders permission to run root stuff'''

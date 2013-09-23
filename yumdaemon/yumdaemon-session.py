@@ -36,7 +36,7 @@ from yum.Errors import *
 
 import argparse
 
-from common import YumDaemonBase, doTextLoggerSetup, Logger, DownloadCallback
+from common import YumDaemonBase, doTextLoggerSetup, Logger, DownloadCallback, FAKE_ATTR, NONE
 
 version = 100 # must be integer
 DAEMON_ORG = 'org.baseurl.YumSession'
@@ -412,6 +412,17 @@ class YumDaemon(YumDaemonBase):
     def working_ended(self, value=None):
         self._is_working = False
         return value
+    
+    def check_lock(self, sender):
+        '''
+        Check that the current sender is owning the yum lock
+        :param sender:
+        '''
+        if self._lock == sender:
+            return True
+        else:
+            raise YumLockedError('Yum is locked by another application')
+    
 
     def _get_yumbase(self):
         '''
