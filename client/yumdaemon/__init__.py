@@ -75,6 +75,9 @@ import json
 import sys
 import re
 import weakref
+import logging
+
+logger = logging.getLogger("yumdaemon.client")
 
 from gi.repository import Gio, GObject
 
@@ -154,7 +157,7 @@ class YumDaemonBase:
         self.dbus_org = org
         self.dbus_interface = interface
         self.daemon = self._get_daemon(bus, org, interface)
-        print("daemon version : ",self.daemon.GetVersion())
+        logger.debug("%s daemon loaded - version :  %s" % (interface,self.daemon.GetVersion()))
 
     def _get_daemon(self,bus, org, interface):
         ''' Get the daemon dbus proxy object'''
