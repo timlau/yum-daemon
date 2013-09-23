@@ -31,6 +31,7 @@ install:
 	install -m644 policykit1/$(ORG_NAME).policy $(DESTDIR)/usr/share/polkit-1/actions/.				
 	install -m755 yumdaemon/yumdaemon-system.py $(DESTDIR)/$(PKGDIR)/yumdaemon-system
 	install -m755 yumdaemon/yumdaemon-session.py $(DESTDIR)/$(PKGDIR)/yumdaemon-session
+	install -m644 yumdaemon/common.py $(DESTDIR)/$(PKGDIR)/.
 	for d in $(SUBDIRS); do make DESTDIR=$(DESTDIR) -C $$d install; [ $$? = 0 ] || exit 1; done
 
 uninstall:
@@ -54,6 +55,7 @@ test-verbose: FORCE
 # Run as root or you will get a password prompt for each test method :)
 test: FORCE
 	@nosetests -v test/
+
 
 # Run as root or you will get a password prompt for each test method :)
 test-devel: FORCE
@@ -145,7 +147,7 @@ start-session:
 
 
 start-system:
-	yumdaemon/yumdaemon-system.py -d -v --notimeout
+	sudo yumdaemon/yumdaemon-system.py -d -v --notimeout
 
 FORCE:
 	

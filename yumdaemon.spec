@@ -74,7 +74,7 @@ fi
 %doc README.md examples/ ChangeLog
 %{_datadir}/dbus-1/system-services/*
 %{_datadir}/dbus-1/services/*
-%{_datadir}/%{name}/%{name}-*
+%{_datadir}/*
 %{_datadir}/polkit-1/actions
 %{_sysconfdir}/dbus-1/system.d/*
 
