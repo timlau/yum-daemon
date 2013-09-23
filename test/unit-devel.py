@@ -17,16 +17,28 @@ class TestAPIDevel(TestBase):
         TestBase.__init__(self, methodName)
 
 
-    def test_Locking(self):
+    def test_GetConfig(self):
         '''
-        Test Unlock and Lock
+        System: GetConfig & SetConfig
         '''
-        print
-        # release the lock (grabbed by setUp)
-        self.Unlock()
-        # calling a method without a lock should raise a YumLockedError
-        # self.assertRaises(YumLockedError,self.Install, '0xFFFF')
-        # trying to unlock method without a lock should raise a YumLockedError
-        self.assertRaises(YumLockedError,self.Unlock)
-        # get the Lock again, else tearDown will fail
-        self.Lock()
+        all_conf = self.GetConfig('*')
+        self.assertIsInstance(all_conf, dict)
+        for key in all_conf:
+            print "   %s = %s" % (key,all_conf[key])
+        kpn = self.GetConfig('kernelpkgnames')
+        self.assertIsInstance(kpn, list)
+        print "kernelpkgnames : %s" % kpn
+        skip_broken = self.GetConfig('skip_broken')
+        self.assertIn(skip_broken, [True,False])
+        print "skip_broken : %s" % skip_broken
+        not_found = self.GetConfig('not_found')
+        print "not_found : %s" % not_found
+        self.assertIsNone(not_found)
+        rc = self.SetConfig("skip_broken", not skip_broken)
+        self.assertTrue(rc)
+        sb = self.GetConfig('skip_broken')
+        self.assertIs(sb, not skip_broken)
+        rc = self.SetConfig("skip_broken",skip_broken)
+        self.assertTrue(rc)
+        sb = self.GetConfig('skip_broken')
+        self.assertIs(sb, skip_broken)

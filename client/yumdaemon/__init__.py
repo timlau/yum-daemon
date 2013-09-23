@@ -510,6 +510,14 @@ class YumDaemonClient(YumDaemonBase):
 # API Methods
 ###############################################################################
 
+    def SetConfig(self, setting, value):
+        '''
+        set a yum config setting
+        :param setting: yum conf setting to set
+        :param value: value to set
+        '''
+        result = self._run_dbus_async('SetConfig','(ss)',setting, json.dumps(value))
+        return result
 
 
     def ClearTransaction(self):

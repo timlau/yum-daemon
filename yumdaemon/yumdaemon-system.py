@@ -243,6 +243,22 @@ class YumDaemon(YumDaemonBase):
 
     @Logger
     @dbus.service.method(DAEMON_INTERFACE,
+                                          in_signature='ss',
+                                          out_signature='b',
+                                          sender_keyword='sender')
+    def SetConfig(self, setting, value ,sender=None):
+        '''
+        Set yum config setting for the running session
+        :param setting: yum conf setting to set
+        :param value: value to set
+        :param sender:
+        '''
+        self.working_start(sender)
+        rc = self._set_option(setting, json.loads(value))
+        return self.working_ended(rc)
+
+    @Logger
+    @dbus.service.method(DAEMON_INTERFACE,
                                           in_signature='s',
                                           out_signature='s',
                                           sender_keyword='sender')
@@ -777,6 +793,19 @@ class YumDaemon(YumDaemonBase):
     def working_ended(self, value=None):
         self._is_working = False
         return value
+
+    def _set_option(self, option, value):
+        if hasattr(self.yumbase.conf, option):
+            setattr(self.yumbase.conf, option, value)
+            self.logger.debug(_("Setting Yum Option %s = %s") % (option, value))
+            for repo in self.yumbase.repos.repos.values():
+                if repo.isEnabled():
+                    if hasattr(repo, option):
+                        setattr(repo, option, value)
+                        self.logger.debug("Setting Yum Option %s = %s (%s)" % (option, value, repo.id), __name__)
+            return True
+        else:
+            return False
 
 
     def _get_history_by_days(self, start, end):

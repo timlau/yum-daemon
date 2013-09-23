@@ -106,6 +106,18 @@ Repository and config methods
    :return: the config value of the requested setting **(JSON)**
    :rtype: string (s)
 
+.. py:function:: SetConfig(setting, value)
+
+   Get the value of a yum config setting
+
+   :param setting: name of setting (debuglevel etc..)
+   :type setting: string
+   :param value: name of setting (debuglevel etc..)
+   :type value: misc types **(JSON)**
+   :return: did the update succed
+   :rtype: boolean (b)
+
+
 Package methods
 ----------------
 

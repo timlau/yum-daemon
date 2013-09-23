@@ -56,6 +56,14 @@ test-verbose: FORCE
 test: FORCE
 	@nosetests -v test/
 
+# Run as root or you will get a password prompt for each test method :)
+test-system: FORCE
+	@nosetests -v test/test-system-api.py
+
+# Run as root or you will get a password prompt for each test method :)
+test-session: FORCE
+	@nosetests -v test/test-session-api.py
+
 
 # Run as root or you will get a password prompt for each test method :)
 test-devel: FORCE

@@ -235,7 +235,7 @@ class TestAPI(TestBase):
 
     def test_GetConfig(self):
         '''
-        System: GetConfig
+        System: GetConfig & SetConfig
         '''
         all_conf = self.GetConfig('*')
         self.assertIsInstance(all_conf, dict)
@@ -250,6 +250,15 @@ class TestAPI(TestBase):
         not_found = self.GetConfig('not_found')
         print "not_found : %s" % not_found
         self.assertIsNone(not_found)
+        rc = self.SetConfig("skip_broken", not skip_broken)
+        self.assertTrue(rc)
+        sb = self.GetConfig('skip_broken')
+        self.assertIs(sb, not skip_broken)
+        rc = self.SetConfig("skip_broken",skip_broken)
+        self.assertTrue(rc)
+        sb = self.GetConfig('skip_broken')
+        self.assertIs(sb, skip_broken)
+        
 
     def test_GetRepositories(self):
         '''
