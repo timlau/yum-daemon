@@ -43,7 +43,7 @@ import argparse
 version = 100 # must be integer
 DAEMON_ORG = 'org.baseurl.YumSystem'
 DAEMON_INTERFACE = DAEMON_ORG
-FAKE_ATTR = ['downgrades','action']
+FAKE_ATTR = ['downgrades','action','pkgtags']
 NONE = json.dumps(None)
 
 def _(msg):
@@ -938,6 +938,8 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             return self._get_action(po)
         elif attr == 'downgrades':
             return self._get_downgrades(po)
+        elif attr == 'pkgtags':
+            return self._get_pkgtags(po)
 
     def _get_downgrades(self,pkg):
         pkg_ids = []
@@ -951,6 +953,17 @@ class YumDaemon(dbus.service.Object, DownloadBaseCallback):
             if ipkgs:
                 pkg_ids.append(self._get_id(ipkgs[0]))
         return pkg_ids
+
+    def _get_pkgtags(self, po):
+        '''
+        Get pkgtags from a given po
+        '''
+        pkgtags = self.yumbase.pkgtags
+        po_dict = pkgtags.search_names(po.name)
+        if po.name in po_dict:
+            return po_dict[po.name]
+        else:
+            return []
         
     def _is_installed(self, po):
         '''
