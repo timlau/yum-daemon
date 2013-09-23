@@ -20,8 +20,6 @@ import dbus
 import dbus.service
 import dbus.glib
 import gobject
-import os
-import subprocess
 import json
 import logging
 from datetime import datetime
@@ -31,10 +29,8 @@ from urlgrabber.progress import format_number
 from yum.callbacks import *
 from yum.rpmtrans import RPMBaseCallback
 from yum.constants import *
-from yum.update_md import UpdateMetadata
 from yum.packageSack import packagesNewestByName
 from yum.Errors import *
-from rpmUtils.arch import canCoinstall
 
 import argparse
 
@@ -121,21 +117,6 @@ class RPMCallback(RPMBaseCallback):
         pass
 
 logger = logging.getLogger('yumdaemon')
-
-def Logger(func):
-    """
-    This decorator catch yum exceptions and send fatal signal to frontend
-    """
-    def newFunc(*args, **kwargs):
-        logger.debug("%s started args: %s " % (func.__name__, repr(args[1:])))
-        rc = func(*args, **kwargs)
-        logger.debug("%s ended" % func.__name__)
-        return rc
-
-    newFunc.__name__ = func.__name__
-    newFunc.__doc__ = func.__doc__
-    newFunc.__dict__.update(func.__dict__)
-    return newFunc
 
 #------------------------------------------------------------------------------ Main class
 class YumDaemon(YumDaemonBase):

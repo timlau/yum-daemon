@@ -30,7 +30,6 @@ import yum.Errors as Errors
 from yum.callbacks import *
 from yum.constants import *
 from yum.update_md import UpdateMetadata
-from yum.packageSack import packagesNewestByName
 from yum.Errors import *
 
 from rpmUtils.arch import canCoinstall

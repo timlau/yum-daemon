@@ -25,22 +25,14 @@ import dbus
 import dbus.service
 import dbus.glib
 import gobject
-import os
-import subprocess
 import json
 import logging
-from datetime import datetime
 import yum
 import yum.Errors as Errors
-from urlgrabber.progress import format_number
 from yum.callbacks import *
-from yum.rpmtrans import RPMBaseCallback
 from yum.constants import *
-from yum.update_md import UpdateMetadata
 from yum.packageSack import packagesNewestByName
 from yum.Errors import *
-
-from rpmUtils.arch import canCoinstall
 
 import argparse
 
