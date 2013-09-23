@@ -29,8 +29,8 @@ install:
 	install -m644 dbus/$(ORG_RO_NAME).service $(DESTDIR)/usr/share/dbus-1/services/.				
 	install -m644 dbus/$(ORG_NAME).conf $(DESTDIR)/etc/dbus-1/system.d/.				
 	install -m644 policykit1/$(ORG_NAME).policy $(DESTDIR)/usr/share/polkit-1/actions/.				
-	install -m755 yumdaemon/yumdaemon-system $(DESTDIR)/$(PKGDIR)/.
-	install -m755 yumdaemon/yumdaemon-session $(DESTDIR)/$(PKGDIR)/.
+	install -m755 yumdaemon/yumdaemon-system.py $(DESTDIR)/$(PKGDIR)/yumdaemon-system
+	install -m755 yumdaemon/yumdaemon-session.py $(DESTDIR)/$(PKGDIR)/yumdaemon-session
 	for d in $(SUBDIRS); do make DESTDIR=$(DESTDIR) -C $$d install; [ $$? = 0 ] || exit 1; done
 
 uninstall:
@@ -141,11 +141,11 @@ kill-both:
 	@sudo /usr/bin/dbus-send --system --print-reply --dest="org.baseurl.YumSystem" / org.baseurl.YumSystem.Exit
 	
 start-session:
-	yumdaemon/yumdaemon-session -d -v --notimeout
+	yumdaemon/yumdaemon-session.py -d -v --notimeout
 
 
 start-system:
-	yumdaemon/yumdaemon-system -d -v --notimeout
+	yumdaemon/yumdaemon-system.py -d -v --notimeout
 
 FORCE:
 	
