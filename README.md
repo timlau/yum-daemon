@@ -29,12 +29,14 @@ Source overview
 How to install services and python bindings:
 -----------------------------------------------
 
-Run the following as root
+Run the following
 
+```
 	git clone ...
 	cd yum-daemon
-	make test-release
-	sudo yum install ~/rpmbuild/RPMS/noarch/*yumdaemon*.rpm
+	make test-inst
+```
+
 
 How to test:
 -------------

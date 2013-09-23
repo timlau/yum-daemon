@@ -664,20 +664,22 @@ class YumDaemon(YumDaemonBase):
 
     @Logger
     @dbus.service.method(DAEMON_INTERFACE,
-                                          in_signature='asasbb',
+                                          in_signature='asasbbb',
                                           out_signature='as',
                                           sender_keyword='sender')
-    def Search(self, fields, keys, match_all, newest_only, sender=None ):
+    def Search(self, fields, keys, match_all, newest_only, tags, sender=None ):
         '''
         Search for for packages, where given fields contain given key words
         :param fields: list of fields to search in
         :param keys: list of keywords to search for
         :param match_all: match all flag, if True return only packages matching all keys
         :param newest_only: return only the newest version of a package
+        :param tags: seach pkgtags
+        
         '''
         self.working_start(sender)
         result = []
-        for found in self.yumbase.searchGenerator(fields, keys, keys=True):
+        for found in self.yumbase.searchGenerator(fields, keys, keys=True, searchtags=tags):
             pkg = found[0]
             fkeys = found[1]
             if match_all and not len(fkeys) == len(keys): # skip the result if not all keys matches
