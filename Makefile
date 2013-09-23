@@ -117,6 +117,10 @@ test-release:
 	@rpmdev-wipetree
 	@rpmbuild -ta ${PKGNAME}-${NEW_VER}.tar.gz
 	@$(MAKE) test-cleanup
+
+test-inst:
+	@$(MAKE) test-release
+	sudo yum install ~/rpmbuild/RPMS/noarch/*yumdaemon*.rpm
 	
 rpm:
 	@$(MAKE) archive
