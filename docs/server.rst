@@ -167,7 +167,7 @@ These methods is for getting packages and information about packages
    :return: update info for the package **(JSON)**
    :rtype: string (s)
 
-.. py:function:: Search(fields, keys, match_all, newest_only )
+.. py:function:: Search(fields, keys, match_all, newest_only, tags )
 
    Search for packages where keys is matched in fields
         
@@ -179,6 +179,8 @@ These methods is for getting packages and information about packages
    :type match_all: boolean
    :param newest_only: match all keys or only one
    :type newest_only: boolean
+   :param tags: match all keys or only one
+   :type tags: boolean
    :return: list of pkg_id's for matches
    :rtype: array of stings (as)
 
@@ -447,7 +449,7 @@ These methods is for getting packages and information about packages
    :return: update info for the package **(JSON)**
    :rtype: string (s)
 
-.. py:function:: Search(fields, keys, match_all, newest_only )
+.. py:function:: Search(fields, keys, match_all, newest_only, tags )
 
    Search for packages where keys is matched in fields
         
@@ -459,6 +461,8 @@ These methods is for getting packages and information about packages
    :type match_all: boolean
    :param newest_only: match all keys or only one
    :type newest_only: boolean
+   :param tags: search in pkgtags
+   :type tags: boolean   
    :return: list of pkg_id's for matches
    :rtype: array of stings (as)
 
