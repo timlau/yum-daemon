@@ -96,7 +96,7 @@ Repository and config methods
    :return: a dictionary with repo information **(JSON)**
    :rtype: string (s)
 
-.. py:function:: SetEnabledGetRepo(repo_ids):
+.. py:function:: SetEnabledRepos(repo_ids):
 
    Enabled a list of repositories, disabled all other repos
 
