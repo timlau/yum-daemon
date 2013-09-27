@@ -110,6 +110,13 @@ class YumDaemonBase(dbus.service.Object, DownloadBaseCallback):
 # Helper methods
 #===============================================================================
 
+    def _enable_repos_from_list(self, repo_ids):
+        for repo in self.yumbase.repos.repos.values():
+            if repo.id in repo_ids: # is in the positive list
+                self.yumbase.repos.enableRepo(repo.id)
+            else:
+                self.yumbase.repos.disableRepo(repo.id)
+
     def _get_po_list(self, pkg, fields):
 
         id = ",".join([pkg.name, pkg.epoch, pkg.ver, pkg.rel, pkg.arch, pkg.ui_from_repo])

@@ -166,11 +166,7 @@ class YumDaemon(YumDaemonBase):
         :param sender:
         '''
         self.working_start(sender)
-        for repo in self.yumbase.repos.repos.values():
-            if repo.id in repo_ids: # is in the positive list
-                self.yumbase.repos.enableRepo(repo.id)
-            else:
-                self.yumbase.repos.disableRepo(repo.id)
+        self._get_yumbase(repo_ids) # we need a new instance of YumBase, with the selected repos
         return self.working_ended()
 
 
@@ -444,7 +440,7 @@ class YumDaemon(YumDaemonBase):
             raise YumLockedError('Yum is locked by another application')
     
 
-    def _get_yumbase(self):
+    def _get_yumbase(self, repos = []):
         '''
         Get a YumBase object to work with
         '''
@@ -455,6 +451,8 @@ class YumDaemon(YumDaemonBase):
         self._yumbase.setCacheDir()
         # setup the download callback handler
         self._yumbase.repos.setProgressBar( DownloadCallback(self) )
+        if repos:
+            self._enable_repos_from_list(repos)                    
         # Disable parallel down for this repo, we dont support it
         for repo in self._yumbase.repos.listEnabled():
             repo._async = False
