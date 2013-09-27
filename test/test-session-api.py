@@ -107,7 +107,7 @@ class TestAPI(TestBaseReadonly):
         print "not_found : %s" % not_found
         self.assertIsNone(not_found)
 
-    def test_GetRepositories(self):
+    def test_Repositories(self):
         '''
         Session: GetRepository and GetRepo
         '''
@@ -127,6 +127,20 @@ class TestAPI(TestBaseReadonly):
         # check for a repo not there
         repo = self.GetRepo('XYZCYZ')
         self.assertIsNone(repo)
+        enabled_pre = self.GetRepositories('enabled')
+        print("before : ", enabled_pre)
+        self.SetEnabledRepos(['fedora'])
+        enabled = self.GetRepositories('enabled')
+        print("after : ", enabled)
+        self.assertEqual(len(enabled),1) # the should only be one :)
+        self.assertEqual(enabled[0],'fedora') # and it should be 'fedora'
+        self.SetEnabledRepos(enabled_pre)
+        enabled = self.GetRepositories('enabled')
+        print("bact to start : ", enabled)
+        self.assertEqual(len(enabled),len(enabled_pre)) # the should only be one :)
+        self.assertEqual(enabled,enabled_pre) # and it should be 'fedora'
+         
+        
 
     def test_Search(self):
         '''

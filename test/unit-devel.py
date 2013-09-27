@@ -1,6 +1,6 @@
 import sys, os
 sys.path.insert(0,os.path.abspath('client'))
-from base import TestBase
+from base import TestBaseReadonly
 from yumdaemon import YumLockedError
 #from nose.exc import SkipTest
 
@@ -11,34 +11,42 @@ When the test method is completted it is move som test-api.py
 use 'nosetest -v -s unit-devel.py' to run the tests
 """
 
-class TestAPIDevel(TestBase):
+class TestAPIDevel(TestBaseReadonly):
 
     def __init__(self, methodName='runTest'):
-        TestBase.__init__(self, methodName)
+        TestBaseReadonly.__init__(self, methodName)
 
 
-    def test_GetConfig(self):
+    def test_Repositories(self):
         '''
-        System: GetConfig & SetConfig
+        Session: GetRepository and GetRepo
         '''
-        all_conf = self.GetConfig('*')
-        self.assertIsInstance(all_conf, dict)
-        for key in all_conf:
-            print "   %s = %s" % (key,all_conf[key])
-        kpn = self.GetConfig('kernelpkgnames')
-        self.assertIsInstance(kpn, list)
-        print "kernelpkgnames : %s" % kpn
-        skip_broken = self.GetConfig('skip_broken')
-        self.assertIn(skip_broken, [True,False])
-        print "skip_broken : %s" % skip_broken
-        not_found = self.GetConfig('not_found')
-        print "not_found : %s" % not_found
-        self.assertIsNone(not_found)
-        rc = self.SetConfig("skip_broken", not skip_broken)
-        self.assertTrue(rc)
-        sb = self.GetConfig('skip_broken')
-        self.assertIs(sb, not skip_broken)
-        rc = self.SetConfig("skip_broken",skip_broken)
-        self.assertTrue(rc)
-        sb = self.GetConfig('skip_broken')
-        self.assertIs(sb, skip_broken)
+        print
+        print "  Getting source repos"
+        repos = self.GetRepositories('*-source')
+        self.assertIsInstance(repos, list)
+        for repo_id in repos:
+            print "    Repo : %s" % repo_id
+            self.assertTrue(repo_id.endswith('-source'))
+        print "  \nGetting fedora repository"
+        repo = self.GetRepo('fedora')
+        self.assertIsInstance(repo, dict)
+        print "  Repo: fedora"
+        print "  Name : %s " % repo['name']
+        print "  Mirrorlist :\n  %s " % repo['mirrorlist']
+        # check for a repo not there
+        repo = self.GetRepo('XYZCYZ')
+        self.assertIsNone(repo)
+        enabled_pre = self.GetRepositories('enabled')
+        print("before : ", enabled_pre)
+        self.SetEnabledRepos(['fedora'])
+        enabled = self.GetRepositories('enabled')
+        print("after : ", enabled)
+        self.assertEqual(len(enabled),1) # the should only be one :)
+        self.assertEqual(enabled[0],'fedora') # and it should be 'fedora'
+        self.SetEnabledRepos(enabled_pre)
+        enabled = self.GetRepositories('enabled')
+        print("bact to start : ", enabled)
+        self.assertEqual(len(enabled),len(enabled_pre)) # the should only be one :)
+        self.assertEqual(enabled,enabled_pre) # and it should be 'fedora'
+ 

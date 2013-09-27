@@ -220,6 +220,27 @@ class YumDaemon(YumDaemonBase):
 
     @Logger
     @dbus.service.method(DAEMON_INTERFACE,
+                                          in_signature='as',
+                                          out_signature='',
+                                          sender_keyword='sender')
+
+    def SetEnabledRepos(self, repo_ids, sender=None):
+        '''
+        Enabled a list of repositories, disabled all other repos
+        :param repo_ids: list of repo ids to enable
+        :param sender:
+        '''
+        self.working_start(sender)
+        for repo in self.yumbase.repos.repos.values():
+            if repo.id in repo_ids: # is in the positive list
+                self.yumbase.repos.enableRepo(repo.id)
+            else:
+                self.yumbase.repos.disableRepo(repo.id)
+        return self.working_ended()
+
+
+    @Logger
+    @dbus.service.method(DAEMON_INTERFACE,
                                           in_signature='s',
                                           out_signature='s',
                                           sender_keyword='sender')

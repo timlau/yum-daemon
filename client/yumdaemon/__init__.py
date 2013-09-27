@@ -361,6 +361,13 @@ class YumDaemonBase:
         result = json.loads(self._run_dbus_async('GetRepo','(s)',repo_id))
         return result
 
+    def SetEnabledRepos(self, repo_ids):
+        '''
+        Enabled a list of repositories, disabled all other repos
+        :param repo_ids: list of repo ids to enable
+        :param sender:
+        '''
+        self._run_dbus_async('SetEnabledRepos','(as)', repo_ids)
 
 
     def GetConfig(self, setting):

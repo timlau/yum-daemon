@@ -14,7 +14,7 @@ System API
     :members: Exit, Lock, Unlock, SetWatchdogState,GetPackageWithAttributes, GetRepositoriesGetRepo, GetConfig, SetConfig,
     		  GetAttribute, GetUpdateInfo, GetPackages, GetPackagesByName, GetHistoryByDays, HistorySearch, GetHistoryPackages,
     		  GetGroups, Search, ClearTransaction, GetTransaction, AddTransaction, Install, Remove, Update, Reinstal, Downgrade,
-    		  BuildTransaction, RunTransaction
+    		  BuildTransaction, RunTransaction, GetEnabledRepos
     
 Session API
 ------------
@@ -22,7 +22,7 @@ Session API
 .. autoclass:: yumdaemon.YumDaemonReadOnlyClient
     :members: Exit, Lock, Unlock, SetWatchdogState,GetPackageWithAttributes, GetRepositoriesGetRepo, GetConfig, 
     		  GetAttribute, GetUpdateInfo, GetPackages, GetPackagesByName, GetGroups, Search
-    		  BuildTransaction, RunTransaction
+    		  BuildTransaction, RunTransaction, GetEnabledRepos
     
 Exceptions
 ============

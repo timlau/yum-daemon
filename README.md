@@ -84,4 +84,18 @@ API Definitions:
 
 The yumdaemon api is documented [here](http://timlau.fedorapeople.org/yumdaemon)
 
+The API is under development, so it might change, when we hit version 1.0, API methods will be frozen and
+API method names, parameters and return types will not change in future releases, new API can be added,
+but the old ones stays as is
+
+
+
+API Addition Checklist: 
+====================================
+* Add the new API methods to yumdaemon-system.py and optional yumdaemon-session.py
+* Add client api method in YumDaemonBase if it is available in both daemon
+  or in YumDaemonClient is it is a system only api.
+* Add unit tests for the api in test/test-system-api.py and optional to test/test-system-api.py if it exists in the session api
+* Update docs/server.rst and docs/client-python.api ( add new api method to members )
+* All unit tests must pass (make test) before pushing to github
 
