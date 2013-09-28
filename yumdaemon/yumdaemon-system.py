@@ -123,7 +123,7 @@ class YumDaemon(YumDaemonBase):
 
     def __init__(self, mainloop):
         YumDaemonBase.__init__(self,  mainloop)
-        self.logger = logging.getLogger('yumdaemon-system')
+        self.logger = logging.getLogger('yumdaemon.system')
         bus_name = dbus.service.BusName(DAEMON_ORG, bus = dbus.SystemBus())
         dbus.service.Object.__init__(self, bus_name, '/')
 
@@ -1005,9 +1005,9 @@ def main():
     args = parser.parse_args()
     if args.verbose:
         if args.debug:
-            doTextLoggerSetup(logroot='yumdaemon-system',loglvl=logging.DEBUG)
+            doTextLoggerSetup(logroot='yumdaemon',loglvl=logging.DEBUG)
         else:
-            doTextLoggerSetup(logroot='yumdaemon-system',)
+            doTextLoggerSetup(logroot='yumdaemon')
 
     # setup the DBus mainloop
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)

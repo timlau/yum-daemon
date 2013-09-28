@@ -58,7 +58,7 @@ class YumNotImplementedError(dbus.DBusException):
     _dbus_error_name = DAEMON_ORG+'.YumNotImplementedError'
 
 
-logger = logging.getLogger('yumdaemon-session')
+logger = logging.getLogger('yumdaemon.session')
 
 #------------------------------------------------------------------------------ Main class
 class YumDaemon(YumDaemonBase):
@@ -480,9 +480,9 @@ def main():
     args = parser.parse_args()
     if args.verbose:
         if args.debug:
-            doTextLoggerSetup(logroot='yumdaemon-session',loglvl=logging.DEBUG)
+            doTextLoggerSetup(logroot='yumdaemon',loglvl=logging.DEBUG)
         else:
-            doTextLoggerSetup(logroot='yumdaemon-session')
+            doTextLoggerSetup(logroot='yumdaemon')
 
     # setup the DBus mainloop
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
