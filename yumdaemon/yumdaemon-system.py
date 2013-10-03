@@ -495,7 +495,10 @@ class YumDaemon(YumDaemonBase):
         '''
         self.working_start(sender)
         for cmd in cmds.split(' '):
-            self.yumbase.install(pattern=cmd)
+            if cmd.endswith('.rpm'):
+                self.yumbase.installLocal(cmd)
+            else:        
+                self.yumbase.install(pattern=cmd)
         value = self._build_transaction()
         return self.working_ended(value)
 
