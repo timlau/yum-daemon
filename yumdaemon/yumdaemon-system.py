@@ -592,8 +592,6 @@ class YumDaemon(YumDaemonBase):
         self.working_start(sender)
         if action != 'localinstall': # Dont get a po if it is at local package
             po = self._get_po(id)
-            
-        if po:
             logger.debug("Add: %s " % str(po))
         txmbrs = []
         if action == "install":
