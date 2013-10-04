@@ -436,6 +436,15 @@ class YumDaemonBase:
         '''
         return json.loads(self._run_dbus_async('GetGroups'))
 
+    def GetGroupPackages(self, grp_id, grp_flt):
+        '''
+        Get packages in a group 
+        :param grp_id:
+        :param grp_flt:
+        '''
+        return self._run_dbus_async('GetGroupPackages', '(ss)', grp_id, grp_flt)
+
+
     def Search(self, fields, keys, match_all, newest_only, tags):
         '''
         Search for packages where keys is matched in fields

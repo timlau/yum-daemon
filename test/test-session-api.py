@@ -172,9 +172,9 @@ class TestAPI(TestBaseReadonly):
         print "found %i packages" % len(pkgs)
         self.assertGreater(len(pkgs), 0) # we should find some matches
 
-    def test_GetGroups(self):
+    def test_Groups(self):
         """
-        Session: GetGroups
+        Session: Groups (GetGroups & GetGroupPackages)
         """
         
         result = self.GetGroups()
@@ -188,7 +188,15 @@ class TestAPI(TestBaseReadonly):
                 # [group_id, group_name, group_desc, group_is_installed]
                 self.assertIsInstance(grp, list) # grp is a list
                 self.assertEqual(len(grp),4) # grp has 4 elements
-                print "   tag: %s name: %s \n   desc: %s \n   installed : %s " % tuple(grp)
+                print "   tag: %s name: %s \n       desc: %s \n       installed : %s " % tuple(grp)
+                # Test GetGroupPackages
+                grp_id = grp[0]
+                pkgs = self.GetGroupPackages(grp_id,'all')
+                self.assertIsInstance(pkgs, list) # cat is a list
+                print "       # of Packages in group         : ",len(pkgs)
+                pkgs = self.GetGroupPackages(grp_id,'default')
+                self.assertIsInstance(pkgs, list) # cat is a list
+                print "       # of Default Packages in group : ",len(pkgs)
 
     def test_GetPackageWithAttributes(self):
         """

@@ -742,6 +742,22 @@ class YumDaemon(YumDaemonBase):
         return self.working_ended(value)
 
 
+    @Logger
+    @dbus.service.method(DAEMON_INTERFACE,
+                                          in_signature='ss',
+                                          out_signature='as',
+                                          sender_keyword='sender')
+    def GetGroupPackages(self, grp_id, grp_flt, sender=None ):
+        '''
+        Get packages in a group by grp_id and grp_flt
+        :param grp_id: The Group id
+        :param grp_flt: Group Filter (all or default)
+        :param sender:
+        '''
+        self.working_start(sender)
+        pkg_ids = self._get_group_pkgs(grp_id, grp_flt)
+        return self.working_ended(pkg_ids)
+
 
 
 #

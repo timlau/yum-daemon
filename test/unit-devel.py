@@ -17,36 +17,28 @@ class TestAPIDevel(TestBaseReadonly):
         TestBaseReadonly.__init__(self, methodName)
 
 
-    def test_Repositories(self):
-        '''
-        Session: GetRepository and GetRepo
-        '''
-        print
-        print "  Getting source repos"
-        repos = self.GetRepositories('*-source')
-        self.assertIsInstance(repos, list)
-        for repo_id in repos:
-            print "    Repo : %s" % repo_id
-            self.assertTrue(repo_id.endswith('-source'))
-        print "  \nGetting fedora repository"
-        repo = self.GetRepo('fedora')
-        self.assertIsInstance(repo, dict)
-        print "  Repo: fedora"
-        print "  Name : %s " % repo['name']
-        print "  Mirrorlist :\n  %s " % repo['mirrorlist']
-        # check for a repo not there
-        repo = self.GetRepo('XYZCYZ')
-        self.assertIsNone(repo)
-        enabled_pre = self.GetRepositories('enabled')
-        print("before : ", enabled_pre)
-        self.SetEnabledRepos(['fedora'])
-        enabled = self.GetRepositories('enabled')
-        print("after : ", enabled)
-        self.assertEqual(len(enabled),1) # the should only be one :)
-        self.assertEqual(enabled[0],'fedora') # and it should be 'fedora'
-        self.SetEnabledRepos(enabled_pre)
-        enabled = self.GetRepositories('enabled')
-        print("bact to start : ", enabled)
-        self.assertEqual(len(enabled),len(enabled_pre)) # the should only be one :)
-        self.assertEqual(enabled,enabled_pre) # and it should be 'fedora'
- 
+    def test_GetGroups(self):
+        """
+        Session: GetGroups
+        """
+        
+        result = self.GetGroups()
+        for cat, grps in result:
+            # cat: [category_id, category_name, category_desc]
+            self.assertIsInstance(cat, list) # cat is a list
+            self.assertIsInstance(grps, list) # grps is a list
+            self.assertEqual(len(cat),3) # cat has 3 elements
+            print " --> %s" % cat[0]
+            for grp in grps:
+                # [group_id, group_name, group_desc, group_is_installed]
+                self.assertIsInstance(grp, list) # grp is a list
+                self.assertEqual(len(grp),4) # grp has 4 elements
+                print "   tag: %s name: %s \n       desc: %s \n       installed : %s " % tuple(grp)
+                # Test GetGroupPackages
+                grp_id = grp[0]
+                pkgs = self.GetGroupPackages(grp_id,'all')
+                self.assertIsInstance(pkgs, list) # cat is a list
+                print "       # of Packages in group         : ",len(pkgs)
+                pkgs = self.GetGroupPackages(grp_id,'default')
+                self.assertIsInstance(pkgs, list) # cat is a list
+                print "       # of Default Packages in group : ",len(pkgs)

@@ -302,7 +302,19 @@ Methods to work with yum groups and categories
 
 .. py:function:: GetGroups( )
 
-   Get available group id's
+   Get available Categories & Groups
+
+.. py:function:: GetGroupPackages(grp_id, grp_flt )
+
+   Get packages in a group by grp_id and grp_flt
+    
+   :param grp_id: The Group id
+   :type grp_id: string (s)
+   :param grp_flt: Group Filter (all or default)
+   :type grp_flt: string (s)
+   :return: list of pkg_id's
+   :rtype: array of strings (as)
+    
 
 .. note:: Under Development
    
@@ -497,7 +509,18 @@ Methods to work with yum groups and categories
 
 .. py:function:: GetGroups( )
 
-   Get available group id's
+   Get available Categories & Groups
+
+.. py:function:: GetGroupPackages(grp_id, grp_flt )
+
+   Get packages in a group by grp_id and grp_flt
+    
+   :param grp_id: The Group id
+   :type grp_id: string (s)
+   :param grp_flt: Group Filter (all or default)
+   :type grp_flt: string (s)
+   :return: list of pkg_id's
+   :rtype: array of strings (as)
 
 .. note:: Under Development
    

@@ -31,6 +31,8 @@ from yum.callbacks import *
 from yum.constants import *
 from yum.update_md import UpdateMetadata
 from yum.Errors import *
+from yum.packageSack import packagesNewestByNameArch
+
 
 from rpmUtils.arch import canCoinstall
 
@@ -149,6 +151,32 @@ class YumDaemonBase(dbus.service.Object, DownloadBaseCallback):
         all_groups.sort()
         return json.dumps(all_groups)
 
+
+    def _get_group_pkgs(self, grp_id, grp_flt):
+        '''
+        Get packages for a given grp_id and group filter
+        '''
+        pkgs = []
+        try:
+            grp = self.yumbase.comps.return_group(grp_id)
+            if grp:
+                if grp_flt == 'all':
+                    best_pkgs = self._group_names2aipkgs(grp.packages)
+                else:
+                    best_pkgs = self._group_names2aipkgs(grp.mandatory_packages.keys() + grp.default_packages.keys())
+                for key in best_pkgs:
+                    # Sort the matching packages and take the last one (the best match for current arch)
+                    (apkg, ipkg) = sorted(best_pkgs[key], key=lambda x: x[1] or x[0])[-1]
+                    if ipkg:
+                        pkgs.append(ipkg)
+                    else:
+                        pkgs.append(apkg)
+            else:
+                pass
+        except Errors.GroupsError, e:
+            print str(e)
+        pkg_ids = self._to_package_id_list(pkgs)
+        return pkg_ids
 
     def _get_id_time_list(self, hist_trans):
         '''
@@ -418,6 +446,33 @@ class YumDaemonBase(dbus.service.Object, DownloadBaseCallback):
             self._watchdog_count += 1
             self.logger.debug("Watchdog : %i" % self._watchdog_count )
             return True
+
+# from yum output.py        
+    def _group_names2aipkgs(self, pkg_names):
+        """ Convert pkg_names to installed pkgs or available pkgs, return
+            value is a dict on pkg.name returning (apkg, ipkg). """
+        ipkgs = self.yumbase.rpmdb.searchNames(pkg_names)
+        apkgs = self.yumbase.pkgSack.searchNames(pkg_names)
+        apkgs = packagesNewestByNameArch(apkgs)
+
+        # This is somewhat similar to doPackageLists()
+        pkgs = {}
+        for pkg in ipkgs:
+            pkgs[(pkg.name, pkg.arch)] = (None, pkg)
+        for pkg in apkgs:
+            key = (pkg.name, pkg.arch)
+            if key not in pkgs:
+                pkgs[(pkg.name, pkg.arch)] = (pkg, None)
+            elif pkg.verGT(pkgs[key][1]):
+                pkgs[(pkg.name, pkg.arch)] = (pkg, pkgs[key][1])
+
+        # Convert (pkg.name, pkg.arch) to pkg.name dict
+        ret = {}
+        for (apkg, ipkg) in pkgs.itervalues():
+            pkg = apkg or ipkg
+            ret.setdefault(pkg.name, []).append((apkg, ipkg))
+        return ret
+        
 
 def doTextLoggerSetup(logroot='yumdaemon', logfmt='%(asctime)s: %(message)s', loglvl=logging.INFO):
     ''' Setup Python logging  '''
