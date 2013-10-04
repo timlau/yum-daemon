@@ -135,12 +135,14 @@ class YumDaemonBase(dbus.service.Object, DownloadBaseCallback):
         make a list with categoties and there groups
         '''
         all_groups = []
+        comps = self.yumbase.comps
+        comps.compile(self.yumbase.rpmdb.simplePkgList())
         try:
-            cats = self.yumbase.comps.get_categories()
+            cats = comps.get_categories()
             for category in cats:
                 cat = (category.categoryid, category.ui_name, category.ui_description)
                 cat_grps = []
-                grps = [self.yumbase.comps.return_group(g) for g in category.groups if self.yumbase.comps.has_group(g)]
+                grps = [comps.return_group(g) for g in category.groups if comps.has_group(g)]
                 for grp in grps:
                     elem = (grp.groupid, grp.ui_name, grp.ui_description, grp.installed)
                     cat_grps.append(elem)
