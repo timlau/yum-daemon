@@ -133,10 +133,13 @@ class YumDaemonBase(dbus.service.Object, DownloadBaseCallback):
     def _get_groups(self):
         '''
         make a list with categoties and there groups
+        This is the old way of yum groups, where a group is a collection of mandatory, default and optional pacakges
+        and the group is installed when all mandatory & default packages is installed.
         '''
         all_groups = []
         comps = self.yumbase.comps
-        comps.compile(self.yumbase.rpmdb.simplePkgList())
+        # this is the old way, so grp.installed is set if all mandatory/default packages is installed.
+        comps.compile(self.yumbase.rpmdb.simplePkgList())  
         try:
             cats = comps.get_categories()
             for category in cats:
