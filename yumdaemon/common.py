@@ -323,24 +323,6 @@ class YumDaemonBase(dbus.service.Object, DownloadBaseCallback):
             self._updateMetadata = UpdateMetadata(self.yumbase.repos.listEnabled())
         return self._updateMetadata
     
-    def _limit_package_list(self, pkgs, skip_old=True):
-        good_pkgs = set()
-        good_tups = {}
-        for po in pkgs:
-            valid = True
-            if po.pkgtup in good_tups: # dont process the same po twice
-                continue
-            if skip_old:
-                ipkgs = self.yumbase.rpmdb.searchNevra(name=po.name)
-                if ipkgs:
-                    ipkg = ipkgs[0]
-                    if ipkg.verGT(po) and not self.yumbase.allowedMultipleInstalls(po): # inst > po
-                        valid = False
-            if valid:
-                good_pkgs.add(po)
-                good_tups[po.pkgtup] = 1
-        return good_pkgs
-    
 
     def _to_package_id_list(self, pkgs):
         '''
