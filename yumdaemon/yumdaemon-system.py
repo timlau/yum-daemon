@@ -36,6 +36,7 @@ import argparse
 
 from common import YumDaemonBase, doTextLoggerSetup, Logger, DownloadCallback, NONE, FAKE_ATTR
 
+
 version = 100 # must be integer
 DAEMON_ORG = 'org.baseurl.YumSystem'
 DAEMON_INTERFACE = DAEMON_ORG
@@ -352,6 +353,7 @@ class YumDaemon(YumDaemonBase):
                 pkgs = self.yumbase.pkgSack.returnNewestByName(patterns=[name], ignore_case=False)
             else:
                 pkgs = self.yumbase.pkgSack.returnPackages(patterns=[name], ignore_case=False)
+            pkgs = self._limit_package_list(pkgs)                    
             value = self._to_package_id_list(pkgs)
         except PackageSackError,e:
             value = []
