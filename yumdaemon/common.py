@@ -129,6 +129,17 @@ class YumDaemonBase(dbus.service.Object, DownloadBaseCallback):
         return po_list
 
 
+    def _get_packages_by_name(self, name, newest_only):
+        try:
+            if newest_only:
+                pkgs = self.yumbase.pkgSack.returnNewestByName(patterns=[name], ignore_case=False)
+            else:
+                pkgs = self.yumbase.pkgSack.returnPackages(patterns=[name], ignore_case=False)
+            pkgs = self._limit_package_list(pkgs)    
+            pkg_ids = self._to_package_id_list(pkgs)
+        except PackageSackError,e:
+            pkg_ids = []
+        return pkg_ids
 
     def _get_groups(self):
         '''

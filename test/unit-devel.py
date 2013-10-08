@@ -17,28 +17,38 @@ class TestAPIDevel(TestBaseReadonly):
         TestBaseReadonly.__init__(self, methodName)
 
 
-    def test_GetGroups(self):
-        """
-        Session: GetGroups
-        """
-        
-        result = self.GetGroups()
-        for cat, grps in result:
-            # cat: [category_id, category_name, category_desc]
-            self.assertIsInstance(cat, list) # cat is a list
-            self.assertIsInstance(grps, list) # grps is a list
-            self.assertEqual(len(cat),3) # cat has 3 elements
-            print " --> %s" % cat[0]
-            for grp in grps:
-                # [group_id, group_name, group_desc, group_is_installed]
-                self.assertIsInstance(grp, list) # grp is a list
-                self.assertEqual(len(grp),4) # grp has 4 elements
-                print "   tag: %s name: %s \n       desc: %s \n       installed : %s " % tuple(grp)
-                # Test GetGroupPackages
-                grp_id = grp[0]
-                pkgs = self.GetGroupPackages(grp_id,'all')
-                self.assertIsInstance(pkgs, list) # cat is a list
-                print "       # of Packages in group         : ",len(pkgs)
-                pkgs = self.GetGroupPackages(grp_id,'default')
-                self.assertIsInstance(pkgs, list) # cat is a list
-                print "       # of Default Packages in group : ",len(pkgs)
+    def test_GetPackagesByName(self):
+        '''
+        Session: GetPackagesByName
+        '''
+        print
+        print "Get all available versions of yum"
+        pkgs = self.GetPackagesByName('yum', newest_only=False)
+        # pkgs should be a list instance
+        self.assertIsInstance(pkgs, list)
+        num1 = len(pkgs)
+        self.assertNotEqual(num1, 0) # yum should always be there
+        for pkg in pkgs:
+            print "  Package : %s" % pkg
+            (n, e, v, r, a, repo_id) = self.to_pkg_tuple(pkg)
+            self.assertEqual(n,"yum")
+        print "Get newest versions of yum"
+        pkgs = self.GetPackagesByName('yum', newest_only=True)
+        # pkgs should be a list instance
+        self.assertIsInstance(pkgs, list)
+        num2 = len(pkgs)
+        self.assertEqual(num2, 1) # there can only be one :)
+        for pkg in pkgs:
+            print "  Package : %s" % pkg
+            (n, e, v, r, a, repo_id) = self.to_pkg_tuple(pkg)
+            self.assertEqual(n,"yum")
+        print "Get the newest packages starting with yum-plugin-"
+        pkgs = self.GetPackagesByName('yum-plugin-*', newest_only=True)
+        # pkgs should be a list instance
+        self.assertIsInstance(pkgs, list)
+        num3 = len(pkgs)
+        self.assertGreater(num3, 1) # there should be more than one :)
+        for pkg in pkgs:
+            print "  Package : %s" % pkg
+            (n, e, v, r, a, repo_id) = self.to_pkg_tuple(pkg)
+            self.assertTrue(n.startswith('yum'))

@@ -348,16 +348,8 @@ class YumDaemon(YumDaemonBase):
         :param sender:
         '''
         self.working_start(sender)
-        try:
-            if newest_only:
-                pkgs = self.yumbase.pkgSack.returnNewestByName(patterns=[name], ignore_case=False)
-            else:
-                pkgs = self.yumbase.pkgSack.returnPackages(patterns=[name], ignore_case=False)
-            pkgs = self._limit_package_list(pkgs)                    
-            value = self._to_package_id_list(pkgs)
-        except PackageSackError,e:
-            value = []
-        return self.working_ended(value)
+        pkg_ids = self._get_packages_by_name()
+        return self.working_ended(pkg_ids)
 
 
     @Logger
