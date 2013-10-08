@@ -333,7 +333,7 @@ class YumDaemon(YumDaemonBase):
             yh = self.yumbase.doPackageLists(pkgnarrow=pkg_filter)
             pkgs = getattr(yh,pkg_filter)
             value = [self._get_po_list(po,fields) for po in pkgs]
-            return self.working_ended(json.dumps(value))
+        return self.working_ended(json.dumps(value))
 
     @Logger
     @dbus.service.method(DAEMON_INTERFACE,
