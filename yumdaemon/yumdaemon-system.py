@@ -348,7 +348,7 @@ class YumDaemon(YumDaemonBase):
         :param sender:
         '''
         self.working_start(sender)
-        pkg_ids = self._get_packages_by_name()
+        pkg_ids = self._get_packages_by_name(name, newest_only)
         return self.working_ended(pkg_ids)
 
 
