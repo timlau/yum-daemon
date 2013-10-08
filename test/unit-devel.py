@@ -17,38 +17,32 @@ class TestAPIDevel(TestBaseReadonly):
         TestBaseReadonly.__init__(self, methodName)
 
 
-    def test_GetPackagesByName(self):
+    def test_Search(self):
         '''
-        Session: GetPackagesByName
+        Session: Search
         '''
-        print
-        print "Get all available versions of yum"
-        pkgs = self.GetPackagesByName('yum', newest_only=False)
-        # pkgs should be a list instance
+        fields = ['name','summary']
+        keys = ['yum','plugin']
+        pkgs = self.Search(fields, keys ,True,True,False)
         self.assertIsInstance(pkgs, list)
-        num1 = len(pkgs)
-        self.assertNotEqual(num1, 0) # yum should always be there
-        for pkg in pkgs:
-            print "  Package : %s" % pkg
-            (n, e, v, r, a, repo_id) = self.to_pkg_tuple(pkg)
-            self.assertEqual(n,"yum")
-        print "Get newest versions of yum"
-        pkgs = self.GetPackagesByName('yum', newest_only=True)
-        # pkgs should be a list instance
+        for p in pkgs:
+            summary = self.GetAttribute(p,'summary')
+            print str(p),summary
+            self.assertTrue(keys[0] in str(p) or keys[0] in summary)
+            self.assertTrue(keys[1] in str(p) or keys[1] in summary)
+        keys = ['yum','zzzzddddsss'] # second key should not be found
+        pkgs = self.Search(fields, keys ,True,True, False)
         self.assertIsInstance(pkgs, list)
-        num2 = len(pkgs)
-        self.assertEqual(num2, 1) # there can only be one :)
-        for pkg in pkgs:
-            print "  Package : %s" % pkg
-            (n, e, v, r, a, repo_id) = self.to_pkg_tuple(pkg)
-            self.assertEqual(n,"yum")
-        print "Get the newest packages starting with yum-plugin-"
-        pkgs = self.GetPackagesByName('yum-plugin-*', newest_only=True)
-        # pkgs should be a list instance
+        print "found %i packages" % len(pkgs)
+        self.assertEqual(len(pkgs), 0) # when should not find any matches
+        keys = ['yum','zzzzddddsss'] # second key should not be found
+        pkgs = self.Search(fields, keys ,False, True, False)
         self.assertIsInstance(pkgs, list)
-        num3 = len(pkgs)
-        self.assertGreater(num3, 1) # there should be more than one :)
-        for pkg in pkgs:
-            print "  Package : %s" % pkg
-            (n, e, v, r, a, repo_id) = self.to_pkg_tuple(pkg)
-            self.assertTrue(n.startswith('yum'))
+        print "found %i packages" % len(pkgs)
+        self.assertGreater(len(pkgs), 0) # we should find some matches
+        # retro should match some pkgtags        
+        keys = ['retro'] # second key should not be found
+        pkgs = self.Search(fields, keys ,True, True, True)
+        self.assertIsInstance(pkgs, list)
+        print "found %i packages" % len(pkgs)
+        self.assertGreater(len(pkgs), 0) # we should find some matches

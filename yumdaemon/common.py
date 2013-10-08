@@ -31,8 +31,7 @@ from yum.callbacks import *
 from yum.constants import *
 from yum.update_md import UpdateMetadata
 from yum.Errors import *
-from yum.packageSack import packagesNewestByNameArch
-
+from yum.packageSack import packagesNewestByNameArch, packagesNewestByName
 
 from rpmUtils.arch import canCoinstall
 
@@ -128,8 +127,40 @@ class YumDaemonBase(dbus.service.Object, DownloadBaseCallback):
                 po_list.append(getattr(pkg,field))
         return po_list
 
+    def _search(self, fields, keys, match_all, newest_only, tags):
+        '''
+        Search for for packages, where given fields contain given key words
+        (Helper for Search)
+        
+        :param fields: list of fields to search in
+        :param keys: list of keywords to search for
+        :param match_all: match all flag, if True return only packages matching all keys
+        :param newest_only: return only the newest version of a package
+        :param tags: seach pkgtags
+        '''
+        result = []
+        for found in self.yumbase.searchGenerator(fields, keys, keys=True, searchtags=tags):
+            pkg = found[0]
+            fkeys = found[1]
+            if match_all and not len(fkeys) == len(keys): # skip the result if not all keys matches
+                continue
+            result.append(pkg)
+        pkgs = self._limit_package_list(result, skip_old=not match_all) # remove dupes and optional old ones
+        if newest_only:
+            pkgs = packagesNewestByName(pkgs)
+        result = [self._get_id(pkg) for pkg in pkgs]
+        return result
+
+
 
     def _get_packages_by_name(self, name, newest_only):
+        '''
+        Get a list of packages from a name pattern
+        (Helper for GetPackagesByName)
+        
+        :param name: name pattern
+        :param newest_only: True = get newest packages only
+        '''
         try:
             if newest_only:
                 pkgs = self.yumbase.pkgSack.returnNewestByName(patterns=[name], ignore_case=False)

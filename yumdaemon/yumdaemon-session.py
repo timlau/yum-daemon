@@ -349,17 +349,7 @@ class YumDaemon(YumDaemonBase):
         :param tags: seach pkgtags
         '''
         self.working_start(sender)
-        result = []
-        for found in self.yumbase.searchGenerator(fields, keys, keys=True, searchtags=tags):
-            pkg = found[0]
-            fkeys = found[1]
-            if match_all and not len(fkeys) == len(keys): # skip the result if not all keys matches
-                continue
-            result.append(pkg)
-        pkgs = self._limit_package_list(result, skip_old=not match_all) # remove dupes and optional old ones
-        if newest_only:
-            pkgs = packagesNewestByName(pkgs)
-        result = [self._get_id(pkg) for pkg in pkgs]
+        result = self._search(fields, keys, match_all, newest_only, tags)
         return self.working_ended(result)
 
     @Logger
