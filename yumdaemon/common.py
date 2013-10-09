@@ -106,26 +106,11 @@ class YumDaemonBase(dbus.service.Object, DownloadBaseCallback):
             self._get_yumbase()
         return self._yumbase
 
-
 #===============================================================================
-# Helper methods
+# Helper methods for api methods both in system & session
+# Search -> _search etc
 #===============================================================================
 
-    def _enable_repos_from_list(self, repo_ids):
-        for repo in self.yumbase.repos.repos.values():
-            if repo.id in repo_ids: # is in the positive list
-                self.yumbase.repos.enableRepo(repo.id)
-            else:
-                self.yumbase.repos.disableRepo(repo.id)
-
-    def _get_po_list(self, pkg, fields):
-
-        id = ",".join([pkg.name, pkg.epoch, pkg.ver, pkg.rel, pkg.arch, pkg.ui_from_repo])
-        po_list = [id]
-        for field in fields:
-            if hasattr(pkg,field):
-                po_list.append(getattr(pkg,field))
-        return po_list
 
     def _search(self, fields, keys, match_all, newest_only, tags):
         '''
@@ -198,6 +183,113 @@ class YumDaemonBase(dbus.service.Object, DownloadBaseCallback):
         all_groups.sort()
         return json.dumps(all_groups)
 
+    def _get_repositories(self, filter):
+        '''
+        Get the value a list of repo ids
+        :param filter: filter to limit the listed repositories
+        '''
+        repos = []
+        repos = self.yumbase.repos
+        if filter == '' or filter == 'enabled':
+            repos = [repo.id for repo in repos.listEnabled()]
+        else:
+            repos = [repo.id for repo in repos.findRepos(filter)]
+        return repos
+    
+
+    def _get_config(self, setting):
+        '''
+        Get the value of a yum config setting
+        it will return a JSON string of the config
+        :param setting: name of setting (debuglevel etc..)
+        '''
+        if setting == '*': # Return all config
+            cfg = self.yumbase.conf
+            all_conf = dict([(c,getattr(cfg,c)) for c in cfg.iterkeys()])
+            value =  json.dumps(all_conf)
+        elif hasattr(self.yumbase.conf, setting):
+            value = json.dumps(getattr(self.yumbase.conf, setting))
+        else:
+            value = json.dumps(None)
+        return value
+    
+    def _get_repo(self, repo_id ):
+        '''
+        Get information about a give repo_id
+        the repo setting will be returned as dictionary in JSON format
+        :param repo_id:
+        '''
+        try:
+            repo = self.yumbase.repos.getRepo(repo_id)
+            repo_conf = dict([(c,getattr(repo,c)) for c in repo.iterkeys()])
+            value = json.dumps(repo_conf)
+        except Errors.RepoError:
+            value = json.dumps(None)
+        return value
+    
+    def _get_packages(self, pkg_filter):
+        '''
+        Get a list of package ids, based on a package pkg_filterer
+        :param pkg_filter: pkg pkg_filter string ('installed','updates' etc)
+        '''
+        if pkg_filter in ['installed','available','updates','obsoletes','recent','extras']:
+            yh = self.yumbase.doPackageLists(pkgnarrow=pkg_filter)
+            pkgs = getattr(yh,pkg_filter)
+            value = self._to_package_id_list(pkgs)
+        else:
+            value = []
+        return value
+    
+    def _get_package_with_attributes(self, pkg_filter, fields):
+        '''
+        Get a list of package ids, based on a package pkg_filterer
+        :param pkg_filter: pkg pkg_filter string ('installed','updates' etc)
+        '''
+        value = []
+        if pkg_filter in ['installed','available','updates','obsoletes','recent','extras']:
+            yh = self.yumbase.doPackageLists(pkgnarrow=pkg_filter)
+            pkgs = getattr(yh,pkg_filter)
+            value = [self._get_po_list(po,fields) for po in pkgs]
+        return value
+
+    def _get_attribute(self, id, attr):
+        '''
+        Get an attribute from a yum package id
+        it will return a python repr string of the attribute
+        :param id: yum package id
+        :param attr: name of attribute (summary, size, description, changelog etc..)
+        '''
+        po = self._get_po(id)
+        if po:
+            if attr in FAKE_ATTR: # is this a fake attr:
+                value = json.dumps(self._get_fake_attributes(po, attr))
+            elif hasattr(po, attr):
+                value = json.dumps(getattr(po,attr))
+            else:
+                value = json.dumps(None)
+        else:
+            value = json.dumps(None)
+        return value
+
+    def _get_updateInfo(self, id):
+        '''
+        Get an Update Infomation e from a yum package id
+        it will return a python repr string of the attribute
+        :param id: yum package id
+        '''
+        po = self._get_po(id)
+        if po:
+            md = self.update_metadata
+            notices = md.get_notices(po.name)
+            result = []
+            for notice in notices:
+                result.append(notice._md)
+            value = json.dumps(result)
+        else:
+            value = json.dumps(None)
+        return value
+
+
 
     def _get_group_pkgs(self, grp_id, grp_flt):
         '''
@@ -224,6 +316,26 @@ class YumDaemonBase(dbus.service.Object, DownloadBaseCallback):
             print str(e)
         pkg_ids = self._to_package_id_list(pkgs)
         return pkg_ids
+
+#===============================================================================
+# Helper methods
+#===============================================================================
+
+    def _enable_repos_from_list(self, repo_ids):
+        for repo in self.yumbase.repos.repos.values():
+            if repo.id in repo_ids: # is in the positive list
+                self.yumbase.repos.enableRepo(repo.id)
+            else:
+                self.yumbase.repos.disableRepo(repo.id)
+
+    def _get_po_list(self, pkg, fields):
+
+        id = ",".join([pkg.name, pkg.epoch, pkg.ver, pkg.rel, pkg.arch, pkg.ui_from_repo])
+        po_list = [id]
+        for field in fields:
+            if hasattr(pkg,field):
+                po_list.append(getattr(pkg,field))
+        return po_list
 
     def _get_id_time_list(self, hist_trans):
         '''

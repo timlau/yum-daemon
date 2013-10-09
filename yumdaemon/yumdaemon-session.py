@@ -145,12 +145,7 @@ class YumDaemon(YumDaemonBase):
         :param sender:
         '''
         self.working_start(sender)
-        repos = []
-        repos = self.yumbase.repos
-        if filter == '' or filter == 'enabled':
-            repos = [repo.id for repo in repos.listEnabled()]
-        else:
-            repos = [repo.id for repo in repos.findRepos(filter)]
+        repos = self._get_repositories(filter)
         return self.working_ended(repos)
 
     @Logger
@@ -183,14 +178,7 @@ class YumDaemon(YumDaemonBase):
         :param sender:
         '''
         self.working_start(sender)
-        if setting == '*': # Return all config
-            cfg = self.yumbase.conf
-            all_conf = dict([(c,getattr(cfg,c)) for c in cfg.iterkeys()])
-            value =  json.dumps(all_conf)
-        elif hasattr(self.yumbase.conf, setting):
-            value = json.dumps(getattr(self.yumbase.conf, setting))
-        else:
-            value = json.dumps(None)
+        value = self._get_config(setting)
         return self.working_ended(value)
 
     @Logger
@@ -206,12 +194,7 @@ class YumDaemon(YumDaemonBase):
         :param sender:
         '''
         self.working_start(sender)
-        try:
-            repo = self.yumbase.repos.getRepo(repo_id)
-            repo_conf = dict([(c,getattr(repo,c)) for c in repo.iterkeys()])
-            value = json.dumps(repo_conf)
-        except Errors.RepoError:
-            value = json.dumps(None)
+        value = self._get_repo(repo_id)
         return self.working_ended(value)
 
     @Logger
@@ -226,12 +209,7 @@ class YumDaemon(YumDaemonBase):
         :param sender:
         '''
         self.working_start(sender)
-        if pkg_filter in ['installed','available','updates','obsoletes','recent','extras']:
-            yh = self.yumbase.doPackageLists(pkgnarrow=pkg_filter)
-            pkgs = getattr(yh,pkg_filter)
-            value = self._to_package_id_list(pkgs)
-        else:
-            value = []
+        value = self._get_packages(pkg_filter)
         return self.working_ended(value)
 
     @Logger
@@ -246,11 +224,7 @@ class YumDaemon(YumDaemonBase):
         :param sender:
         '''
         self.working_start(sender)
-        value = []
-        if pkg_filter in ['installed','available','updates','obsoletes','recent','extras']:
-            yh = self.yumbase.doPackageLists(pkgnarrow=pkg_filter)
-            pkgs = getattr(yh,pkg_filter)
-            value = [self._get_po_list(po,fields) for po in pkgs]
+        value = self._get_package_with_attributes(pkg_filter, fields)
         return self.working_ended(json.dumps(value))
 
     @Logger
@@ -284,16 +258,7 @@ class YumDaemon(YumDaemonBase):
         :param sender:
         '''
         self.working_start(sender)
-        po = self._get_po(id)
-        if po:
-            if attr in FAKE_ATTR: # is this a fake attr:
-                value = json.dumps(self._get_fake_attributes(po, attr))
-            elif hasattr(po, attr):
-                value = json.dumps(getattr(po,attr))
-            else:
-                value = json.dumps(None)
-        else:
-            value = json.dumps(None)
+        value = self._get_attribute( id, attr)
         return self.working_ended(value)
 
     @Logger
@@ -309,16 +274,7 @@ class YumDaemon(YumDaemonBase):
         :param sender:
         '''
         self.working_start(sender)
-        po = self._get_po(id)
-        if po:
-            md = self.update_metadata
-            notices = md.get_notices(po.name)
-            result = []
-            for notice in notices:
-                result.append(notice._md)
-            value = json.dumps(result)
-        else:
-            value = json.dumps(None)
+        value = self._get_updateInfo(id)
         return self.working_ended(value)
 
     @Logger

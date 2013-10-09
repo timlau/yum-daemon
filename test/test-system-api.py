@@ -103,6 +103,9 @@ class TestAPI(TestBase):
             raise SkipTest('more than one available version of yumex is needed for downgrade test')
         rc, output = self.Downgrade('yumex')
         print('  Return Code : %i' % rc)
+        print('  output : %s' % output)
+        if rc == 0:
+            raise SkipTest('nothing to do in Downgrade(\'yumex\')')
         self.assertEqual(rc,2)
         self.show_transaction_result(output)
         self.assertGreater(len(output),0)
