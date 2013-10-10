@@ -294,6 +294,19 @@ These methods is for handling the current yum transaction
 .. py:function:: RunTransaction()
 
    Execute the current transaction
+   
+   :return: state of run transaction (0 = ok, 1 = need GPG import confirmation, 2 = error)
+   :rtype: int (i)
+
+.. py:function:: ConfirmGPGImport(self, hexkeyid, confirmed)
+
+   Confirm import of at GPG Key by yum
+   
+   :param hexkeyid: hex keyid for GPG key
+   :type hexkeyid: string (s)
+   :param confirmed: confirm import of key (True/False)
+   :type confirmed: boolean (b)
+   
 
 Groups
 -------

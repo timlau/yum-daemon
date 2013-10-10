@@ -9,6 +9,8 @@ class TestBase(unittest.TestCase, YumDaemonClient):
     def __init__(self, methodName='runTest'):
         unittest.TestCase.__init__(self, methodName)
         YumDaemonClient.__init__(self)
+        self._gpg_confirm = None
+        self._signals = []
 
     def setUp(self):
         self.Lock()
@@ -16,6 +18,15 @@ class TestBase(unittest.TestCase, YumDaemonClient):
     def tearDown(self):
         self.Unlock()
 
+    def reset_signals(self):
+        self._signals = []
+
+    def check_signal(self, name):
+        if name in self._signals:
+            return True
+        else:
+            return False
+        
     def show_changelog(self, changelog, max_elem=3):
         i = 0
         for (c_date, c_ver, msg) in changelog:
@@ -74,6 +85,15 @@ class TestBase(unittest.TestCase, YumDaemonClient):
             self.assertGreater(len(output),0)
         self.RunTransaction()
 
+    def check_installed(self, name):
+        pkgs = self.GetPackagesByName(name, newest_only=True)
+        # pkgs should be a list instance
+        for pkg in pkgs:
+            (n, e, v, r, a, repo_id) = self.to_pkg_tuple(pkg)
+            if repo_id[0] == '@':
+                return True
+        return False
+
     def _is_installed(self, name):
         pkgs = self.GetPackagesByName(name, newest_only=True)
         # pkgs should be a list instance
@@ -111,13 +131,22 @@ class TestBase(unittest.TestCase, YumDaemonClient):
 ###############################################################################
 
     def on_UpdateProgress(self,name,frac,fread,ftime):
+        self._signals.append("UpdateProgress")
         pass
 
     def on_TransactionEvent(self,event, data):
+        self._signals.append("TransactionEvent")
         pass
 
     def on_RPMProgress(self, package, action, te_current, te_total, ts_current, ts_total):
+        self._signals.append("RPMProgress")
         pass
+
+    def on_GPGImport(self, pkg_id, userid, hexkeyid, keyurl, timestamp ):
+        self._signals.append("GPGImport")
+        values =  (pkg_id, userid, hexkeyid, keyurl, timestamp)
+        self._gpg_confirm = values
+        print "received signal : GPGImport%s" % (repr(values))
 
 
 class TestBaseReadonly(unittest.TestCase, YumDaemonReadOnlyClient):

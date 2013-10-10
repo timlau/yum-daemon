@@ -53,6 +53,10 @@ Usage: (Make your own subclass based on :class:`yumdaemon.YumDaemonClient` and o
             # Do your stuff here
             pass
 
+        def on_GPGImport(self, pkg_id, userid, hexkeyid, keyurl,  timestamp ):
+           # do stuff here   
+           pass
+
 
 Usage: (Make your own subclass based on :class:`yumdaemon.YumDaemonReadOnlyClient` and overload the signal handlers)::
 
@@ -290,6 +294,10 @@ class YumDaemonBase:
     def on_RPMProgress(self, package, action, te_current, te_total, ts_current, ts_total):
         print("RPMProgress : %s %s" % (action, package))
 
+    def on_GPGImport(self, pkg_id, userid, hexkeyid, keyurl,  timestamp ):
+        values =  (pkg_id, userid, hexkeyid, keyurl, timestamp)
+        print("on_GPGImport : %s" % (repr(values)))
+
 ###############################################################################
 # API Methods
 ###############################################################################
@@ -520,6 +528,8 @@ class YumDaemonClient(YumDaemonBase):
             self.on_TransactionEvent(*args)
         elif signal == "RPMProgress":
             self.on_RPMProgress(*args)
+        elif signal == "GPGImport":
+            self.on_GPGImport(*args)
         else:
             print("Unhandled Signal : "+signal," Param: ",args)
 
@@ -631,7 +641,7 @@ class YumDaemonClient(YumDaemonBase):
         '''
         Get a list of pkg ids for the current availabe updates
         '''
-        self._run_dbus_async('RunTransaction')
+        return self._run_dbus_async('RunTransaction')
 
 
     def GetHistoryByDays(self, start_days, end_days):
@@ -671,4 +681,13 @@ class YumDaemonClient(YumDaemonBase):
         '''
         value = self._run_dbus_async('GetHistoryPackages','(i)',tid)
         return json.loads(value)
+
+    def ConfirmGPGImport(self, hexkeyid, confirmed):
+        '''
+        Confirm import of at GPG Key by yum
+        :param hexkeyid: hex keyid for GPG key
+        :param confirmed: confirm import of key (True/False)
+        :param sender:
+        '''
+        self._run_dbus_async('ConfirmGPGImport','(si)',hexkeyid, confirmed)
 

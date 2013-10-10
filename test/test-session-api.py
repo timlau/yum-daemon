@@ -1,11 +1,11 @@
 import sys, os
 sys.path.insert(0,os.path.abspath('client'))
-from base import TestBaseReadonly
+from base import TestBaseReadonly as TestBase
 from yumdaemon import YumLockedError
 from nose.exc import SkipTest
 
 
-class TestAPI(TestBaseReadonly):
+class TestAPI(TestBase):
 
     def __init__(self, methodName='runTest'):
         TestBaseReadonly.__init__(self, methodName)

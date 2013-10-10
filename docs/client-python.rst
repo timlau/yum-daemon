@@ -14,7 +14,7 @@ System API
     :members: Exit, Lock, Unlock, SetWatchdogState,GetPackageWithAttributes, GetRepositoriesGetRepo, GetConfig, SetConfig,
     		  GetAttribute, GetUpdateInfo, GetPackages, GetPackagesByName, GetHistoryByDays, HistorySearch, GetHistoryPackages,
     		  GetGroups, Search, ClearTransaction, GetTransaction, AddTransaction, Install, Remove, Update, Reinstal, Downgrade,
-    		  BuildTransaction, RunTransaction, GetEnabledRepos, GetGroupPackages
+    		  BuildTransaction, RunTransaction, GetEnabledRepos, GetGroupPackages, ConfirmGPGImport
     
 Session API
 ------------

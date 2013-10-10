@@ -388,3 +388,48 @@ class TestAPI(TestBase):
                 self.assertIsInstance(id, unicode)
                 self.assertIsInstance(state, unicode)
                 self.assertIsInstance(is_installed, bool)
+                
+    def test_GPGKeyInstall(self):
+        '''
+        System: GPG Key installation
+        '''
+        print "\n"
+        # make sure yum-plugins-keys is installed
+        self.Unlock()                
+        rc = call('sudo yum -y install yum-plugin-keys', shell=True)
+        self.Lock()                
+        output = check_output("yum keys | grep Fedora", shell=True)
+        # uninstall the Fedora GPG key
+        if output.startswith('Fedora'):
+            hexkey = output.split(' installed ')[-1][:17]
+            print '\nhexkey : [%s]' % hexkey
+            self.Unlock()                
+            rc = call('sudo yum -y keys-remove %s' % hexkey, shell=True)
+            self.Lock()       
+        # Make sure test package is not installed            
+        rc, output = self.Remove('0xFFFF')
+        if rc == 2:
+            retcode = self.RunTransaction()
+            self.assertEqual(retcode, 0)
+        # Both test packages should be uninstalled now
+        self.assertFalse(self._is_installed('0xFFFF'))
+        self.reset_signals() # reset the signal store        
+        rc, output = self.Install('0xFFFF')
+        self.assertEqual(rc,2)
+        self.show_transaction_result(output)
+        retcode = self.RunTransaction()
+        self.assertEqual(retcode, 1) # we should get a retcode=1 for gpg key needed
+        self.assertTrue(self.check_signal('GPGImport')) # check if we got a GPGImport signal
+        print "GPG Info : ",repr(self._gpg_confirm)
+        self.assertEqual(len(self._gpg_confirm), 5)
+        (pkg_id, userid, hexkeyid, keyurl, timestamp) = self._gpg_confirm
+        self.ConfirmGPGImport(hexkeyid, True) # confirm the gpg key import
+        retcode = self.RunTransaction() # run the transaction again
+        self.assertEqual(retcode, 0) # we should get a retcode=0 now
+        self.assertTrue(self._is_installed('0xFFFF'))
+        # cleanup remove the test package again
+        rc, output = self.Remove('0xFFFF')
+        self.assertEqual(rc,2)
+        retcode = self.RunTransaction()
+        self.assertEqual(retcode, 0)
+                

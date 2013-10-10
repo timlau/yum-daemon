@@ -165,5 +165,9 @@ start-session:
 start-system:
 	sudo yumdaemon/yumdaemon-system.py -d -v --notimeout
 
+kill:
+	@-sudo killall -9 -r "yumdaemon-system\.py" &> /dev/null 
+	@-sudo killall -9 -r "yumdaemon-session\.py" &> /dev/null 
+
 FORCE:
 	

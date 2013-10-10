@@ -116,6 +116,28 @@ class RPMCallback(RPMBaseCallback):
         """package is the package.  msgs is the messages that were
         output (if any)."""
         pass
+    
+    
+class DaemonYumBase(yum.YumBase):
+    
+    def __init__(self, daemon):
+        yum.YumBase.__init__(self)
+        self._daemon = daemon    
+        
+    def _checkSignatures(self,pkgs,callback):
+        ''' The the signatures of the downloaded packages '''
+        for po in pkgs:
+            result, errmsg = self.sigCheckPkg(po)
+            if result == 0:
+                # Verified ok, or verify not req'd
+                continue            
+            elif result == 1:
+                self.getKeyForPackage(po, fullaskcb=self._daemon.handle_gpg_import)
+            else:
+                raise Errors.YumGPGCheckError, errmsg
+    
+        return 0        
+    
 
 logger = logging.getLogger('yumdaemon')
 
@@ -127,6 +149,7 @@ class YumDaemon(YumDaemonBase):
         self.logger = logging.getLogger('yumdaemon.system')
         bus_name = dbus.service.BusName(DAEMON_ORG, bus = dbus.SystemBus())
         dbus.service.Object.__init__(self, bus_name, '/')
+        self._gpg_confirm = {}
 
 #===============================================================================
 # DBus Methods
@@ -623,7 +646,7 @@ class YumDaemon(YumDaemonBase):
     @Logger
     @dbus.service.method(DAEMON_INTERFACE,
                                           in_signature='',
-                                          out_signature='',
+                                          out_signature='i',
                                           sender_keyword='sender')
     def RunTransaction(self, sender = None):
         '''
@@ -641,13 +664,17 @@ class YumDaemon(YumDaemonBase):
             self._can_quit = True
             self._reset_yumbase()
             self.TransactionEvent('end-run',NONE)
-            self.working_ended()
+            return self.working_ended(0)
+        except Errors.YumGPGCheckError, errmsg: # GPG Key import needed
+            return self.working_ended(1)       # return 1 to tell the client we need a ask the user for gpg import confirmation and run again           
         except Errors.YumBaseError, e:
             self._can_quit = True
+            if str(e) == "Didn't install any keys": #FIXME: This is crap, find a better way
+                return self.working_ended(1)       # return 1 to tell the client we need a ask the user for gpg import confirmation and run again
             self.TransactionEvent('fail',NONE)
             self._reset_yumbase()
-            self.working_ended()
-            raise YumTransactionError(str(e))
+            return self.working_ended(2)
+            #raise YumTransactionError(str(e))
 
     @Logger
     @dbus.service.method(DAEMON_INTERFACE,
@@ -698,6 +725,22 @@ class YumDaemon(YumDaemonBase):
         pkg_ids = self._get_group_pkgs(grp_id, grp_flt)
         return self.working_ended(pkg_ids)
 
+    @Logger
+    @dbus.service.method(DAEMON_INTERFACE,
+                                          in_signature='sb',
+                                          out_signature='',
+                                          sender_keyword='sender')
+    def ConfirmGPGImport(self, hexkeyid, confirmed, sender=None ):
+        '''
+        Confirm import of at GPG Key by yum
+        :param hexkeyid: hex keyid for GPG key
+        :param confirmed: confirm import of key (True/False)
+        :param sender:
+        '''
+        
+        self.working_start(sender)
+        self._gpg_confirm[hexkeyid] = confirmed # store confirmation of GPG import
+        return self.working_ended()
 
 
 #
@@ -758,6 +801,20 @@ class YumDaemon(YumDaemonBase):
         """
         pass
 
+
+    @dbus.service.signal(DAEMON_INTERFACE)
+    def GPGImport(self, pkg_id, userid, hexkeyid, keyurl, timestamp ):
+        '''
+        GPG Key Import DBus signal
+        
+        :param pkg_id:
+        :param userid:
+        :param hexkeyid:
+        :param keyurl:
+        :param timestamp:
+        '''
+        pass
+
 #===============================================================================
 # Helper methods
 #===============================================================================
@@ -770,6 +827,26 @@ class YumDaemon(YumDaemonBase):
     def working_ended(self, value=None):
         self._is_working = False
         return value
+
+    def handle_gpg_import(self, gpg_info):
+        '''
+        Callback for handling af user confirmation of gpg key import
+        
+        :param gpg_info: dict with info about gpg key {"po": ..,  "userid": .., "hexkeyid": .., "keyurl": ..,  "fingerprint": .., "timestamp": ..)
+        
+        '''
+        print(gpg_info)
+        pkg_id = self._get_id(gpg_info['po'])
+        userid = gpg_info['userid']
+        hexkeyid = gpg_info['hexkeyid']
+        keyurl = gpg_info['keyurl']
+        fingerprint = gpg_info['fingerprint']
+        timestamp = gpg_info['timestamp']
+        if not hexkeyid in self._gpg_confirm: # the gpg key has not been confirmed by the user
+            self._gpg_confirm[hexkeyid] = False
+            self.GPGImport( pkg_id, userid, hexkeyid, keyurl, timestamp )
+        return self._gpg_confirm[hexkeyid]
+    
 
     def _set_option(self, option, value):
         if hasattr(self.yumbase.conf, option):
@@ -926,7 +1003,7 @@ class YumDaemon(YumDaemonBase):
         '''
         Get a YumBase object to work with
         '''
-        self._yumbase = yum.YumBase()
+        self._yumbase = DaemonYumBase(self)
         # make yum silent
         self._yumbase.preconf.errorlevel=0
         self._yumbase.preconf.debuglevel=0
