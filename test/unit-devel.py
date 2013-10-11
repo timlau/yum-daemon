@@ -28,7 +28,7 @@ class TestAPIDevel(TestBase):
         print "\n"
         # make sure yum-plugins-keys is installed
         self.Unlock()                
-        rc = call('sudo yum -y install yum-plugin-keys', shell=True)
+        rc = call('sudo yum -y install yum-plugin-keys &>/dev/null', shell=True)
         self.Lock()                
         output = check_output("yum keys | grep Fedora", shell=True)
         # uninstall the Fedora GPG key
@@ -36,7 +36,7 @@ class TestAPIDevel(TestBase):
             hexkey = output.split(' installed ')[-1][:17]
             print '\nhexkey : [%s]' % hexkey
             self.Unlock()                
-            rc = call('sudo yum -y keys-remove %s' % hexkey, shell=True)
+            rc = call('sudo yum -y keys-remove %s &>/dev/null' % hexkey, shell=True)
             self.Lock()       
         # Make sure test package is not installed            
         rc, output = self.Remove('0xFFFF')

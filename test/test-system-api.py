@@ -3,6 +3,8 @@ sys.path.insert(0,os.path.abspath('client'))
 from base import TestBase
 from yumdaemon import YumLockedError
 from nose.exc import SkipTest
+from subprocess import check_output, call
+
 
 
 class TestAPI(TestBase):
@@ -396,7 +398,7 @@ class TestAPI(TestBase):
         print "\n"
         # make sure yum-plugins-keys is installed
         self.Unlock()                
-        rc = call('sudo yum -y install yum-plugin-keys', shell=True)
+        rc = call('sudo yum -y install yum-plugin-keys &>/dev/null', shell=True)
         self.Lock()                
         output = check_output("yum keys | grep Fedora", shell=True)
         # uninstall the Fedora GPG key
@@ -404,7 +406,7 @@ class TestAPI(TestBase):
             hexkey = output.split(' installed ')[-1][:17]
             print '\nhexkey : [%s]' % hexkey
             self.Unlock()                
-            rc = call('sudo yum -y keys-remove %s' % hexkey, shell=True)
+            rc = call('sudo yum -y keys-remove %s &>/dev/null' % hexkey, shell=True)
             self.Lock()       
         # Make sure test package is not installed            
         rc, output = self.Remove('0xFFFF')
@@ -413,7 +415,7 @@ class TestAPI(TestBase):
             self.assertEqual(retcode, 0)
         # Both test packages should be uninstalled now
         self.assertFalse(self._is_installed('0xFFFF'))
-        self.reset_signals() # reset the signal store        
+        self.reset_signals()
         rc, output = self.Install('0xFFFF')
         self.assertEqual(rc,2)
         self.show_transaction_result(output)

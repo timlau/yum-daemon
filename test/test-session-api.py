@@ -8,7 +8,7 @@ from nose.exc import SkipTest
 class TestAPI(TestBase):
 
     def __init__(self, methodName='runTest'):
-        TestBaseReadonly.__init__(self, methodName)
+        TestBase.__init__(self, methodName)
 
     def test_Locking(self):
         '''
