@@ -309,8 +309,7 @@ class YumDaemonBase:
         this must always be called before doing other actions
         '''
         try:
-            self._run_dbus_async('Lock')
-            #self.daemon.Lock()
+            return self._run_dbus_async('Lock')
         except Exception as err:
             self._handle_dbus_error(err)
 
