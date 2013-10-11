@@ -197,7 +197,8 @@ class YumDaemonBase:
         :type err:
         '''
         exc, msg = self._parse_error()
-        print (exc,msg)
+        logger.error("Exception   : %s",exc)
+        logger.error("   message  : %s",msg)
         if exc == self.dbus_org+'.AccessDeniedError':
             raise AccessDeniedError(msg)
         elif exc == self.dbus_org+'.YumLockedError':
