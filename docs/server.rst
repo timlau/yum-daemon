@@ -367,6 +367,58 @@ Methods to work with the yum history
         :return: list of (tid,isodates)
         :type sender: json encoded string
 
+Signals
+--------
+
+.. py:function:: UpdateProgress(self,name,frac,fread,ftime):
+
+        Signal with download progress information
+        
+        :param name: filename
+        :param frac: Progress fracment (0 -> 1)
+        :param fread: formated string containing BytesRead
+        :param ftime : formated string containing remaining or elapsed time
+
+.. py:function:: TransactionEvent(self,event,data):
+
+        Signal with Transaction event information, telling the current step in the processing of
+        the current transaction.
+        
+        Steps are : start-run, download, pkg-to-download, signature-check, run-test-transaction, run-transaction, fail, end-run
+        
+        :param event: current step 
+
+
+.. py:function:: RPMProgress(self, package, action, te_current, te_total, ts_current, ts_total):
+        
+        signal with RPM Progress
+        
+        :param package: A yum package object or simple string of a package name
+        :param action: A yum.constant transaction set state or in the obscure
+                       rpm repackage case it could be the string 'repackaging'
+        :param te_current: Current number of bytes processed in the transaction
+                           element being processed
+        :param te_total: Total number of bytes in the transaction element being
+                         processed
+        :param ts_current: number of processes completed in whole transaction
+        :param ts_total: total number of processes in the transaction.
+
+
+.. py:function:: GPGImport(self, pkg_id, userid, hexkeyid, keyurl, timestamp ):
+
+        signal with GPG Key information of a key there need to be confirmed to complete the 
+        current transaction. after signal is send transaction will abort with rc=1
+        Use ConfirmGPGImport method to comfirm the key and run RunTransaction again 
+        
+        
+        :param pkg_id: pkg_id for the package needing the GPG Key to be verified
+        :param userid: GPG key name
+        :param hexkeyid: GPG key hex id
+        :param keyurl: Url to the GPG Key
+        :param timestamp: 
+        '''
+
+
    
 ==========================================
 Session Service
@@ -539,3 +591,14 @@ Methods to work with yum groups and categories
    
    More to come in the future, methods to install groups etc. has to be defined and implemented
 
+Signals
+--------
+
+.. py:function:: UpdateProgress(self,name,frac,fread,ftime):
+
+        Signal with download progress information
+        
+        :param name: filename
+        :param frac: Progress fracment (0 -> 1)
+        :param fread: formated string containing BytesRead
+        :param ftime : formated string containing remaining or elapsed time

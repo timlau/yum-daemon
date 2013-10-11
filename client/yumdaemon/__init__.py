@@ -326,6 +326,7 @@ class YumDaemonBase:
     def SetWatchdogState(self,state):
         '''
         Set the Watchdog state
+        
         :param state: True = Watchdog active, False = Watchdog disabled
         :type state: boolean (b)
         '''
@@ -373,6 +374,7 @@ class YumDaemonBase:
     def SetEnabledRepos(self, repo_ids):
         '''
         Enabled a list of repositories, disabled all other repos
+        
         :param repo_ids: list of repo ids to enable
         :param sender:
         '''
@@ -382,6 +384,7 @@ class YumDaemonBase:
     def GetConfig(self, setting):
         '''
         Read a config setting from yum.conf
+        
         :param setting: setting to read
         :type setting: string
         '''
@@ -390,7 +393,7 @@ class YumDaemonBase:
 
     def GetAttribute(self, pkg_id, attr):
         '''
-        get yum package attribute (description, filelist, changelog etc)
+        Get yum package attribute (description, filelist, changelog etc)
 
         :param pkg_id: pkg_id to get attribute from
         :param attr: name of attribute to get
@@ -447,8 +450,9 @@ class YumDaemonBase:
     def GetGroupPackages(self, grp_id, grp_flt):
         '''
         Get packages in a group 
-        :param grp_id:
-        :param grp_flt:
+        
+        :param grp_id: the group id to get packages for
+        :param grp_flt: the filter ('all' = all packages ,'default' = packages to be installed, before the group is installed) 
         '''
         return self._run_dbus_async('GetGroupPackages', '(ss)', grp_id, grp_flt)
 
@@ -473,7 +477,9 @@ class YumDaemonBase:
         return self._run_dbus_async('Search','(asasbbb)',fields, keys, match_all, newest_only, tags)
 
     def Exit(self):
-        ''' End the daemon'''
+        ''' 
+        End the daemon
+        '''
         self._run_dbus_async('Exit')
 
 ###############################################################################
@@ -685,9 +691,9 @@ class YumDaemonClient(YumDaemonBase):
     def ConfirmGPGImport(self, hexkeyid, confirmed):
         '''
         Confirm import of at GPG Key by yum
+        
         :param hexkeyid: hex keyid for GPG key
         :param confirmed: confirm import of key (True/False)
-        :param sender:
         '''
         self._run_dbus_async('ConfirmGPGImport','(si)',hexkeyid, confirmed)
 

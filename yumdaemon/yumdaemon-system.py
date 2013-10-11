@@ -778,8 +778,12 @@ class YumDaemon(YumDaemonBase):
     @dbus.service.signal(DAEMON_INTERFACE)
     def TransactionEvent(self,event,data):
         '''
-        DBus signal with Transaction information
-        :param event:
+        DBus signal with Transaction event information, telling the current step in the processing of
+        the current transaction.
+        
+        Steps are : start-run, download, pkg-to-download, signature-check, run-test-transaction, run-transaction, fail, end-run
+        
+        :param event: current step 
         '''
         #print "event: %s" % event
         pass
@@ -807,11 +811,11 @@ class YumDaemon(YumDaemonBase):
         '''
         GPG Key Import DBus signal
         
-        :param pkg_id:
-        :param userid:
-        :param hexkeyid:
-        :param keyurl:
-        :param timestamp:
+        :param pkg_id: pkg_id for the package needing the GPG Key to be verified
+        :param userid: GPG key name
+        :param hexkeyid: GPG key hex id
+        :param keyurl: Url to the GPG Key
+        :param timestamp: 
         '''
         pass
 
