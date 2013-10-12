@@ -122,17 +122,16 @@ test-release:
 	@rm -rf ${PKGNAME}-${NEW_VER}.tar.gz
 	@git archive --format=tar --prefix=$(PKGNAME)-$(NEW_VER)/ HEAD | gzip -9v >${PKGNAME}-$(NEW_VER).tar.gz
 	# Build RPMS
-	@rpmdev-wipetree
 	@rpmbuild -ta ${PKGNAME}-${NEW_VER}.tar.gz
 	@$(MAKE) test-cleanup
 
 test-inst:
 	@$(MAKE) test-release
-	sudo yum install ~/rpmbuild/RPMS/noarch/*yumdaemon*.rpm
+	sudo yum install ~/rpmbuild/RPMS/noarch/*${PKGNAME}-${NEW_VER}*.rpm
 
 test-reinst:
 	@$(MAKE) test-release
-	sudo yum reinstall ~/rpmbuild/RPMS/noarch/*yumdaemon*.rpm
+	sudo yum reinstall ~/rpmbuild/RPMS/noarch/*${PKGNAME}-${NEW_VER}*.rpm
 	
 rpm:
 	@$(MAKE) archive
