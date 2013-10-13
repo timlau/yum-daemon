@@ -10,6 +10,10 @@ VER_REGEX=\(^Version:\s*[0-9]*\.[0-9]*\.\)\(.*\)
 BUMPED_MINOR=${shell VN=`cat ${PKGNAME}.spec | grep Version| sed  's/${VER_REGEX}/\2/'`; echo $$(($$VN + 1))}
 NEW_VER=${shell cat ${PKGNAME}.spec | grep Version| sed  's/\(^Version:\s*\)\([0-9]*\.[0-9]*\.\)\(.*\)/\2${BUMPED_MINOR}/'}
 NEW_REL=0.1.${GITDATE}
+MOCK_DIR=/home/tim/udv/repos
+FEDORA_REL = 19 20 21
+ARCHS = i386 x86_64
+
 all: subdirs
 	
 subdirs:
@@ -146,6 +150,25 @@ test-builds:
 	@scp ~/rpmbuild/RPMS/noarch/python3-${PKGNAME}-${NEW_VER}*.rpm timlau.fedorapeople.org:public_html/files/${PKGNAME}/.
 	@scp ~/rpmbuild/SRPMS/${PKGNAME}-${NEW_VER}*.rpm timlau.fedorapeople.org:public_html/files/${PKGNAME}/.
 
+mock-build:
+	@$(MAKE) test-release
+	for rel in $(FEDORA_REL); do \
+		rm -rf ${MOCK_DIR}/fedora-$$rel/mock-build/${PKGNAME}; \
+		mkdir -p ${MOCK_DIR}/fedora-$$rel/mock-build/${PKGNAME}; \
+		mock -r fedora-$$rel-i386 ~/rpmbuild/SRPMS/${PKGNAME}-${NEW_VER}-${NEW_REL}*.src.rpm --resultdir=${MOCK_DIR}/fedora-$$rel/mock-build/${PKGNAME};\
+		for arch in $(ARCHS); do \
+			cp ${MOCK_DIR}/fedora-$$rel/mock-build/*${PKGNAME}-${PKGNAME}-${NEW_VER}*.noarch.rpm ${MOCK_DIR}/fedora-$$rel/$$arch/*;\
+		done;\
+		cp ${MOCK_DIR}/fedora-$$rel/mock-build/*${PKGNAME}-${PKGNAME}-${NEW_VER}*.src.rpm ${MOCK_DIR}/fedora-$$rel/SRPMS/*;\
+	done;
+	
+update-repo:	
+	for rel in $(FEDORA_REL); do \
+		for arch in $(ARCHS); do \
+			cp ${MOCK_DIR}/fedora-$$rel/mock-build/*${PKGNAME}-${PKGNAME}-${NEW_VER}*.noarch.rpm ${MOCK_DIR}/fedora-$$rel/$$arch/*;\
+		done;\
+		cp ${MOCK_DIR}/fedora-$$rel/mock-build/*${PKGNAME}-${PKGNAME}-${NEW_VER}*.src.rpm ${MOCK_DIR}/fedora-$$rel/SRPMS/*;\
+	done;
 
 kill-session:
 	@/usr/bin/dbus-send --session --print-reply --dest="org.baseurl.YumSession" / org.baseurl.YumSession.Exit
