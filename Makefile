@@ -4,15 +4,13 @@ ORG_NAME = org.baseurl.YumSystem
 ORG_RO_NAME = org.baseurl.YumSession
 SUBDIRS = client/yumdaemon
 VERSION=$(shell awk '/Version:/ { print $$2 }' ${PKGNAME}.spec)
-PYTHON=python
+PYTHON=pythons
 GITDATE=git$(shell date +%Y%m%d)
 VER_REGEX=\(^Version:\s*[0-9]*\.[0-9]*\.\)\(.*\)
 BUMPED_MINOR=${shell VN=`cat ${PKGNAME}.spec | grep Version| sed  's/${VER_REGEX}/\2/'`; echo $$(($$VN + 1))}
 NEW_VER=${shell cat ${PKGNAME}.spec | grep Version| sed  's/\(^Version:\s*\)\([0-9]*\.[0-9]*\.\)\(.*\)/\2${BUMPED_MINOR}/'}
 NEW_REL=0.1.${GITDATE}
-MOCK_DIR=/home/tim/udv/repos
-FEDORA_REL = 19 20 21
-ARCHS = i386 x86_64
+DIST=${shell rpm --eval "%{dist}"}
 
 all: subdirs
 	
@@ -116,7 +114,7 @@ show-vars:
 	
 test-release:
 	@git checkout -b release-test
-	# +1 Minor version and add 0.1-gitYYYYMMDD release
+	# +1 Minors version and add 0.1-gitYYYYMMDD release
 	@cat ${PKGNAME}.spec | sed  -e 's/${VER_REGEX}/\1${BUMPED_MINOR}/' -e 's/\(^Release:\s*\)\([0-9]*\)\(.*\)./\10.1.${GITDATE}%{?dist}/' > ${PKGNAME}-test.spec ; mv ${PKGNAME}-test.spec ${PKGNAME}.spec
 	@git commit -a -m "bumped ${PKGNAME} version ${NEW_VER}-${NEW_REL}"
 	# Make Changelog
@@ -152,23 +150,10 @@ test-builds:
 
 mock-build:
 	@$(MAKE) test-release
-	for rel in $(FEDORA_REL); do \
-		rm -rf ${MOCK_DIR}/fedora-$$rel/mock-build/${PKGNAME}; \
-		mkdir -p ${MOCK_DIR}/fedora-$$rel/mock-build/${PKGNAME}; \
-		mock -r fedora-$$rel-i386 ~/rpmbuild/SRPMS/${PKGNAME}-${NEW_VER}-${NEW_REL}*.src.rpm --resultdir=${MOCK_DIR}/fedora-$$rel/mock-build/${PKGNAME};\
-		for arch in $(ARCHS); do \
-			cp ${MOCK_DIR}/fedora-$$rel/mock-build/*${PKGNAME}-${PKGNAME}-${NEW_VER}*.noarch.rpm ${MOCK_DIR}/fedora-$$rel/$$arch/*;\
-		done;\
-		cp ${MOCK_DIR}/fedora-$$rel/mock-build/*${PKGNAME}-${PKGNAME}-${NEW_VER}*.src.rpm ${MOCK_DIR}/fedora-$$rel/SRPMS/*;\
-	done;
+	@tools/repo-build.py --build ${PKGNAME} ~/rpmbuild/SRPMS/${PKGNAME}-${NEW_VER}-${NEW_REL}${DIST}.src.rpm 
+	@tools/repo-build.py --copy ${PKGNAME} ~/rpmbuild/SRPMS/${PKGNAME}-${NEW_VER}-${NEW_REL}${DIST}.src.rpm 
 	
-update-repo:	
-	for rel in $(FEDORA_REL); do \
-		for arch in $(ARCHS); do \
-			cp ${MOCK_DIR}/fedora-$$rel/mock-build/*${PKGNAME}-${PKGNAME}-${NEW_VER}*.noarch.rpm ${MOCK_DIR}/fedora-$$rel/$$arch/*;\
-		done;\
-		cp ${MOCK_DIR}/fedora-$$rel/mock-build/*${PKGNAME}-${PKGNAME}-${NEW_VER}*.src.rpm ${MOCK_DIR}/fedora-$$rel/SRPMS/*;\
-	done;
+	
 
 kill-session:
 	@/usr/bin/dbus-send --session --print-reply --dest="org.baseurl.YumSession" / org.baseurl.YumSession.Exit
