@@ -147,6 +147,11 @@ test-builds:
 	@scp ~/rpmbuild/RPMS/noarch/python-${PKGNAME}-${NEW_VER}*.rpm timlau.fedorapeople.org:public_html/files/${PKGNAME}/.
 	@scp ~/rpmbuild/RPMS/noarch/python3-${PKGNAME}-${NEW_VER}*.rpm timlau.fedorapeople.org:public_html/files/${PKGNAME}/.
 	@scp ~/rpmbuild/SRPMS/${PKGNAME}-${NEW_VER}*.rpm timlau.fedorapeople.org:public_html/files/${PKGNAME}/.
+	
+review:	
+	@ssh timlau.fedorapeople.org rm -f public_html/files/${PKGNAME}/*
+	@scp ~/rpmbuild/SRPMS/${PKGNAME}-${VERSION}*.src.rpm  timlau.fedorapeople.org:public_html/files/${PKGNAME}/.
+	@scp ${PKGNAME}.spec timlau.fedorapeople.org:public_html/files/${PKGNAME}/.
 
 mock-build:
 	@$(MAKE) test-release
