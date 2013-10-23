@@ -1,11 +1,11 @@
 Name:           yumdaemon
 Version:        0.9.2
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Dbus daemon for yum package actions
 
 License:        GPLv2+
 URL:            https://github.com/timlau/yum-daemon
-Source0:  		https://fedorahosted.org/releases/y/u/yumex/%{name}-%{version}.tar.gz
+Source0:        https://fedorahosted.org/releases/y/u/yumex/%{name}-%{version}.tar.gz
 
 BuildArch:      noarch
 BuildRequires:  python2-devel
@@ -13,8 +13,8 @@ Requires:       dbus-python
 Requires:       yum >= 3.4.0
 Requires:       polkit
 
-Requires(post): 	policycoreutils-python
-Requires(postun): 	policycoreutils-python
+Requires(post):     policycoreutils-python
+Requires(postun):   policycoreutils-python
 
 %description
 Dbus daemon for yum package actions
@@ -42,7 +42,7 @@ Python 3 api for communicating with the yum-daemon DBus service
 
 
 %files -n  python3-%{name}
-%{python3_sitelib}/%{name}/*
+%{python3_sitelib}/%{name}/
 
 %package -n python-%{name}
 Summary:        Python 2 api for communicating with the yum-daemon DBus service
@@ -56,7 +56,7 @@ Python 2 api for communicating with the yum-daemon DBus service
 
 
 %files -n  python-%{name}
-%{python_sitelib}/%{name}/*
+%{python_sitelib}/%{name}/
 
 # apply the right selinux file context
 # http://fedoraproject.org/wiki/PackagingDrafts/SELinux#File_contexts
@@ -74,12 +74,14 @@ fi
 %doc README.md examples/ ChangeLog COPYING
 %{_datadir}/dbus-1/system-services/*
 %{_datadir}/dbus-1/services/*
-%{_datadir}/*
+%{_datadir}/%{name}/
 %{_datadir}/polkit-1/actions
-%{_sysconfdir}/dbus-1/system.d/*
+%config %{_sysconfdir}/dbus-1/system.d/*
 
 
 %changelog
+* Wed Oct 23 2013 Tim Lauridsen <timlau@fedoraproject.org> 0.9.2-2
+- converted tab to spaces
 * Wed Oct 23 2013 Tim Lauridsen <timlau@fedoraproject.org> 0.9.2-1
 - bumped release to 0.9.2
 * Mon Nov 5 2012 Tim Lauridsen <timlau@fedoraproject.org> 0.9.1-1
