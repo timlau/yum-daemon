@@ -1,6 +1,6 @@
 Name:           yumdaemon
 Version:        0.9.2
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Dbus daemon for yum package actions
 
 License:        GPLv2+
@@ -28,7 +28,7 @@ Dbus daemon for yum package actions
 
 %install
 rm -rf $RPM_BUILD_ROOT
-make install DESTDIR=$RPM_BUILD_ROOT
+make install DESTDIR=$RPM_BUILD_ROOT DATADIR=%{_datadir} SYSCONFDIR=%{_sysconfdir}
 
 %package -n python3-%{name}
 Summary:        Python 3 api for communicating with the yum-daemon DBus service
@@ -80,6 +80,8 @@ fi
 
 
 %changelog
+* Wed Oct 23 2013 Tim Lauridsen <timlau@fedoraproject.org> 0.9.2-3
+- added DATADIR=%%{_datadir} SYSCONFDIR=%%{_sysconfdir} to make install
 * Wed Oct 23 2013 Tim Lauridsen <timlau@fedoraproject.org> 0.9.2-2
 - converted tab to spaces
 * Wed Oct 23 2013 Tim Lauridsen <timlau@fedoraproject.org> 0.9.2-1
