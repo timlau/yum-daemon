@@ -1,5 +1,5 @@
 Name:           yumdaemon
-Version:        0.9.1
+Version:        0.9.2
 Release:        1%{?dist}
 Summary:        Dbus daemon for yum package actions
 
@@ -71,7 +71,7 @@ semanage fcontext -d -t rpm_exec_t '%{_datadir}/%{name}/%{name}-system' 2>/dev/n
 fi
 
 %files
-%doc README.md examples/ ChangeLog
+%doc README.md examples/ ChangeLog COPYING
 %{_datadir}/dbus-1/system-services/*
 %{_datadir}/dbus-1/services/*
 %{_datadir}/*
@@ -80,6 +80,8 @@ fi
 
 
 %changelog
+* Wed Oct 23 2013 Tim Lauridsen <timlau@fedoraproject.org> 0.9.2-1
+- bumped release to 0.9.2
 * Mon Nov 5 2012 Tim Lauridsen <timlau@fedoraproject.org> 0.9.1-1
 - both python2 & python3 uses same sources
 * Sat May 26 2012 Tim Lauridsen <timlau@fedoraproject.org> 0.9.0-1

@@ -14,7 +14,7 @@
 #    along with this program; if not, write to the Free Software
 #    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
-# (C) 2011 - Tim Lauridsen <timlau@fedoraproject.org>
+# (C) 2013 - Tim Lauridsen <timlau@fedoraproject.org>
 
 import dbus
 import dbus.service
@@ -36,8 +36,7 @@ import argparse
 
 from common import YumDaemonBase, doTextLoggerSetup, Logger, DownloadCallback, NONE, FAKE_ATTR
 
-
-version = 100 # must be integer
+version = 902 #  (00.09.02) must be integer
 DAEMON_ORG = 'org.baseurl.YumSystem'
 DAEMON_INTERFACE = DAEMON_ORG
 
