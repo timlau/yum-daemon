@@ -5,7 +5,7 @@ Summary:        Dbus daemon for yum package actions
 
 License:        GPLv2+
 URL:            https://github.com/timlau/yum-daemon
-Source0:        yumdaemon-%{version}.tar.gz
+Source0:  		https://fedorahosted.org/releases/y/u/yumex/%{name}-%{version}.tar.gz
 
 BuildArch:      noarch
 BuildRequires:  python2-devel
