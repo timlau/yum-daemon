@@ -22,6 +22,6 @@ install:
 	mkdir -p $(DESTDIR)/$(PKGDIR)
 	mkdir -p $(DESTDIR)/$(PKGDIR3)
 	for p in $(PYFILES) ; do \
-		install -m 755 $$p $(DESTDIR)/$(PKGDIR)/$$p; \
-		install -m 755 $$p $(DESTDIR)/$(PKGDIR3)/$$p; \
+		install -m 644 $$p $(DESTDIR)/$(PKGDIR)/$$p; \
+		install -m 644 $$p $(DESTDIR)/$(PKGDIR3)/$$p; \
 	done
