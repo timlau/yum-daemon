@@ -20,7 +20,7 @@ class TestAPI(TestBase):
         # calling a method without a lock should raise a YumLockedError
         # self.assertRaises(YumLockedError,self.Install, '0xFFFF')
         # trying to unlock method without a lock should raise a YumLockedError
-        self.assertRaises(YumLockedError,self.Unlock)
+        self.assertRaises(LockedError,self.Unlock)
         # get the Lock again, else tearDown will fail
         self.Lock()
 
