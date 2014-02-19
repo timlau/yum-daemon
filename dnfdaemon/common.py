@@ -190,17 +190,9 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         Get a list of package ids, based on a package pkg_filterer
         :param pkg_filter: pkg pkg_filter string ('installed','updates' etc)
         '''
-        pkgs = None
-        q = self.base.sack.query()
-        if pkg_filter == "available":
-            pkgs  = q.available()
-        elif pkg_filter == "installed":
-            pkgs  = q.installed()
-        elif pkg_filter == "updates":
-            pkgs  = q.upgrades()
-        else:
-            print("pkg_filter : %s is not supported" % pkg_filter)
-        if pkgs:    
+        if pkg_filter in ['installed','available','updates','obsoletes','recent','extras']:
+            yh = self.base.doPackageLists(pkgnarrow=pkg_filter)
+            pkgs = getattr(yh,pkg_filter)
             value = self._to_package_id_list(pkgs)
         else:
             value = []
