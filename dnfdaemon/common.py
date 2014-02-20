@@ -191,8 +191,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         :param pkg_filter: pkg pkg_filter string ('installed','updates' etc)
         '''
         if pkg_filter in ['installed','available','updates','obsoletes','recent','extras']:
-            yh = self.base.doPackageLists(pkgnarrow=pkg_filter)
-            pkgs = getattr(yh,pkg_filter)
+            pkgs = getattr(self.base.packages,pkg_filter)
             value = self._to_package_id_list(pkgs)
         else:
             value = []
@@ -422,6 +421,108 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
             self.logger.debug("Watchdog : %i" % self._watchdog_count )
             return True
 
+class Packages:
+    
+    def __init__(self, base):
+        self._base = base
+        self._sack = base.sack
+        self._inst_na = self._sack.query().installed().na_dict()
+
+    def _filter_packages(self, pkg_list, replace=True):
+        '''
+        Filter a list of package objects and replace
+        the installed ones with the installed object, instead
+        of the available object
+        '''
+        pkgs = []
+        for pkg in pkg_list:
+            key = (pkg.name, pkg.arch)
+            inst_pkg = self._inst_na.get(key, [None])[0]
+            if inst_pkg and inst_pkg.evr == pkg.evr:
+                if replace:
+                    pkgs.append(inst_pkg)
+            else:
+                pkgs.append(pkg)
+        return pkgs
+        
+
+    @property
+    def query(self):
+        return self._sack.query()
+            
+    @property
+    def installed(self):
+        '''
+        instawlled packages
+        '''
+        return self.query.installed().run()
+
+    @property
+    def updates(self):
+        '''
+        available updates
+        '''
+        return self.query.upgrades().run()
+
+    
+    @property
+    def all(self,showdups = False):
+        '''
+        all packages in the repositories
+        installed ones are replace with the install package objects
+        '''
+        if showdups:
+            return self._filter_packages(self.query.available().run())
+        else:
+            return self._filter_packages(self.query.latest().run())
+    
+    @property
+    def available(self, showdups = False):
+        '''
+        available packages there is not installed yet
+        '''
+        if showdups:
+            return self._filter_packages(self.query.available().run(), replace=False)
+        else:
+            return self._filter_packages(self.query.latest().run(), replace=False)
+    
+    @property
+    def extras(self):
+        '''
+        installed packages, not in current repos
+        '''
+        # anything installed but not in a repo is an extra
+        avail_dict = self.query.available().pkgtup_dict()
+        inst_dict = self.query.installed().pkgtup_dict()
+        pkgs = []
+        for pkgtup in inst_dict:
+            if pkgtup not in avail_dict:
+                pkgs.extend(inst_dict[pkgtup])
+        return pkgs
+
+    @property
+    def obsoletes(self):
+        '''
+        packages there is obsoleting some installed packages
+        '''
+        inst = self.query.installed()
+        return self.query.filter(obsoletes=inst)
+
+    @property
+    def recent(self, showdups=False):
+        recent = []
+        now = time()
+        recentlimit = now-(self._base.conf.recent*86400)
+        if showdups:
+            avail = self.query.available()
+        else:
+            avail = self.query.latest()
+        for po in avail:
+            if int(po.buildtime) > recentlimit:
+                recent.append(po)
+        return recent
+
+
 class DnfBase(dnf.Base):
 
     def __init__(self):
@@ -432,6 +533,11 @@ class DnfBase(dnf.Base):
         self.bar = RepoCallback(fo=sys.stdout)
         self.repos.all.set_progress_bar(self.bar)
         self.fill_sack()
+        self._packages = Packages(self)
+        
+    @property
+    def packages(self):
+        return self._packages
 
     def setup_cache(self):
         # perform the CLI-specific cachedir tricks
