@@ -93,8 +93,11 @@ test-devel: FORCE
 	@nosetests -v -s test/unit-devel.py
 
 # Run as root or you will get a password prompt for each test method :)
-test-devel-dnf: FORCE
+test-dnf-devel: FORCE
 	@nosetests -v -s test/dnf/unit-devel.py
+
+test-dnf-session: FORCE
+	@nosetests -v test/dnf/test-session-api.py
 
 instdeps:
 	sudo yum install python-nose python3-gobject pygobject3	
