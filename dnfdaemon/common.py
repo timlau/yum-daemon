@@ -3,12 +3,12 @@
 # modify it under the terms of the GNU General Public License
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -51,7 +51,7 @@ class DownloadCallback:
     '''
     def __init__(self):
         pass
-    
+
     def updateProgress(self,name,frac,fread,ftime):
         '''
         Update the progressbar
@@ -116,7 +116,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         '''
         Search for for packages, where given fields contain given key words
         (Helper for Search)
-        
+
         :param fields: list of fields to search in
         :param keys: list of keywords to search for
         :param match_all: match all flag, if True return only packages matching all keys
@@ -133,7 +133,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         '''
         Get a list of packages from a name pattern
         (Helper for GetPackagesByName)
-        
+
         :param name: name pattern
         :param newest_only: True = get newest packages only
         '''
@@ -160,10 +160,13 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         Get the value a list of repo ids
         :param filter: filter to limit the listed repositories
         '''
-        repos = []
-        # TODO : Add dnf code
+        if filter == '' or filter == 'enabled':
+            repos = [repo.id for repo in self.base.repos.iter_enabled()]
+        else:
+            # .get_multiple(filter) is not public api
+            repos = [repo.id for repo in  self.base.repos.get_multiple(filter)]
         return repos
-    
+
 
     def _get_config(self, setting):
         '''
@@ -174,7 +177,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         value = json.dumps(None)
         # TODO : Add dnf code
         return value
-    
+
     def _get_repo(self, repo_id ):
         '''
         Get information about a give repo_id
@@ -184,7 +187,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         value = json.dumps(None)
         # TODO : Add dnf code
         return value
-    
+
     def _get_packages(self, pkg_filter):
         '''
         Get a list of package ids, based on a package pkg_filterer
@@ -196,7 +199,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         else:
             value = []
         return value
-    
+
     def _get_package_with_attributes(self, pkg_filter, fields):
         '''
         Get a list of package ids, based on a package pkg_filterer
@@ -320,7 +323,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         valid = False
         # TODO : Add dnf code
         return valid
-    
+
     def _to_package_id_list(self, pkgs):
         '''
         return a sorted list of package ids from a list of packages
@@ -422,7 +425,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
             return True
 
 class Packages:
-    
+
     def __init__(self, base):
         self._base = base
         self._sack = base.sack
@@ -444,12 +447,12 @@ class Packages:
             else:
                 pkgs.append(pkg)
         return pkgs
-        
+
 
     @property
     def query(self):
         return self._sack.query()
-            
+
     @property
     def installed(self):
         '''
@@ -464,7 +467,7 @@ class Packages:
         '''
         return self.query.upgrades().run()
 
-    
+
     @property
     def all(self,showdups = False):
         '''
@@ -475,7 +478,7 @@ class Packages:
             return self._filter_packages(self.query.available().run())
         else:
             return self._filter_packages(self.query.latest().run())
-    
+
     @property
     def available(self, showdups = False):
         '''
@@ -485,7 +488,7 @@ class Packages:
             return self._filter_packages(self.query.available().run(), replace=False)
         else:
             return self._filter_packages(self.query.latest().run(), replace=False)
-    
+
     @property
     def extras(self):
         '''
@@ -534,7 +537,7 @@ class DnfBase(dnf.Base):
         self.repos.all.set_progress_bar(self.bar)
         self.fill_sack()
         self._packages = Packages(self)
-        
+
     @property
     def packages(self):
         return self._packages
@@ -587,7 +590,7 @@ class DnfBase(dnf.Base):
         print("Running Transaction")
         disp = TransactionDisplay()
         print(self.do_transaction(display=disp))
-        
+
 
 
 
@@ -886,7 +889,7 @@ class TransactionDisplay(object):
         print("Verifing : %s "% pkg)
 
 
-      
+
 
 def doTextLoggerSetup(logroot='dnfdaemon', logfmt='%(asctime)s: %(message)s', loglvl=logging.INFO):
     ''' Setup Python logging  '''

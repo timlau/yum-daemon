@@ -4,12 +4,12 @@
 # modify it under the terms of the GNU General Public License
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -144,7 +144,7 @@ class DnfDaemon(DnfDaemonBase):
         :param sender:
         '''
         self.working_start(sender)
-        repos = [] #  TODO : Add dnf code
+        repos = self._get_repositories(filter)
         return self.working_ended(repos)
 
     @Logger
@@ -381,7 +381,7 @@ class DnfDaemon(DnfDaemonBase):
     def working_ended(self, value=None):
         self._is_working = False
         return value
-    
+
     def check_lock(self, sender):
         '''
         Check that the current sender is owning the yum lock
@@ -391,8 +391,8 @@ class DnfDaemon(DnfDaemonBase):
             return True
         else:
             raise LockedError('dnf is locked by another application')
-    
-       
+
+
 
 def main():
     parser = argparse.ArgumentParser(description='Yum D-Bus Session Daemon')

@@ -17,7 +17,7 @@ class TestAPIDevel(TestBaseReadonly):
 
     def __init__(self, methodName='runTest'):
         TestBaseReadonly.__init__(self, methodName)
-        
+
     def test_Locking(self):
         '''
         Session: Unlock and Lock
@@ -32,3 +32,19 @@ class TestAPIDevel(TestBaseReadonly):
         # get the Lock again, else tearDown will fail
         self.Lock()
 
+    def test_Repositories(self):
+        '''
+        Session: GetRepository and GetRepo
+        '''
+        print
+        print "  Getting enabled repos"
+        repos = self.GetRepositories('')
+        self.assertIsInstance(repos, list)
+        for repo_id in repos:
+            print "    Repo : %s" % repo_id
+        print "  Getting *-source repos"
+        repos = self.GetRepositories('*-source')
+        self.assertIsInstance(repos, list)
+        for repo_id in repos:
+            print "    Repo : %s" % repo_id
+            self.assertTrue(repo_id.endswith('-source'))
