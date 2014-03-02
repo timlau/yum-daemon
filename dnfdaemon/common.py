@@ -185,6 +185,10 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         :param repo_id:
         '''
         value = json.dumps(None)
+        repo = self.base.repos.get(repo_id, None) # get the repo object
+        if repo:
+            repo_conf = dict([(c,getattr(repo,c)) for c in repo.iterkeys()])
+            value = json.dumps(repo_conf)
         # TODO : Add dnf code
         return value
 

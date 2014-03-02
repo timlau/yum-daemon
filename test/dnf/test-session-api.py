@@ -97,3 +97,33 @@ class TestAPIDevel(TestBaseReadonly):
             print "  Package : %s" % pkg
             (n, e, v, r, a, repo_id) = self.to_pkg_tuple(pkg)
             self.assertTrue(n.startswith('yum'))
+            
+    def test_Repositories(self):
+        '''
+        Session: GetRepository and GetRepo
+        '''
+        print
+        print("  Getting enabled repos")
+        repos = self.GetRepositories('')
+        self.assertIsInstance(repos, list)
+        for repo_id in repos:
+            print("    Repo : %s" % repo_id)
+        print "  Getting *-source repos"
+        repos = self.GetRepositories('*-source')
+        self.assertIsInstance(repos, list)
+        for repo_id in repos:
+            print("    Repo : %s" % repo_id)
+            self.assertTrue(repo_id.endswith('-source'))
+        print("  \nGetting fedora repository")
+        repo = self.GetRepo('updates')
+        self.assertIsInstance(repo, dict)
+        print("  Repo: fedora")
+        print("  Name : %s " % repo['name'])
+        print("  Metalink :\n  %s " % repo['metalink'])
+        print("  enabled : %s " % repo['enabled'])
+        print("  gpgcheck : %s " % repo['gpgcheck'])
+        
+        # check for a repo not there
+        repo = self.GetRepo('XYZCYZ')
+        self.assertIsNone(repo)
+            
