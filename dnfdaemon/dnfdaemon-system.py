@@ -4,12 +4,12 @@
 # modify it under the terms of the GNU General Public License
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -107,17 +107,17 @@ class RPMCallback(RPMBaseCallback):
         """package is the package.  msgs is the messages that were
         output (if any)."""
         pass
-    
-    
+
+
 class DaemonBase():
-    
+
     def __init__(self, daemon):
-        self._daemon = daemon    
-        
+        self._daemon = daemon
+
     def _checkSignatures(self,pkgs,callback):
         ''' The the signatures of the downloaded packages '''
-        return 0        
-    
+        return 0
+
 
 logger = logging.getLogger('yumdaemon')
 
@@ -623,7 +623,7 @@ class DnfDaemon(DaemonBase):
         :param match_all: match all flag, if True return only packages matching all keys
         :param newest_only: return only the newest version of a package
         :param tags: seach pkgtags
-        
+
         '''
         self.working_start(sender)
         result = self._search(fields, keys, match_all, newest_only, tags)
@@ -671,7 +671,7 @@ class DnfDaemon(DaemonBase):
         :param confirmed: confirm import of key (True/False)
         :param sender:
         '''
-        
+
         self.working_start(sender)
         self._gpg_confirm[hexkeyid] = confirmed # store confirmation of GPG import
         return self.working_ended()
@@ -709,15 +709,37 @@ class DnfDaemon(DaemonBase):
         '''
         pass
 
+# Parallel Download Progress signals
+
+    @dbus.service.signal(DAEMON_INTERFACE)
+    def DownloadStart(self, num_files, num_bytes):
+        ''' Starting a new parallel download batch '''
+        pass
+
+    @dbus.service.signal(DAEMON_INTERFACE)
+    def DownloadProgress(self, name, frac, total_frac, total_files):
+        ''' Progress for a single instance in the batch '''
+        pass
+
+    @dbus.service.signal(DAEMON_INTERFACE)
+    def DownloadEnd(self, name, status, msg):
+        ''' Download of af single instace ended '''
+        pass
+
+    @dbus.service.signal(DAEMON_INTERFACE)
+    def RepoMetaDataProgress(self, name, frac):
+        ''' Repository Metadata Download progress '''
+
+
     @dbus.service.signal(DAEMON_INTERFACE)
     def TransactionEvent(self,event,data):
         '''
         DBus signal with Transaction event information, telling the current step in the processing of
         the current transaction.
-        
+
         Steps are : start-run, download, pkg-to-download, signature-check, run-test-transaction, run-transaction, fail, end-run
-        
-        :param event: current step 
+
+        :param event: current step
         '''
         #print "event: %s" % event
         pass
@@ -744,12 +766,12 @@ class DnfDaemon(DaemonBase):
     def GPGImport(self, pkg_id, userid, hexkeyid, keyurl, timestamp ):
         '''
         GPG Key Import DBus signal
-        
+
         :param pkg_id: pkg_id for the package needing the GPG Key to be verified
         :param userid: GPG key name
         :param hexkeyid: GPG key hex id
         :param keyurl: Url to the GPG Key
-        :param timestamp: 
+        :param timestamp:
         '''
         pass
 
@@ -769,9 +791,9 @@ class DnfDaemon(DaemonBase):
     def handle_gpg_import(self, gpg_info):
         '''
         Callback for handling af user confirmation of gpg key import
-        
+
         :param gpg_info: dict with info about gpg key {"po": ..,  "userid": .., "hexkeyid": .., "keyurl": ..,  "fingerprint": .., "timestamp": ..)
-        
+
         '''
         print(gpg_info)
         pkg_id = self._get_id(gpg_info['po'])
@@ -784,7 +806,7 @@ class DnfDaemon(DaemonBase):
             self._gpg_confirm[hexkeyid] = False
             self.GPGImport( pkg_id, userid, hexkeyid, keyurl, timestamp )
         return self._gpg_confirm[hexkeyid]
-    
+
 
     def _set_option(self, option, value):
         # TODO : Add dnf code
@@ -838,7 +860,7 @@ class DnfDaemon(DaemonBase):
         result = []
         # TODO : Add dnf code
         return result
-    
+
     def check_lock(self, sender):
         '''
         Check that the current sender is owning the yum lock
@@ -848,7 +870,7 @@ class DnfDaemon(DaemonBase):
             return True
         else:
             raise LockedError('dnf is locked by another application')
-    
+
 
     def check_permission(self, sender):
         ''' Check for senders permission to run root stuff'''

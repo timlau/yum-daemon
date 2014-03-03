@@ -3,12 +3,12 @@
 # modify it under the terms of the GNU General Public License
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -54,7 +54,7 @@ Usage: (Make your own subclass based on :class:`dnfdaemon.DnfDaemonClient` and o
             pass
 
         def on_GPGImport(self, pkg_id, userid, hexkeyid, keyurl,  timestamp ):
-           # do stuff here   
+           # do stuff here
            pass
 
 
@@ -300,6 +300,26 @@ class DnfDaemonBase:
         values =  (pkg_id, userid, hexkeyid, keyurl, timestamp)
         print("on_GPGImport : %s" % (repr(values)))
 
+    def on_DownloadStart(self, num_files, num_bytes):
+        ''' Starting a new parallel download batch '''
+        values =  (num_files, num_bytes)
+        print("on_DownloadStart : %s" % (repr(values)))
+
+    def on_DownloadProgress(self, name, frac, total_frac, total_files):
+        ''' Progress for a single instance in the batch '''
+        values =  (name, frac, total_frac, total_files)
+        print("on_DownloadProgress : %s" % (repr(values)))
+
+    def on_DownloadEnd(self, name, status, msg):
+        ''' Download of af single instace ended '''
+        values =  (name, status, msg)
+        print("on_DownloadEnd : %s" % (repr(values)))
+
+    def on_RepoMetaDataProgress(self, name, frac):
+        ''' Repository Metadata Download progress '''
+        values =  (name, frac)
+        print("on_RepoMetaDataProgress : %s" % (repr(values)))
+
 ###############################################################################
 # API Methods
 ###############################################################################
@@ -327,7 +347,7 @@ class DnfDaemonBase:
     def SetWatchdogState(self,state):
         '''
         Set the Watchdog state
-        
+
         :param state: True = Watchdog active, False = Watchdog disabled
         :type state: boolean (b)
         '''
@@ -375,7 +395,7 @@ class DnfDaemonBase:
     def SetEnabledRepos(self, repo_ids):
         '''
         Enabled a list of repositories, disabled all other repos
-        
+
         :param repo_ids: list of repo ids to enable
         :param sender:
         '''
@@ -385,7 +405,7 @@ class DnfDaemonBase:
     def GetConfig(self, setting):
         '''
         Read a config setting from yum.conf
-        
+
         :param setting: setting to read
         :type setting: string
         '''
@@ -450,10 +470,10 @@ class DnfDaemonBase:
 
     def GetGroupPackages(self, grp_id, grp_flt):
         '''
-        Get packages in a group 
-        
+        Get packages in a group
+
         :param grp_id: the group id to get packages for
-        :param grp_flt: the filter ('all' = all packages ,'default' = packages to be installed, before the group is installed) 
+        :param grp_flt: the filter ('all' = all packages ,'default' = packages to be installed, before the group is installed)
         '''
         return self._run_dbus_async('GetGroupPackages', '(ss)', grp_id, grp_flt)
 
@@ -478,7 +498,7 @@ class DnfDaemonBase:
         return self._run_dbus_async('Search','(asasbbb)',fields, keys, match_all, newest_only, tags)
 
     def Exit(self):
-        ''' 
+        '''
         End the daemon
         '''
         self._run_dbus_async('Exit')
@@ -537,6 +557,14 @@ class DnfDaemonClient(DnfDaemonBase):
             self.on_RPMProgress(*args)
         elif signal == "GPGImport":
             self.on_GPGImport(*args)
+        elif signal == "DownloadStart":
+            self.on_DownloadStart(*args)
+        elif signal == "DownloadEnd":
+            self.on_DownloadEnd(*args)
+        elif signal == "DownloadProgress":
+            self.on_DownloadProgress(*args)
+        elif signal == "RepoMetaDataProgress":
+            self.on_RepoMetaDataProgress(*args)
         else:
             print("Unhandled Signal : "+signal," Param: ",args)
 
@@ -547,7 +575,7 @@ class DnfDaemonClient(DnfDaemonBase):
     def SetConfig(self, setting, value):
         '''
         set a yum config setting
-        
+
         :param setting: yum conf setting to set
         :param value: value to set
         '''
@@ -692,7 +720,7 @@ class DnfDaemonClient(DnfDaemonBase):
     def ConfirmGPGImport(self, hexkeyid, confirmed):
         '''
         Confirm import of at GPG Key by yum
-        
+
         :param hexkeyid: hex keyid for GPG key
         :param confirmed: confirm import of key (True/False)
         '''

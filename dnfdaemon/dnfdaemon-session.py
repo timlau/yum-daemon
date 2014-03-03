@@ -36,7 +36,7 @@ import sys
 import os
 
 from common import DnfDaemonBase, doTextLoggerSetup, Logger, DownloadCallback, FAKE_ATTR, NONE, \
-                   MultiFileProgressMeter, RepoCallback, TransactionDisplay
+                   TransactionDisplay
 
 version = 902 #  (00.09.02) must be integer
 DAEMON_ORG = 'org.baseurl.DnfSession'
@@ -369,6 +369,28 @@ class DnfDaemon(DnfDaemonBase):
         :param ftime : formated string containing remaining or elapsed time
         '''
         pass
+
+# Parallel Download Progress signals
+
+    @dbus.service.signal(DAEMON_INTERFACE)
+    def DownloadStart(self, num_files, num_bytes):
+        ''' Starting a new parallel download batch '''
+        pass
+
+    @dbus.service.signal(DAEMON_INTERFACE)
+    def DownloadProgress(self, name, frac, total_frac, total_files):
+        ''' Progress for a single instance in the batch '''
+        pass
+
+    @dbus.service.signal(DAEMON_INTERFACE)
+    def DownloadEnd(self, name, status, msg):
+        ''' Download of af single instace ended '''
+        pass
+
+    @dbus.service.signal(DAEMON_INTERFACE)
+    def RepoMetaDataProgress(self, name, frac):
+        ''' Repository Metadata Download progress '''
+
 
 #===============================================================================
 # Helper methods

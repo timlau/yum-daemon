@@ -38,12 +38,31 @@ import dnf.yum
 import dnf.const
 import dnf.conf
 import dnf.subject
+from dnf.callback import DownloadProgress
 
 FAKE_ATTR = ['downgrades','action','pkgtags']
 NONE = json.dumps(None)
 
 
 #------------------------------------------------------------------------------ Callback handlers
+
+logger = logging.getLogger('dnfdaemon.service')
+
+def Logger(func):
+    """
+    This decorator catch yum exceptions and send fatal signal to frontend
+    """
+    def newFunc(*args, **kwargs):
+        logger.debug("%s started args: %s " % (func.__name__, repr(args[1:])))
+        rc = func(*args, **kwargs)
+        logger.debug("%s ended" % func.__name__)
+        return rc
+
+    newFunc.__name__ = func.__name__
+    newFunc.__doc__ = func.__doc__
+    newFunc.__dict__.update(func.__dict__)
+    return newFunc
+
 class DownloadCallback:
     '''
     Yum Download callback handler class
@@ -61,30 +80,35 @@ class DownloadCallback:
         :param ftime : formated string containing remaining or elapsed time
         '''
         # send a DBus signal with progress info
-        self.base.UpdateProgress(name,frac,fread,ftime)
+        self.UpdateProgress(name,frac,fread,ftime)
+
+# Parallel Download Progress
+    @Logger
+    def downloadStart(self, num_files, num_bytes):
+        ''' Starting a new parallel download batch '''
+        self.DownloadStart(num_files, num_bytes) # send a signal
+
+    @Logger
+    def downloadProgress(self, name, frac, total_frac, total_files):
+        ''' Progress for a single instance in the batch '''
+        self.DownloadProgress(name, frac, total_frac, total_files) # send a signal
+
+    @Logger
+    def downloadEnd(self, name, status, msg):
+        ''' Download of af single instace ended '''
+        self.DownloadEnd(name, status, msg) # send a signal
+
+    @Logger
+    def repoMetaDataProgress(self, name, frac):
+        ''' Repository Metadata Download progress '''
+        print("repoMetaDataProgress", name, frac)
+        self.RepoMetaDataProgress( name, frac)
 
 
-logger = logging.getLogger('yumdaemon.service')
-
-def Logger(func):
-    """
-    This decorator catch yum exceptions and send fatal signal to frontend
-    """
-    def newFunc(*args, **kwargs):
-        logger.debug("%s started args: %s " % (func.__name__, repr(args[1:])))
-        rc = func(*args, **kwargs)
-        logger.debug("%s ended" % func.__name__)
-        return rc
-
-    newFunc.__name__ = func.__name__
-    newFunc.__doc__ = func.__doc__
-    newFunc.__dict__.update(func.__dict__)
-    return newFunc
 
 class DnfDaemonBase(dbus.service.Object, DownloadCallback):
 
     def __init__(self, mainloop):
-        DownloadCallback.__init__(self)
         self.logger = logging.getLogger('dnfdaemon.base')
         self.mainloop = mainloop # use to terminate mainloop
         self.authorized_sender = set()
@@ -390,7 +414,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         '''
         # TODO : Add dnf code
         if not self._base:
-            self._base = DnfBase()
+            self._base = DnfBase(self)
         return self._base
 
 
@@ -532,13 +556,14 @@ class Packages:
 
 class DnfBase(dnf.Base):
 
-    def __init__(self):
+    def __init__(self, base):
         dnf.Base.__init__(self)
+        self.base = base
+        self.md_progress = MDProgress(self.base)
         self.setup_cache()
         self.read_all_repos()
-        self.progress = MultiFileProgressMeter(fo=sys.stdout)
-        self.bar = RepoCallback(fo=sys.stdout)
-        self.repos.all.set_progress_bar(self.bar)
+        self.progress = Progress(self.base)
+        self.repos.all.set_progress_bar( self.md_progress)
         self.fill_sack()
         self._packages = Packages(self)
 
@@ -559,290 +584,108 @@ class DnfBase(dnf.Base):
         self._system_cachedir = cli_cache.system_cachedir
         print("cachedir: %s" % conf.cachedir)
 
-    def do_filter(self):
-        print("=============== filter name = yumex (available) =====================")
-        q = self.sack.query()
-        a = q.available()
-        a = a.filter(name='yumex')
-        for pkg in a: # a only gets evaluated here
-            print(pkg)
-
-    def do_query(self):
-        print("=============== packages matching yum* =====================")
-        subj = dnf.subject.Subject("yum*")
-        qa = subj.get_best_query(self.sack, with_provides=False)
-        for po in qa:
-            print(po)
-
-    def do_install(self):
-        print("=============== install btanks =====================")
-        if os.getuid() != 0:
-            print("You need to run test.py install as root")
-            return
-        rc = self.install('btanks')
-        print("# of packages added : %d" % rc)
-        print(self._goal)
+    def apply_transaction(self):
+        ''' apply the current transaction to the system'''
         rc = self.resolve()
+        if rc:
+            to_dnl = self.get_packages_to_download()
+            # Downloading Packages
+            self.download_packages(to_dnl, self.progress)
+            rc, msg = self.do_transaction()
+            if rc <> 0:
+                return (False, "transaction-error", msg)
+            else:
+                return (True, "transaction-ok","")
+        else:
+            return (False, "depsolve-failed", "")
+
+    def get_packages_to_download(self):
+        ''' Get a list of packages to download from the current transaction'''
         to_dnl = []
         for tsi in self.transaction:
-            print("   "+tsi.active_history_state+" - "+ str(tsi.active) )
             if tsi.installed:
                 to_dnl.append(tsi.installed)
-        print(to_dnl)
-        print("Downloading Packages")
-        print(self.download_packages(to_dnl, self.progress))
-        print("Running Transaction")
-        disp = TransactionDisplay()
-        print(self.do_transaction(display=disp))
+        return to_dnl
 
 
+class MDProgress(DownloadProgress):
 
-
-def _term_width(fd=1):
-    return 80
-
-
-def format_number(number, SI=0, space=' '):
-    """Return a human-readable metric-like string representation
-    of a number.
-
-    :param number: the number to be converted to a human-readable form
-    :param SI: If is 0, this function will use the convention
-       that 1 kilobyte = 1024 bytes, otherwise, the convention
-       that 1 kilobyte = 1000 bytes will be used
-    :param space: string that will be placed between the number
-       and the SI prefix
-    :return: a human-readable metric-like string representation of
-       *number*
-    """
-
-    # copied from from urlgrabber.progress
-    symbols = [ ' ', # (none)
-                'k', # kilo
-                'M', # mega
-                'G', # giga
-                'T', # tera
-                'P', # peta
-                'E', # exa
-                'Z', # zetta
-                'Y'] # yotta
-
-    if SI: step = 1000.0
-    else: step = 1024.0
-
-    thresh = 999
-    depth = 0
-    max_depth = len(symbols) - 1
-
-    if number is None:
-        number = 0.0
-
-    # we want numbers between 0 and thresh, but don't exceed the length
-    # of our list.  In that event, the formatting will be screwed up,
-    # but it'll still show the right number.
-    while number > thresh and depth < max_depth:
-        depth  = depth + 1
-        number = number / step
-
-    if isinstance(number, int) or isinstance(number, long):
-        fmt = '%i%s%s'
-    elif number < 9.95:
-        # must use 9.95 for proper sizing.  For example, 9.99 will be
-        # rounded to 10.0 with the .1f format string (which is too long)
-        fmt = '%.1f%s%s'
-    else:
-        fmt = '%.0f%s%s'
-
-    return(fmt % (float(number or 0), space, symbols[depth]))
-
-def format_time(seconds, use_hours=0):
-    """Return a human-readable string representation of a number
-    of seconds.  The string will show seconds, minutes, and
-    optionally hours.
-
-    :param seconds: the number of seconds to convert to a
-       human-readable form
-    :param use_hours: If use_hours is 0, the representation will
-       be in minutes and seconds. Otherwise, it will be in hours,
-       minutes, and seconds
-    :return: a human-readable string representation of *seconds*
-    """
-
-    # copied from from urlgrabber.progress
-    if seconds is None or seconds < 0:
-        if use_hours: return '--:--:--'
-        else:         return '--:--'
-    elif seconds == float('inf'):
-        return 'Infinite'
-    else:
-        seconds = int(seconds)
-        minutes = seconds // 60
-        seconds = seconds % 60
-        if use_hours:
-            hours = minutes // 60
-            minutes = minutes % 60
-            return '%02i:%02i:%02i' % (hours, minutes, seconds)
-        else:
-            return '%02i:%02i' % (minutes, seconds)
-
-
-class MultiFileProgressMeter(object):
-    """Multi-file download progress meter"""
-
-    def __init__(self, fo=sys.stderr, update_period=1.0, tick_period=2.0, rate_average=5.0):
-        """Creates a new progress meter instance
-
-        update_period -- how often to update the progress bar
-        tick_period -- how fast to cycle through concurrent downloads
-        rate_average -- time constant for average speed calculation
-        """
-        self.fo = fo
-        self.update_period = update_period
-        self.tick_period = tick_period
-        self.rate_average = rate_average
+    def __init__(self, base):
+        super(MDProgress, self).__init__()
+        self._last = None
+        self.base = base
 
     def start(self, total_files, total_size):
-        """Initialize the progress meter
+        pass
 
-        This must be called first to initialize the progress object.
-        We should know the number of files and total size in advance.
+    def end(self,payload, status, msg):
+        pass
 
-        total_files -- the number of files to download
-        total_size -- the total size of all files
-        """
+    def progress(self, payload, done):
+        print("REPO", name, frac)
+        name  = str(payload)
+        cur_total_bytes = payload.download_size()
+        if cur_total_bytes > 0.0:
+            frac = done/float(cur_total_bytes)
+        else:
+            frac = 0.0
+        self.base.repoMetaDataProgress(name, frac)
+
+
+class Progress(DownloadProgress):
+
+    def __init__(self, base):
+        super(Progress, self).__init__()
+        self.base = base
+        self.total_files = 0
+        self.total_size = 0.0
+        self.download_files = 0
+        self.download_size = 0.0
+        self.dnl = {}
+        self.last_frac = 0
+
+    def start(self, total_files, total_size):
         self.total_files = total_files
         self.total_size = total_size
+        self.download_files = 0
+        self.download_size = 0.0
+        self.base.downloadStart(total_files, total_size)
 
-        # download state
-        self.done_files = 0
-        self.done_size = 0
-        self.state = {}
-        self.active = []
 
-        # rate averaging
-        self.last_time = 0
-        self.last_size = 0
-        self.rate = None
+    def end(self,payload, status, msg):
+        if not status: # payload download complete
+            self.download_files += 1
+        self.base.downloadEnd(str(payload), status, msg)
 
-    def progress(self, text, total, done):
-        """Update the progress display
-
-        text -- the file id
-        total -- file total size (mostly ignored)
-        done -- how much of this file is already downloaded
-        """
-        now = time()
-        total = int(total)
-        done = int(done)
-
-        # update done_size
-        if text not in self.state:
-            self.state[text] = now, 0
-            self.active.append(text)
-            print("Starting to download : %s " % text)
-        start, old = self.state[text]
-        self.state[text] = start, done
-        self.done_size += done - old
-
-        # update screen if enough time has elapsed
-        if now - self.last_time > self.update_period:
-            if total > self.total_size:
-                self.total_size = total
-            #print("dnl :",text, total, done)
-            #self._update(now)
-
-    def _update(self, now):
-        if self.last_time:
-            delta_time = now - self.last_time
-            delta_size = self.done_size - self.last_size
-            if delta_time > 0 and delta_size > 0:
-                # update the average rate
-                rate = delta_size / delta_time
-                if self.rate is not None:
-                    weight = min(delta_time/self.rate_average, 1)
-                    rate = rate*weight + self.rate*(1 - weight)
-                self.rate = rate
-        self.last_time = now
-        self.last_size = self.done_size
-
-        # pick one of the active downloads
-        text = self.active[int(now/self.tick_period) % len(self.active)]
-        if self.total_files > 1:
-            n = '%d' % (self.done_files + 1)
-            if len(self.active) > 1:
-                n += '-%d' % (self.done_files + len(self.active))
-            text = '(%s/%d): %s' % (n, self.total_files, text)
-
-        # average rate, total done size, estimated remaining time
-        msg = ' %5sB/s | %5sB %9s ETA\r' % (
-            format_number(self.rate) if self.rate else '---  ',
-            format_number(self.done_size),
-            format_time((self.total_size - self.done_size) / self.rate) if self.rate else '--:--')
-        left = _term_width() - len(msg)
-        bl = (left - 7)//2
-        if bl > 8:
-            # use part of the remaining space for progress bar
-            pct = self.done_size*100 // self.total_size
-            n, p = divmod(self.done_size*bl*2 // self.total_size, 2)
-            bar = '='*n + '-'*p
-            msg = '%3d%% [%-*s]%s' % (pct, bl, bar, msg)
-            left -= bl + 7
-        self.fo.write('%-*.*s%s' % (left, left, text, msg))
-        self.fo.flush()
-
-    def end(self, text, size, err, status='FAILED'):
-        """Display a message that file has finished downloading
-
-        text -- the file id
-        size -- the file size
-        err -- None if ok, error message otherwise
-        status -- Download status (relevant when err != None)
-        """
-        # update state
-        start = now = time()
-        if text in self.state:
-            start, done = self.state.pop(text)
-            self.active.remove(text)
-            size -= done
-        self.done_files += 1
-        self.done_size += size
-
-        if err:
-            # the error message, no trimming
-            msg = '[%s] %s: ' % (status, text)
-            left = _term_width() - len(msg) - 1
-            msg = '%s%-*s\n' % (msg, left, err)
+    def progress(self, payload, done):
+        pload = str(payload)
+        cur_total_bytes = payload.download_size()
+        if not pload in self.dnl:
+            self.dnl[pload] = 0.0
         else:
-            if self.total_files > 1:
-                text = '(%d/%d): %s' % (self.done_files, self.total_files, text)
+            self.dnl[pload] = done
+            total_frac = self.get_total()
+            if total_frac > self.last_frac:
+                self.last_frac = total_frac
+                if cur_total_bytes > 0.0:
+                    frac = done / cur_total_bytes
+                else:
+                    frac = 0.0
+                self.base.downloadProgress(pload, frac, total_frac, self.download_files)
 
-            # average rate, file size, download time
-            tm = max(now - start, 0.001)
-            msg = ' %5sB/s | %5sB %9s    \n' % (
-                format_number(float(done) / tm),
-                format_number(done),
-                format_time(tm))
-            left = _term_width() - len(msg)
-            msg = '%-*.*s%s' % (left, left, text, msg)
-        self.fo.write(msg)
-        self.fo.flush()
+    def get_total(self):
+        """ Get the total downloaded percentage"""
+        tot = 0.0
+        for value in self.dnl.values():
+            tot += value
+        frac = int((tot / float(self.total_size)))
+        return frac
 
-        # now there's a blank line. fill it if possible.
-        if self.active:
-            self._update(now)
+    def update(self):
+        """ Output the current progress"""
 
-class RepoCallback(MultiFileProgressMeter):
-    """Use it as single-file progress, too
-    """
-    def begin(self, text):
-        self.text = text
-        MultiFileProgressMeter.start(self, 1, 1)
+        sys.stdout.write("Progress : %-3d %% (%d/%d)\r" % (self.last_pct,self.download_files, self.total_files))
 
-    def librepo_cb(self, data, total, done):
-        MultiFileProgressMeter.progress(self, self.text, total, done)
-
-    def end(self):
-        MultiFileProgressMeter.end(self, self.text, 0, None)
 
 class TransactionDisplay(object):
 
@@ -900,7 +743,7 @@ def doTextLoggerSetup(logroot='dnfdaemon', logfmt='%(asctime)s: %(message)s', lo
     logger = logging.getLogger(logroot)
     logger.setLevel(loglvl)
     formatter = logging.Formatter(logfmt, "%H:%M:%S")
-    handler = logging.StreamHandler()
+    handler = logging.StreamHandler(stream=sys.stdout)
     handler.setFormatter(formatter)
     handler.propagate = False
     logger.addHandler(handler)
