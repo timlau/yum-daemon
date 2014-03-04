@@ -228,6 +228,18 @@ start-system-dnf:
 kill-dnf:
 	@-sudo killall -9 -r "dnfdaemon-system\.py" &> /dev/null 
 	@-sudo killall -9 -r "dnfdaemon-session\.py" &> /dev/null 
+	
+monitor-dnf-session:
+	dbus-monitor "type='signal',sender='org.baseurl.DnfSession',interface='org.baseurl.DnfSession'"	
+
+monitor-dnf-system:
+	dbus-monitor "type='signal',sender='org.baseurl.DnfSystem',interface='org.baseurl.DnfSystem'"	
+
+monitor-yum-session:
+	dbus-monitor "type='signal',sender='org.baseurl.YumSession',interface='org.baseurl.YumSession'"	
+
+monitor-yum-system:
+	dbus-monitor "type='signal',sender='org.baseurl.YumSystem',interface='org.baseurl.YumSystem'"	
 
 FORCE:
 	

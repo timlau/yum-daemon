@@ -38,7 +38,7 @@ import dnf.yum
 import dnf.const
 import dnf.conf
 import dnf.subject
-from dnf.callback import DownloadProgress
+from dnf.callback import DownloadProgress, STATUS_OK
 
 FAKE_ATTR = ['downgrades','action','pkgtags']
 NONE = json.dumps(None)
@@ -83,25 +83,20 @@ class DownloadCallback:
         self.UpdateProgress(name,frac,fread,ftime)
 
 # Parallel Download Progress
-    @Logger
     def downloadStart(self, num_files, num_bytes):
         ''' Starting a new parallel download batch '''
         self.DownloadStart(num_files, num_bytes) # send a signal
 
-    @Logger
     def downloadProgress(self, name, frac, total_frac, total_files):
         ''' Progress for a single instance in the batch '''
         self.DownloadProgress(name, frac, total_frac, total_files) # send a signal
 
-    @Logger
     def downloadEnd(self, name, status, msg):
         ''' Download of af single instace ended '''
         self.DownloadEnd(name, status, msg) # send a signal
 
-    @Logger
     def repoMetaDataProgress(self, name, frac):
         ''' Repository Metadata Download progress '''
-        print("repoMetaDataProgress", name, frac)
         self.RepoMetaDataProgress( name, frac)
 
 
@@ -556,13 +551,13 @@ class Packages:
 
 class DnfBase(dnf.Base):
 
-    def __init__(self, base):
+    def __init__(self, parent):
         dnf.Base.__init__(self)
-        self.base = base
-        self.md_progress = MDProgress(self.base)
+        self.parent = parent
+        self.md_progress = MDProgress(parent)
         self.setup_cache()
         self.read_all_repos()
-        self.progress = Progress(self.base)
+        self.progress = Progress(parent)
         self.repos.all.set_progress_bar( self.md_progress)
         self.fill_sack()
         self._packages = Packages(self)
@@ -610,33 +605,36 @@ class DnfBase(dnf.Base):
 
 class MDProgress(DownloadProgress):
 
-    def __init__(self, base):
+    def __init__(self, parent):
         super(MDProgress, self).__init__()
-        self._last = None
-        self.base = base
+        self._last = -1.0
+        self.parent = parent
 
     def start(self, total_files, total_size):
-        pass
+        self._last = -1.0
 
     def end(self,payload, status, msg):
-        pass
+        name  = str(payload)
+        if status == STATUS_OK:
+            self.parent.repoMetaDataProgress(name, 1.0)
 
     def progress(self, payload, done):
-        print("REPO", name, frac)
         name  = str(payload)
-        cur_total_bytes = payload.download_size()
-        if cur_total_bytes > 0.0:
+        cur_total_bytes = payload.download_size
+        if cur_total_bytes:
             frac = done/float(cur_total_bytes)
         else:
             frac = 0.0
-        self.base.repoMetaDataProgress(name, frac)
+        if frac > self._last+0.01:
+            self._last = frac
+            self.parent.repoMetaDataProgress(name, frac)
 
 
 class Progress(DownloadProgress):
 
-    def __init__(self, base):
+    def __init__(self, parent):
         super(Progress, self).__init__()
-        self.base = base
+        self.parent = parent
         self.total_files = 0
         self.total_size = 0.0
         self.download_files = 0
@@ -649,17 +647,17 @@ class Progress(DownloadProgress):
         self.total_size = total_size
         self.download_files = 0
         self.download_size = 0.0
-        self.base.downloadStart(total_files, total_size)
+        self.parent.downloadStart(total_files, total_size)
 
 
     def end(self,payload, status, msg):
         if not status: # payload download complete
             self.download_files += 1
-        self.base.downloadEnd(str(payload), status, msg)
+        self.parent.downloadEnd(str(payload), status, msg)
 
     def progress(self, payload, done):
         pload = str(payload)
-        cur_total_bytes = payload.download_size()
+        cur_total_bytes = payload.download_size
         if not pload in self.dnl:
             self.dnl[pload] = 0.0
         else:
@@ -667,11 +665,11 @@ class Progress(DownloadProgress):
             total_frac = self.get_total()
             if total_frac > self.last_frac:
                 self.last_frac = total_frac
-                if cur_total_bytes > 0.0:
+                if cur_total_bytes:
                     frac = done / cur_total_bytes
                 else:
                     frac = 0.0
-                self.base.downloadProgress(pload, frac, total_frac, self.download_files)
+                self.parent.downloadProgress(pload, frac, total_frac, self.download_files)
 
     def get_total(self):
         """ Get the total downloaded percentage"""
