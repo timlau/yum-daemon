@@ -5,6 +5,7 @@ from base import TestBase, TestBaseReadonly
 from dnfdaemon import LockedError
 from subprocess import check_output, call
 from nose.exc import SkipTest
+import time
 
 """
 This module is used for testing new unit tests
@@ -157,3 +158,26 @@ class TestAPIDevel(TestBaseReadonly):
         self.assertIsInstance(pkgs, list)
         print "found %i packages" % len(pkgs)
         self.assertGreater(len(pkgs), 0) # we should find some matches
+
+    def test_PackageActions(self):
+        """
+        Session: GetPackageWithAttributes & GetAttribute
+        """
+        print()
+        flt_dict = {'installed':['remove'],'updates':['update'],'obsoletes':['obsolete'], 'available':['install','remove','update','obsolete']}
+        for flt in flt_dict.keys():
+            now = time.time()
+            result = self.GetPackageWithAttributes(flt, ['summary','size'])
+            print("%s, # = %s, time = %.3f" % (flt, len(result),time.time()-now))
+            self.assertIsInstance(result, list) # result is a list
+            i = 0
+            for elem in result:
+                self.assertIsInstance(elem, list) # each elem is a list
+                self.assertEqual(len(elem),3) # 3 elements
+                i += 1
+                if i > 10: break # only test the first 10 elements
+                now = time.time()
+                action = self.GetAttribute(elem[0], 'action')
+                name =  elem[0].split(",")[0]
+                print("    %s = %s , time = %.3f" % (name, action, time.time()-now))
+                self.assertIn(action, flt_dict[flt])

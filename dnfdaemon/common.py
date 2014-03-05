@@ -115,6 +115,14 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         self._watchdog_disabled = False
         self._timeout_idle = 20         # time to daemon is closed when unlocked
         self._timeout_locked = 600      # time to daemon is closed when locked and not working
+        self._obsoletes_list = None     # Cache for obsoletes
+
+
+    def _get_obsoletes(self):
+        ''' Cache a list of obsoletes'''
+        if not self._obsoletes_list:
+            self._obsoletes_list = list(self.base.packages.obsoletes)
+        return self._obsoletes_list
 
     @property
     def base(self):
@@ -172,7 +180,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         and the group is installed when all mandatory & default packages is installed.
         '''
         all_groups = []
-        # TODO : Add dnf code
+        # TODO : Add dnf code ( _get_groups )
         all_groups.sort()
         return json.dumps(all_groups)
 
@@ -184,8 +192,11 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         if filter == '' or filter == 'enabled':
             repos = [repo.id for repo in self.base.repos.iter_enabled()]
         else:
-            # .get_multiple(filter) is not public api
+            # get_multiple(filter) is not public api (0.4.16)
             repos = [repo.id for repo in  self.base.repos.get_multiple(filter)]
+            # FIXME: fix code when 0.4.17 is released.
+            # dnf 0.4.17 get_matching is public api
+            #repos = [repo.id for repo in  self.base.repos.get_matching(filter)]
         return repos
 
 
@@ -196,7 +207,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         :param setting: name of setting (debuglevel etc..)
         '''
         value = json.dumps(None)
-        # TODO : Add dnf code
+        # TODO : Add dnf code ( _get_config )
         return value
 
     def _get_repo(self, repo_id ):
@@ -210,7 +221,6 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         if repo:
             repo_conf = dict([(c,getattr(repo,c)) for c in repo.iterkeys()])
             value = json.dumps(repo_conf)
-        # TODO : Add dnf code
         return value
 
     def _get_packages(self, pkg_filter):
@@ -231,8 +241,8 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         :param pkg_filter: pkg pkg_filter string ('installed','updates' etc)
         '''
         value = []
-        if pkg_filter in ['installed','available','updates']:
-            pkgs = self._get_packages(pkg_filter)
+        if pkg_filter in ['installed','available','updates','obsoletes','recent','extras']:
+            pkgs = getattr(self.base.packages,pkg_filter)
             value = [self._get_po_list(po,fields) for po in pkgs]
         return value
 
@@ -263,7 +273,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         '''
         po = self._get_po(id)
         if po:
-            # TODO : Add dnf code
+            # TODO : Add dnf code ( _get_updateInfo )
             value = json.dumps(None)
         else:
             value = json.dumps(None)
@@ -276,7 +286,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         Get packages for a given grp_id and group filter
         '''
         pkgs = []
-        # TODO : Add dnf code
+        # TODO : Add dnf code ( _get_group_pkgs )
         pkg_ids = self._to_package_id_list(pkgs)
         return pkg_ids
 
@@ -284,13 +294,16 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
 # Helper methods
 #===============================================================================
 
-    def _get_po_list(self, pkg, fields):
-
-        id = self._get_id(pkg)
-        po_list = [id]
-        for field in fields:
-            if hasattr(pkg,field):
-                po_list.append(getattr(pkg,field))
+    def _get_po_list(self, po, attrs):
+        po_list = [self._get_id(po)]
+        for attr in attrs:
+            if attr in FAKE_ATTR: # is this a fake attr:
+                value = self._get_fake_attributes(po, attr)
+            elif hasattr(po, attr):
+                value = getattr(po,attr)
+            else:
+                value = None
+            po_list.append(value)
         return po_list
 
     def _get_id_time_list(self, hist_trans):
@@ -319,35 +332,15 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
 
     def _get_downgrades(self,pkg):
         pkg_ids = []
-        # TODO : Add dnf code
+        # TODO : Add dnf code ( _get_downgrades )
         return pkg_ids
 
     def _get_pkgtags(self, po):
         '''
         Get pkgtags from a given po
         '''
-        # TODO : Add dnf code
+        # TODO : Add dnf code ( _get_pkgtags )
         return []
-
-
-
-    def _is_installed(self, po):
-        '''
-        Check if a package is installed
-        :param po: package to check for
-        '''
-        # TODO : Add dnf code
-        return False
-
-    def _is_valid_downgrade(self, po, down_po):
-        '''
-        Check if down_po is a valid downgrade to po
-        @param po:
-        @param down_po:
-        '''
-        valid = False
-        # TODO : Add dnf code
-        return valid
 
     def _to_package_id_list(self, pkgs):
         '''
@@ -400,10 +393,27 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         :return: action (remove, install, update, downgrade, obsolete)
         :rtype: string
         '''
-        action = ''
-        # TODO : Add dnf code
+        action = 'install'
+        n, a, e, v, r = po.pkgtup
+        q = self.base.sack.query()
+        if po.reponame.startswith('@'):
+            action = 'remove'
+        else:
+            upd = q.upgrades().filter(name=n, version=v, release=r, arch=a)
+            if upd:
+                action = 'updates'
+            else:
+                obsoletes = self._get_obsoletes()
+                if po in obsoletes:
+                    action = 'obsolete'
+                else:
+                    # get installed packages with same name
+                    ipkgs = q.installed().filter(name=po.name).run()
+                    if ipkgs:
+                        ipkg = ipkgs[0]
+                        if po.evr_gt(ipkg):
+                            action = 'downgrade'
         return action
-
 
     def _get_base(self):
         '''
@@ -561,6 +571,8 @@ class DnfBase(dnf.Base):
         self.read_all_repos()
         self.progress = Progress(parent)
         self.repos.all.set_progress_bar( self.md_progress)
+        # FIXME: all() is a method in 0.4.17 and is public API now
+        #self.repos.all().set_progress_bar( self.md_progress)
         self.fill_sack()
         self._packages = Packages(self)
 
