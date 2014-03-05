@@ -16,11 +16,10 @@
 # (C) 2013 - Tim Lauridsen <timlau@fedoraproject.org>
 
 """
-Common stuff for the yumdaemon dbus services
+Common stuff for the dnfdaemon dbus services
 """
 from __future__ import print_function
 from __future__ import absolute_import
-import os
 import dbus
 import dbus.service
 import dbus.glib
@@ -31,7 +30,6 @@ from datetime import datetime
 
 import sys
 from time import time
-from dnf.pycomp import long
 
 import dnf
 import dnf.yum
@@ -39,6 +37,8 @@ import dnf.const
 import dnf.conf
 import dnf.subject
 from dnf.callback import DownloadProgress, STATUS_OK
+import dnf.match_counter
+
 
 FAKE_ATTR = ['downgrades','action','pkgtags']
 NONE = json.dumps(None)
@@ -142,9 +142,11 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         :param newest_only: return only the newest version of a package
         :param tags: seach pkgtags
         '''
-        result = []
-        # TODO : Add dnf code
-        return result
+        # FIXME: Add support for search in pkgtags
+        showdups = not newest_only
+        result = self.base.search(fields, keys, match_all, showdups)
+        pkg_ids = self._to_package_id_list(result)
+        return pkg_ids
 
 
 
@@ -570,7 +572,7 @@ class DnfBase(dnf.Base):
         # perform the CLI-specific cachedir tricks
         conf = self.conf
         #conf.read() # Read the conf file from disk
-        conf.releasever = '20'
+        conf.releasever = '20' # FIXME: dont hardcode fedora release
         # conf.cachedir = CACHE_DIR # hardcoded cache dir
         # This is not public API, but we want the same cache as dnf cli
         suffix = dnf.yum.parser.varReplace(dnf.const.CACHEDIR_SUFFIX, conf.yumvar)
@@ -601,6 +603,33 @@ class DnfBase(dnf.Base):
             if tsi.installed:
                 to_dnl.append(tsi.installed)
         return to_dnl
+
+    def search(self, fields, values, match_all=True, showdups=False):
+        '''
+        search in a list of package fields for a list of keys
+        :param fields: package attributes to search in
+        :param values: the values to match
+        :param match_all: match all values (default)
+        :param showdups: show duplicate packages or latest (default)
+        :return: a list of package objects
+        '''
+        num_val = len(values)
+        counter = dnf.match_counter.MatchCounter() # not public api
+        for arg in values:
+            for field in fields:
+                self.search_counted(counter, field, arg) # not public api
+        if match_all and num_val > 1:
+            res = []
+            for pkg in counter:
+                if len(counter.matched_needles(pkg)) == num_val:
+                    res.append(pkg)
+        else:
+            res = counter.keys()
+        if not showdups:
+            limit = self.sack.query().filter(pkg=res).latest()
+            return limit
+        else:
+            return res
 
 
 class MDProgress(DownloadProgress):

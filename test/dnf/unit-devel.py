@@ -32,4 +32,3 @@ class TestAPIDevel(TestBaseReadonly):
         # get the Lock again, else tearDown will fail
         self.Lock()
 
-            
