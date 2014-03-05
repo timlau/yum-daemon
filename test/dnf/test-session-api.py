@@ -181,3 +181,30 @@ class TestAPIDevel(TestBaseReadonly):
                 name =  elem[0].split(",")[0]
                 print("    %s = %s , time = %.3f" % (name, action, time.time()-now))
                 self.assertIn(action, flt_dict[flt])
+
+
+    def test_Groups(self):
+        """
+        Session: Groups (GetGroups & GetGroupPackages)
+        """
+
+        result = self.GetGroups()
+        for cat, grps in result:
+            # cat: [category_id, category_name, category_desc]
+            self.assertIsInstance(cat, list) # cat is a list
+            self.assertIsInstance(grps, list) # grps is a list
+            self.assertEqual(len(cat),3) # cat has 3 elements
+            print " --> %s" % cat[0]
+            for grp in grps:
+                # [group_id, group_name, group_desc, group_is_installed]
+                self.assertIsInstance(grp, list) # grp is a list
+                self.assertEqual(len(grp),4) # grp has 4 elements
+                print "   tag: %s name: %s \n       desc: %s \n       installed : %s " % tuple(grp)
+                # Test GetGroupPackages
+                grp_id = grp[0]
+                pkgs = self.GetGroupPackages(grp_id,'all')
+                self.assertIsInstance(pkgs, list) # cat is a list
+                print "       # of Packages in group         : ",len(pkgs)
+                pkgs = self.GetGroupPackages(grp_id,'default')
+                self.assertIsInstance(pkgs, list) # cat is a list
+                print "       # of Default Packages in group : ",len(pkgs)

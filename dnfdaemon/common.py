@@ -160,8 +160,19 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
 
     def _get_packages_by_name(self, name, newest_only):
         '''
-        Get a list of packages from a name pattern
+        Get a list of pkg ids from a name pattern
         (Helper for GetPackagesByName)
+
+        :param name: name pattern
+        :param newest_only: True = get newest packages only
+        '''
+        qa = self._get_po_by_name(name, newest_only)
+        pkg_ids = self._to_package_id_list(qa)
+        return pkg_ids
+
+    def _get_po_by_name(self, name, newest_only):
+        '''
+        Get packages matching a name pattern
 
         :param name: name pattern
         :param newest_only: True = get newest packages only
@@ -170,8 +181,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         qa = subj.get_best_query(self.base.sack, with_provides=False)
         if newest_only:
             qa = qa.latest()
-        pkg_ids = self._to_package_id_list(qa)
-        return pkg_ids
+        return list(qa)
 
     def _get_groups(self):
         '''
@@ -180,7 +190,19 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         and the group is installed when all mandatory & default packages is installed.
         '''
         all_groups = []
-        # TODO : Add dnf code ( _get_groups )
+        if not self.base.comps: # lazy load the comps metadata
+            self.base.read_comps()
+        cats = self.base.comps.categories
+        for category in cats:
+            cat = (category.name, category.ui_name, category.ui_description)
+            cat_grps = []
+            for obj in category.group_ids:
+                grp = self.base.comps.group_by_pattern(obj.name) # get the dnf group obj
+                if grp:
+                    elem = (grp.id, grp.ui_name, grp.ui_description, grp.installed)
+                    cat_grps.append(elem)
+            cat_grps.sort()
+            all_groups.append((cat, cat_grps))
         all_groups.sort()
         return json.dumps(all_groups)
 
@@ -286,7 +308,26 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         Get packages for a given grp_id and group filter
         '''
         pkgs = []
-        # TODO : Add dnf code ( _get_group_pkgs )
+        grp = self.base.comps.group_by_pattern(grp_id)
+        if grp:
+            if grp_flt == 'all':
+                pkg_names = []
+                pkg_names.extend([p.name for p in grp.mandatory_packages ])
+                pkg_names.extend([p.name for p in grp.default_packages ])
+                pkg_names.extend([p.name for p in grp.optional_packages ])
+                best_pkgs = []
+                for name in pkg_names:
+                    best_pkgs.extend(self._get_po_by_name(name,True))
+            else:
+                pkg_names = []
+                pkg_names.extend([p.name for p in grp.mandatory_packages ])
+                pkg_names.extend([p.name for p in grp.default_packages ])
+                best_pkgs = []
+                for name in pkg_names:
+                    best_pkgs.extend(self._get_po_by_name(name,True))
+            pkgs = self.base.packages.filter_packages(best_pkgs)
+        else:
+            pass
         pkg_ids = self._to_package_id_list(pkgs)
         return pkg_ids
 
@@ -419,7 +460,6 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         '''
         Get a Dnf Base object to work with
         '''
-        # TODO : Add dnf code
         if not self._base:
             self._base = DnfBase(self)
         return self._base
@@ -429,7 +469,6 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         '''
         destroy the current YumBase object
         '''
-        # TODO : Add dnf code
         del self._base
         self._base = None
 
@@ -466,7 +505,7 @@ class Packages:
         self._sack = base.sack
         self._inst_na = self._sack.query().installed().na_dict()
 
-    def _filter_packages(self, pkg_list, replace=True):
+    def filter_packages(self, pkg_list, replace=True):
         '''
         Filter a list of package objects and replace
         the installed ones with the installed object, instead
@@ -510,9 +549,9 @@ class Packages:
         installed ones are replace with the install package objects
         '''
         if showdups:
-            return self._filter_packages(self.query.available().run())
+            return self.filter_packages(self.query.available().run())
         else:
-            return self._filter_packages(self.query.latest().run())
+            return self.filter_packages(self.query.latest().run())
 
     @property
     def available(self, showdups = False):
@@ -520,9 +559,9 @@ class Packages:
         available packages there is not installed yet
         '''
         if showdups:
-            return self._filter_packages(self.query.available().run(), replace=False)
+            return self.filter_packages(self.query.available().run(), replace=False)
         else:
-            return self._filter_packages(self.query.latest().run(), replace=False)
+            return self.filter_packages(self.query.latest().run(), replace=False)
 
     @property
     def extras(self):
