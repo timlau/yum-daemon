@@ -26,7 +26,7 @@ class TestBase(unittest.TestCase, DnfDaemonClient):
             return True
         else:
             return False
-        
+
     def show_changelog(self, changelog, max_elem=3):
         i = 0
         for (c_date, c_ver, msg) in changelog:
@@ -148,6 +148,26 @@ class TestBase(unittest.TestCase, DnfDaemonClient):
         self._gpg_confirm = values
         print "received signal : GPGImport%s" % (repr(values))
 
+    def on_DownloadStart(self, num_files, num_bytes):
+        ''' Starting a new parallel download batch '''
+        values =  (num_files, num_bytes)
+        print("on_DownloadStart : %s" % (repr(values)))
+
+    def on_DownloadProgress(self, name, frac, total_frac, total_files):
+        ''' Progress for a single instance in the batch '''
+        values =  (name, frac, total_frac, total_files)
+        print("on_DownloadProgress : %s" % (repr(values)))
+
+    def on_DownloadEnd(self, name, status, msg):
+        ''' Download of af single instace ended '''
+        values =  (name, status, msg)
+        print("on_DownloadEnd : %s" % (repr(values)))
+
+    def on_RepoMetaDataProgress(self, name, frac):
+        ''' Repository Metadata Download progress '''
+        values =  (name, frac)
+        print("on_RepoMetaDataProgress : %s" % (repr(values)))
+
 
 class TestBaseReadonly(unittest.TestCase, DnfDaemonReadOnlyClient):
     def __init__(self, methodName='runTest'):
@@ -220,3 +240,23 @@ class TestBaseReadonly(unittest.TestCase, DnfDaemonReadOnlyClient):
 
     def on_RPMProgress(self, package, action, te_current, te_total, ts_current, ts_total):
         pass
+
+    def on_DownloadStart(self, num_files, num_bytes):
+        ''' Starting a new parallel download batch '''
+        values =  (num_files, num_bytes)
+        print("on_DownloadStart : %s" % (repr(values)))
+
+    def on_DownloadProgress(self, name, frac, total_frac, total_files):
+        ''' Progress for a single instance in the batch '''
+        values =  (name, frac, total_frac, total_files)
+        print("on_DownloadProgress : %s" % (repr(values)))
+
+    def on_DownloadEnd(self, name, status, msg):
+        ''' Download of af single instace ended '''
+        values =  (name, status, msg)
+        print("on_DownloadEnd : %s" % (repr(values)))
+
+    def on_RepoMetaDataProgress(self, name, frac):
+        ''' Repository Metadata Download progress '''
+        values =  (name, frac)
+        print("on_RepoMetaDataProgress : %s" % (repr(values)))

@@ -150,7 +150,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         :param newest_only: return only the newest version of a package
         :param tags: seach pkgtags
         '''
-        # FIXME: Add support for search in pkgtags
+        # FIXME: Add support for search in pkgtags, when supported in dnf
         showdups = not newest_only
         result = self.base.search(fields, keys, match_all, showdups)
         pkg_ids = self._to_package_id_list(result)
@@ -228,8 +228,15 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         it will return a JSON string of the config
         :param setting: name of setting (debuglevel etc..)
         '''
-        value = json.dumps(None)
-        # TODO : Add dnf code ( _get_config )
+        if setting == '*': # Return all config
+            cfg = self.base.conf
+            all_conf = dict([(c,getattr(cfg,c)) for c in cfg.iterkeys()])
+            value =  json.dumps(all_conf)
+        elif hasattr(self.base.conf, setting):
+            value = json.dumps(getattr(self.base.conf, setting))
+        else:
+            value = json.dumps(None)
+        return value
         return value
 
     def _get_repo(self, repo_id ):
@@ -295,7 +302,8 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         '''
         po = self._get_po(id)
         if po:
-            # TODO : Add dnf code ( _get_updateInfo )
+            # TODO : updateinfo is not supported in DNF yet
+            # https://bugzilla.redhat.com/show_bug.cgi?id=850912
             value = json.dumps(None)
         else:
             value = json.dumps(None)
@@ -389,7 +397,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         '''
         Get pkgtags from a given po
         '''
-        # TODO : Add dnf code ( _get_pkgtags )
+        # TODO : pkgtags is not supported in DNF yet
         return []
 
     def _to_package_id_list(self, pkgs):
@@ -451,7 +459,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         else:
             upd = q.upgrades().filter(name=n, version=v, release=r, arch=a)
             if upd:
-                action = 'updates'
+                action = 'update'
             else:
                 obsoletes = self._get_obsoletes()
                 if po in obsoletes:

@@ -161,7 +161,7 @@ class TestAPIDevel(TestBaseReadonly):
 
     def test_PackageActions(self):
         """
-        Session: GetPackageWithAttributes & GetAttribute
+        Session: GetPackageWithAttributes & GetAttribute (action)
         """
         print()
         flt_dict = {'installed':['remove'],'updates':['update'],'obsoletes':['obsolete'], 'available':['install','remove','update','obsolete']}
@@ -229,3 +229,23 @@ class TestAPIDevel(TestBaseReadonly):
             evr = "%s:%s.%s" % (e,v,r)
             self.assertTrue(evr < inst_evr)
             print("  Downgrade : %s" % id)
+
+    def test_GetConfig(self):
+        '''
+        Session: GetConfig
+        '''
+        all_conf = self.GetConfig('*')
+        self.assertIsInstance(all_conf, dict)
+        for key in all_conf:
+            print "   %s = %s" % (key,all_conf[key])
+        fastestmirror = self.GetConfig('fastestmirror')
+        print("fastestmirror : %s" % fastestmirror)
+        self.assertIn(fastestmirror, [True,False])
+        not_found = self.GetConfig('not_found')
+        print("not_found : %s" % not_found)
+        self.assertIsNone(not_found)
+
+
+
+
+

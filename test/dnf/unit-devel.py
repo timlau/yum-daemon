@@ -31,10 +31,3 @@ class TestAPIDevel(TestBaseReadonly):
         self.assertRaises(LockedError,self.Unlock)
         # get the Lock again, else tearDown will fail
         self.Lock()
-
-
-
-
-
-
-
