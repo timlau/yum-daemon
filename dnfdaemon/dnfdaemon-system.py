@@ -175,7 +175,6 @@ class DnfDaemon(DaemonBase):
         '''
         self.check_permission(sender)
         if not self._lock:
-            # TODO : Add dnf code
             self._lock = sender
             self.logger.info('LOCK: Locked by : %s' % sender)
             return True
@@ -227,7 +226,7 @@ class DnfDaemon(DaemonBase):
         :param sender:
         '''
         self.working_start(sender)
-        # TODO : Add dnf code
+        # TODO : Add dnf code (SetEnabledRepos)
         return self.working_ended()
 
 
@@ -426,7 +425,6 @@ class DnfDaemon(DaemonBase):
         ''' release the lock'''
         self.check_permission(sender)
         if self.check_lock(sender):
-            # TODO : Add dnf code
             self._reset_base()
             self.logger.info('UNLOCK: Lock Release by %s' % self._lock)
             self._lock = None
@@ -446,7 +444,12 @@ class DnfDaemon(DaemonBase):
         '''
         self.working_start(sender)
         value = 0
-        # TODO : Add dnf code
+        for cmd in cmds.split(' '):
+            if cmd.endswith('.rpm'):
+                self.base.installLocal(cmd)
+            else:
+                self.base.install(cmd)
+        value = self._build_transaction()
         return self.working_ended(value)
 
     @Logger
@@ -463,7 +466,7 @@ class DnfDaemon(DaemonBase):
         '''
         self.working_start(sender)
         value = 0
-        # TODO : Add dnf code
+        # TODO : Add dnf code (Remove)
         return self.working_ended(value)
 
     @Logger
@@ -480,7 +483,7 @@ class DnfDaemon(DaemonBase):
         '''
         self.working_start(sender)
         value = 0
-        # TODO : Add dnf code
+        # TODO : Add dnf code (Update)
         return self.working_ended(value)
 
     @Logger
@@ -497,7 +500,7 @@ class DnfDaemon(DaemonBase):
         '''
         self.working_start(sender)
         value = 0
-        # TODO : Add dnf code
+        # TODO : Add dnf code (Reinstall)
         return self.working_ended(value)
 
     @Logger
@@ -514,7 +517,7 @@ class DnfDaemon(DaemonBase):
         '''
         self.working_start(sender)
         value = 0
-        # TODO : Add dnf code
+        # TODO : Add dnf code (Downgrade)
         return self.working_ended(value)
 
 
@@ -533,7 +536,7 @@ class DnfDaemon(DaemonBase):
         '''
         self.working_start(sender)
         value = 0
-        # TODO : Add dnf code
+        # TODO : Add dnf code (AddTransaction)
         return self.working_ended(value)
 
     @Logger
@@ -546,7 +549,7 @@ class DnfDaemon(DaemonBase):
         Clear the transactopm
         '''
         self.working_start(sender)
-        # TODO : Add dnf code
+        # TODO : Add dnf code (ClearTransaction)
         return self.working_ended()
 
 
@@ -562,7 +565,7 @@ class DnfDaemon(DaemonBase):
         '''
         self.working_start(sender)
         value = []
-        # TODO : Add dnf code
+        # TODO : Add dnf code (GetTransaction)
         return self.working_ended(value)
 
 
@@ -585,9 +588,12 @@ class DnfDaemon(DaemonBase):
         Resolve dependencies of current transaction
         '''
         self.TransactionEvent('start-build',NONE)
-        rc = 0
-        output = []
-        # TODO : Add dnf code
+        rc = self.resolve()
+        if rc: # OK
+            output = self._get_transaction_list()
+        else:
+            output = []
+        self.TransactionEvent('end-build',NONE)
         return json.dumps((rc,output))
 
     @Logger
@@ -604,7 +610,7 @@ class DnfDaemon(DaemonBase):
         self.check_lock(sender)
         self.TransactionEvent('start-run',NONE)
         self._can_quit = False
-        # TODO : Add dnf code
+        # TODO : Add dnf code (RunTransaction)
         self._can_quit = True
         self._reset_base()
         self.TransactionEvent('end-run',NONE)
@@ -809,7 +815,7 @@ class DnfDaemon(DaemonBase):
 
 
     def _set_option(self, option, value):
-        # TODO : Add dnf code
+        # TODO : Add dnf code (_set_option)
         pass
 
 
@@ -820,7 +826,7 @@ class DnfDaemon(DaemonBase):
         :param end: end days from today
         '''
         result = []
-        # TODO : Add dnf code
+        # TODO : Add dnf code (_get_history_by_days)
         return self._get_id_time_list(result)
 
     def _history_search(self, pattern):
@@ -829,9 +835,8 @@ class DnfDaemon(DaemonBase):
         :param pattern: list of search patterns
         :type pattern: list
         '''
-        tids = self.yumbase.history.search(pattern)
         result = []
-        # TODO : Add dnf code
+        # TODO : Add dnf code (_history_search)
         return self._get_id_time_list(result)
 
     def _get_history_transaction_pkgs(self, tid):
@@ -840,7 +845,7 @@ class DnfDaemon(DaemonBase):
         yum history transaction id
         '''
         result = []
-        # TODO : Add dnf code
+        # TODO : Add dnf code (_get_history_transaction_pkgs)
         return result
 
     def _get_transaction_list(self):
@@ -848,7 +853,7 @@ class DnfDaemon(DaemonBase):
         Generate a list of the current transaction
         '''
         out_list = []
-        # TODO : Add dnf code
+        # TODO : Add dnf code (_get_transaction_list)
         return out_list
 
     def _to_transaction_id_list(self, txmbrs):
@@ -858,7 +863,7 @@ class DnfDaemon(DaemonBase):
         :param pkgs:
         '''
         result = []
-        # TODO : Add dnf code
+        # TODO : Add dnf code (_to_transaction_id_list)
         return result
 
     def check_lock(self, sender):
@@ -894,22 +899,6 @@ class DnfDaemon(DaemonBase):
                 ('system-bus-name', {'name': sender}), DAEMON_ORG, {}, dbus.UInt32(1), '', timeout=600)
         if not granted:
             raise AccessDeniedError('Session is not authorized')
-
-    def _get_base(self, repos=[]):
-        '''
-        Get a YumBase object to work with
-        '''
-        self._base = DaemonBase(self)
-        # TODO : Add dnf code
-
-    def _reset_base(self):
-        '''
-        destroy the current YumBase object
-        '''
-        if self._base:
-            # TODO : Add dnf code
-            self._base = None
-
 
 
 def main():
