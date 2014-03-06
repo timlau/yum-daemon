@@ -40,7 +40,7 @@ from dnf.callback import DownloadProgress, STATUS_OK
 import dnf.match_counter
 
 
-FAKE_ATTR = ['downgrades','action','pkgtags']
+FAKE_ATTR = ['downgrades','action','pkgtags','changelog']
 NONE = json.dumps(None)
 
 
@@ -370,10 +370,19 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
             return self._get_downgrades(po)
         elif attr == 'pkgtags':
             return self._get_pkgtags(po)
+        elif attr == 'changelog':
+            # TODO : changelog is not supported in DNF yet
+            # https://bugzilla.redhat.com/show_bug.cgi?id=1066867
+            return None
 
     def _get_downgrades(self,pkg):
         pkg_ids = []
-        # TODO : Add dnf code ( _get_downgrades )
+        ''' Find available downgrades for a given name.arch'''
+        q = self.base.sack.query()
+        avail = q.available().filter(name=pkg.name, arch=pkg.arch).run()
+        for apkg in avail:
+            if pkg.evr_gt(apkg):
+                pkg_ids.append(self._get_id(apkg))
         return pkg_ids
 
     def _get_pkgtags(self, po):
@@ -610,7 +619,7 @@ class DnfBase(dnf.Base):
         self.read_all_repos()
         self.progress = Progress(parent)
         self.repos.all.set_progress_bar( self.md_progress)
-        # FIXME: all() is a method in 0.4.17 and is public API now
+        # FIXME: fix code when 0.4.17 is released.
         #self.repos.all().set_progress_bar( self.md_progress)
         self.fill_sack()
         self._packages = Packages(self)

@@ -35,7 +35,7 @@ class TestAPIDevel(TestBaseReadonly):
 
     def test_GetPackages(self):
         '''
-        Session: GetPackages & GetAttribute
+        Session: GetPackages
         '''
         print
         for narrow in ['installed','available']:
@@ -208,3 +208,24 @@ class TestAPIDevel(TestBaseReadonly):
                 pkgs = self.GetGroupPackages(grp_id,'default')
                 self.assertIsInstance(pkgs, list) # cat is a list
                 print "       # of Default Packages in group : ",len(pkgs)
+
+    def test_Downgrades(self):
+        '''
+        Session: GetAttribute( downgrades )
+        '''
+        print "Get newest versions of yum"
+        pkgs = self.GetPackagesByName('yum', newest_only=True)
+        # pkgs should be a list instance
+        self.assertIsInstance(pkgs, list)
+        num2 = len(pkgs)
+        self.assertEqual(num2, 1) # there can only be one :)
+        downgrades = self.GetAttribute(pkgs[0], 'downgrades')
+        self.assertIsInstance(downgrades, list)
+        (n, e, v, r, a, repo_id) = self.to_pkg_tuple(pkgs[0])
+        inst_evr = "%s:%s.%s" % (e,v,r)
+        print("Installed : %s" % pkgs[0])
+        for id in downgrades:
+            (n, e, v, r, a, repo_id) = self.to_pkg_tuple(id)
+            evr = "%s:%s.%s" % (e,v,r)
+            self.assertTrue(evr < inst_evr)
+            print("  Downgrade : %s" % id)

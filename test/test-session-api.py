@@ -139,8 +139,8 @@ class TestAPI(TestBase):
         print("bact to start : ", enabled)
         self.assertEqual(len(enabled),len(enabled_pre)) # the should only be one :)
         self.assertEqual(enabled,enabled_pre) # and it should be 'fedora'
-         
-        
+
+
 
     def test_Search(self):
         '''
@@ -165,7 +165,7 @@ class TestAPI(TestBase):
         self.assertIsInstance(pkgs, list)
         print "found %i packages" % len(pkgs)
         self.assertGreater(len(pkgs), 0) # we should find some matches
-        # retro should match some pkgtags        
+        # retro should match some pkgtags
         keys = ['retro'] # second key should not be found
         pkgs = self.Search(fields, keys ,True, True, True)
         self.assertIsInstance(pkgs, list)
@@ -176,7 +176,7 @@ class TestAPI(TestBase):
         """
         Session: Groups (GetGroups & GetGroupPackages)
         """
-        
+
         result = self.GetGroups()
         for cat, grps in result:
             # cat: [category_id, category_name, category_desc]
