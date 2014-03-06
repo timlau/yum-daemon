@@ -37,8 +37,7 @@ import dnf.const
 import dnf.conf
 import dnf.subject
 from dnf.callback import DownloadProgress, STATUS_OK
-import dnf.match_counter
-
+import hawkey
 
 FAKE_ATTR = ['downgrades','action','pkgtags','changelog']
 NONE = json.dumps(None)
@@ -681,23 +680,30 @@ class DnfBase(dnf.Base):
         :param showdups: show duplicate packages or latest (default)
         :return: a list of package objects
         '''
-        num_val = len(values)
-        counter = dnf.match_counter.MatchCounter() # not public api
-        for arg in values:
-            for field in fields:
-                self.search_counted(counter, field, arg) # not public api
-        if match_all and num_val > 1:
-            res = []
-            for pkg in counter:
-                if len(counter.matched_needles(pkg)) == num_val:
-                    res.append(pkg)
-        else:
-            res = counter.keys()
+        matches = set()
+        for key in values:
+            key_set = set()
+            for attr in fields:
+                pkgs = set(self.contains(attr,key).run())
+                key_set |= pkgs
+            if len(matches) == 0:
+                matches = key_set
+            else:
+                if match_all:
+                    matches &= key_set
+                else:
+                    matches |= key_set
+        result = list(matches)
         if not showdups:
-            limit = self.sack.query().filter(pkg=res).latest()
-            return limit
+            result = self.sack.query().filter(pkg=result).latest()
+        return result
+
+    def contains(self, attr, needle, ignore_case=True):
+        fdict = {'%s__substr' % attr : needle}
+        if ignore_case:
+            return self.sack.query().filter(hawkey.ICASE, **fdict)
         else:
-            return res
+            return self.sack.query().filter(**fdict)
 
 
 class MDProgress(DownloadProgress):
