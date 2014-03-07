@@ -213,11 +213,7 @@ class DnfDaemonBase(dbus.service.Object, DownloadCallback):
         if filter == '' or filter == 'enabled':
             repos = [repo.id for repo in self.base.repos.iter_enabled()]
         else:
-            # get_multiple(filter) is not public api (0.4.16)
-            repos = [repo.id for repo in  self.base.repos.get_multiple(filter)]
-            # FIXME: fix code when 0.4.17 is released.
-            # dnf 0.4.17 get_matching is public api
-            #repos = [repo.id for repo in  self.base.repos.get_matching(filter)]
+            repos = [repo.id for repo in  self.base.repos.get_matching(filter)]
         return repos
 
 
@@ -625,9 +621,7 @@ class DnfBase(dnf.Base):
         self.setup_cache()
         self.read_all_repos()
         self.progress = Progress(parent)
-        self.repos.all.set_progress_bar( self.md_progress)
-        # FIXME: fix code when 0.4.17 is released.
-        #self.repos.all().set_progress_bar( self.md_progress)
+        self.repos.all().set_progress_bar( self.md_progress)
         self.fill_sack()
         self._packages = Packages(self)
 
