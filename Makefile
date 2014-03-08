@@ -1,14 +1,9 @@
 PKGNAME = yumdaemon
-PKGNAME_DNF = dnfdaemon
 DATADIR=/usr/share
 SYSCONFDIR=/etc
 PKGDIR = $(DATADIR)/$(PKGNAME)
-PKGDIR_DNF = $(DATADIR)/$(PKGNAME_DNF)
 ORG_NAME = org.baseurl.YumSystem
 ORG_RO_NAME = org.baseurl.YumSession
-ORG_NAME_DNF = org.baseurl.DnfSystem
-ORG_RO_NAME_DNF = org.baseurl.DnfSession
-SUBDIRS = client/yumdaemon client/dnfdaemon
 VERSION=$(shell awk '/Version:/ { print $$2 }' ${PKGNAME}.spec)
 PYTHON=python
 GITDATE=git$(shell date +%Y%m%d)
@@ -33,21 +28,13 @@ install:
 	mkdir -p $(DESTDIR)$(SYSCONFDIR)/dbus-1/system.d
 	mkdir -p $(DESTDIR)$(DATADIR)/polkit-1/actions
 	mkdir -p $(DESTDIR)$(PKGDIR)
-	mkdir -p $(DESTDIR)$(PKGDIR_DNF)
 	install -m644 dbus/$(ORG_NAME).service $(DESTDIR)$(DATADIR)/dbus-1/system-services/.				
 	install -m644 dbus/$(ORG_RO_NAME).service $(DESTDIR)$(DATADIR)/dbus-1/services/.				
 	install -m644 dbus/$(ORG_NAME).conf $(DESTDIR)$(SYSCONFDIR)/dbus-1/system.d/.				
-	install -m644 dbus/$(ORG_NAME_DNF).service $(DESTDIR)$(DATADIR)/dbus-1/system-services/.				
-	install -m644 dbus/$(ORG_RO_NAME_DNF).service $(DESTDIR)$(DATADIR)/dbus-1/services/.				
-	install -m644 dbus/$(ORG_NAME_DNF).conf $(DESTDIR)$(SYSCONFDIR)/dbus-1/system.d/.				
 	install -m644 policykit1/$(ORG_NAME).policy $(DESTDIR)$(DATADIR)/polkit-1/actions/.				
-	install -m644 policykit1/$(ORG_NAME_DNF).policy $(DESTDIR)$(DATADIR)/polkit-1/actions/.				
 	install -m755 yumdaemon/yumdaemon-system.py $(DESTDIR)/$(PKGDIR)/yumdaemon-system
 	install -m755 yumdaemon/yumdaemon-session.py $(DESTDIR)/$(PKGDIR)/yumdaemon-session
 	install -m644 yumdaemon/common.py $(DESTDIR)/$(PKGDIR)/.
-	install -m755 dnfdaemon/dnfdaemon-system.py $(DESTDIR)/$(PKGDIR_DNF)/dnfdaemon-system
-	install -m755 dnfdaemon/dnfdaemon-session.py $(DESTDIR)/$(PKGDIR_DNF)/dnfdaemon-session
-	install -m644 dnfdaemon/common.py $(DESTDIR)/$(PKGDIR_DNF)/.
 	for d in $(SUBDIRS); do make DESTDIR=$(DESTDIR) -C $$d install; [ $$? = 0 ] || exit 1; done
 
 uninstall:
@@ -56,18 +43,11 @@ uninstall:
 	rm -f $(DESTDIR)$(SYSCONFDIR)/dbus-1/system.d/$(ORG_NAME).*				
 	rm -r $(DESTDIR)$(DATADIR)/polkit-1/actions/$(ORG_NAME).*		
 	rm -rf $(DESTDIR)/$(PKGDIR)/
-	rm -f $(DESTDIR)$(DATADIR)/dbus-1/system-services/$(ORG_NAME_DNF).*
-	rm -f $(DESTDIR)$(DATADIR)/dbus-1/services/$(ORG_RO_NAME_DNF).*
-	rm -f $(DESTDIR)$(SYSCONFDIR)/dbus-1/system.d/$(ORG_NAME_DNF).*				
-	rm -r $(DESTDIR)$(DATADIR)/polkit-1/actions/$(ORG_NAME_DNF).*		
-	rm -rf $(DESTDIR)/$(PKGDIR_DNF)/
 
 selinux:
 	@$(MAKE) install
 	semanage fcontext -a -t rpm_exec_t $(DESTDIR)/$(PKGDIR)/yumdaemon-system
 	restorecon $(DESTDIR)/$(PKGDIR)/yumdaemon-system
-	semanage fcontext -a -t rpm_exec_t $(DESTDIR)/$(PKGDIR_DNF)/dnfdaemon-system
-	restorecon $(DESTDIR)/$(PKGDIR_DNF)/dnfdaemon-system
 	
 
 # Run as root or you will get a password prompt for each test method :)
@@ -92,12 +72,6 @@ test-session: FORCE
 test-devel: FORCE
 	@nosetests -v -s test/unit-devel.py
 
-# Run as root or you will get a password prompt for each test method :)
-test-dnf-devel: FORCE
-	@nosetests -v -s test/dnf/unit-devel.py
-
-test-dnf-session: FORCE
-	@nosetests -v  test/dnf/test-session-api.py
 
 instdeps:
 	sudo yum install python-nose python3-gobject pygobject3	
@@ -207,33 +181,6 @@ start-system:
 kill:
 	@-sudo killall -9 -r "yumdaemon-system\.py" &> /dev/null 
 	@-sudo killall -9 -r "yumdaemon-session\.py" &> /dev/null 
-
-kill-session-dnf:
-	@/usr/bin/dbus-send --session --print-reply --dest="org.baseurl.DnfSession" / org.baseurl.DnfSession.Exit
-
-kill-system-dnf:
-	@sudo /usr/bin/dbus-send --system --print-reply --dest="org.baseurl.DnfSystem" / org.baseurl.DnfSystem.Exit
-	
-kill-both-dnf:
-	@/usr/bin/dbus-send --session --print-reply --dest="org.baseurl.DnfSession" / org.baseurl.DnfSession.Exit
-	@sudo /usr/bin/dbus-send --system --print-reply --dest="org.baseurl.DnfSystem" / org.baseurl.DnfSystem.Exit
-	
-start-session-dnf:
-	dnfdaemon/dnfdaemon-session.py -d -v --notimeout
-
-
-start-system-dnf:
-	sudo dnfdaemon/dnfdaemon-system.py -d -v --notimeout
-
-kill-dnf:
-	@-sudo killall -9 -r "dnfdaemon-system\.py" &> /dev/null 
-	@-sudo killall -9 -r "dnfdaemon-session\.py" &> /dev/null 
-	
-monitor-dnf-session:
-	dbus-monitor "type='signal',sender='org.baseurl.DnfSession',interface='org.baseurl.DnfSession'"	
-
-monitor-dnf-system:
-	dbus-monitor "type='signal',sender='org.baseurl.DnfSystem',interface='org.baseurl.DnfSystem'"	
 
 monitor-yum-session:
 	dbus-monitor "type='signal',sender='org.baseurl.YumSession',interface='org.baseurl.YumSession'"	

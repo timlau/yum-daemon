@@ -1,5 +1,3 @@
-%global dnfname dnfdaemon
-%global dnf_org org.baseurl.Dnf
 %global yum_org org.baseurl.Yum
 
 Name:           yumdaemon
@@ -61,68 +59,6 @@ Python 2 api for communicating with the yum-daemon DBus service
 %files -n  python-%{name}
 %{python_sitelib}/%{name}/
 
-%package -n python3-%{dnfname}
-Summary:        Python 3 api for communicating with the dnf-daemon DBus service
-Group:          Applications/System
-BuildRequires:  python3-devel
-Requires:       %{dnfname} = %{version}-%{release}
-Requires:       python3-gobject
-
-%description -n python3-%{dnfname}
-Python 3 api for communicating with the dnf-daemon DBus service
-
-
-%files -n  python3-%{dnfname}
-%{python3_sitelib}/%{dnfname}/
-
-%package -n python-%{dnfname}
-Summary:        Python 2 api for communicating with the yum-daemon DBus service
-Group:          Applications/System
-BuildRequires:  python2-devel
-Requires:       %{dnfname} = %{version}-%{release}
-Requires:       pygobject3
-
-%description -n python-%{dnfname}
-Python 2 api for communicating with the dnf-daemon DBus service
-
-
-%files -n  python-%{dnfname}
-%{python_sitelib}/%{dnfname}/
-
-%package -n %{dnfname}
-Summary:        DBus daemon for dnf package actions
-BuildRequires:  python2-devel
-Requires:       dbus-python
-Requires:       dnf >= 0.4.14
-Requires:       polkit
-Requires(post):     policycoreutils-python
-Requires(postun):   policycoreutils-python
-
-%description -n %{dnfname}
-Python 2 api for communicating with the dnf-daemon DBus service
-
-
-%files -n %{dnfname}
-%doc README.md ChangeLog COPYING
-%{_datadir}/dbus-1/system-services/%{dnf_org}*
-%{_datadir}/dbus-1/services/%{dnf_org}*
-%{_datadir}/%{dnfname}/
-%{_datadir}/polkit-1/actions/%{dnf_org}*
-# this should not be edited by the user, so no %%config
-%{_sysconfdir}/dbus-1/system.d/%{dnf_org}*
-
-# apply the right selinux file context
-# http://fedoraproject.org/wiki/PackagingDrafts/SELinux#File_contexts
-
-%post -n %{dnfname}
-semanage fcontext -a -t rpm_exec_t '%{_datadir}/%{dnfname}/%{dnfname}-system' 2>/dev/null || :
-restorecon -R %{_datadir}/%{dnfname}/%{dnfname}-system || :
-
-%postun -n %{dnfname}
-if [ $1 -eq 0 ] ; then  # final removal
-semanage fcontext -d -t rpm_exec_t '%{_datadir}/%{dnfname}/%{dnfname}-system' 2>/dev/null || :
-fi
-
 # apply the right selinux file context
 # http://fedoraproject.org/wiki/PackagingDrafts/SELinux#File_contexts
 
@@ -147,7 +83,7 @@ fi
 
 %changelog
 * Thu Feb 18 2014 Tim Lauridsen <timlau@fedoraproject.org> 0.9.3-1
-- Added dnf daemons & sub-packages
+- version 0.9.3-1
 
 * Wed Oct 23 2013 Tim Lauridsen <timlau@fedoraproject.org> 0.9.2-5
 - removed %%config from %%{_sysconfdir}/dbus-1/system.d/*
